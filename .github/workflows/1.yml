@@ -1,4 +1,4 @@
-name: Build PanVk for Android
+name: Build PanVk for G610
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Build PanVk for aarch64"
+    name: "Build PanVk for aarch64 (G610)"
     runs-on: ubuntu-latest
 
     steps:
@@ -16,104 +16,139 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y \
-            meson ninja-build pkg-config \
-            python3-pip wget unzip \
-            libclc-dev  # 安装 libclc 开发包
-          pip3 install --upgrade meson mako
+          sudo apt install -y meson ninja-build pkg-config \
+            libxrandr-dev libxxf86vm-dev libxcb-*-dev \
+            libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
+            python3-pip wget unzip gettext
+          pip3 install mako
 
       - name: Setup Android NDK
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
-          echo "NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
 
-      - name: Build Mesa with PanVk
+      - name: Build libdrm
         run: |
-          # 创建交叉编译文件 - 使用 Android 26
-          echo '[binaries]' > android-crossfile
-          echo "c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang'" >> android-crossfile
-          echo "cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++'" >> android-crossfile
-          echo "ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-crossfile
-          echo "strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> android-crossfile
-          echo "pkg-config = 'pkg-config'" >> android-crossfile
-          echo '' >> android-crossfile
-          echo '[host_machine]' >> android-crossfile
-          echo "system = 'linux'" >> android-crossfile
-          echo "cpu_family = 'aarch64'" >> android-crossfile
-          echo "cpu = 'aarch64'" >> android-crossfile
-          echo "endian = 'little'" >> android-crossfile
+          # 使用 echo 创建交叉编译文件
+          echo '[binaries]' > build-crossfile-drm
+          echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile-drm
+          echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile-drm
+          echo "cpp = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> build-crossfile-drm
+          echo "c_ld = 'lld'" >> build-crossfile-drm
+          echo "cpp_ld = 'lld'" >> build-crossfile-drm
+          echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile-drm
+          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
+          echo '' >> build-crossfile-drm
+          echo '[host_machine]' >> build-crossfile-drm
+          echo 'system = "linux"' >> build-crossfile-drm
+          echo 'cpu_family = "arm"' >> build-crossfile-drm
+          echo 'cpu = "armv8"' >> build-crossfile-drm
+          echo 'endian = "little"' >> build-crossfile-drm
 
-          # 全局关闭 detached HEAD 警告
-          git config --global advice.detachedHead false
+          git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
+          cd drm
+          meson setup "build-android" \
+            --prefix=/tmp/drm-static \
+            --cross-file "../build-crossfile-drm" \
+            -Ddefault_library=static \
+            -Dintel=disabled \
+            -Dradeon=disabled \
+            -Damdgpu=disabled \
+            -Dnouveau=disabled \
+            -Dvmwgfx=disabled \
+            -Dfreedreno=disabled \
+            -Dvc4=disabled \
+            -Detnaviv=disabled
+          ninja -C "build-android" install
 
-          # 克隆和构建 Mesa
-          git clone https://gitlab.freedesktop.org/mesa/mesa.git
+      - name: Build Mesa with PanVk for G610
+        run: |
+          # 使用 echo 创建 Mesa 交叉编译文件
+          echo '[binaries]' > build-crossfile
+          echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile
+          echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile
+          echo "cpp = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> build-crossfile
+          echo "c_ld = 'lld'" >> build-crossfile
+          echo "cpp_ld = 'lld'" >> build-crossfile
+          echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile
+          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
+          echo '' >> build-crossfile
+          echo '[host_machine]' >> build-crossfile
+          echo 'system = "linux"' >> build-crossfile
+          echo 'cpu_family = "arm"' >> build-crossfile
+          echo 'cpu = "armv8"' >> build-crossfile
+          echo 'endian = "little"' >> build-crossfile
+
+          # 克隆 Mesa 25.3.0 而不是 panvk 分支
+          git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
 
-          export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 禁用 OpenCL 相关功能
-          meson setup build-android \
-            --cross-file ../android-crossfile \
+          # 配置 Mesa 构建 - 针对 G610 优化，启用 PanVk
+          meson setup "build-android" \
+            --prefix=/tmp/pan \
+            --cross-file "../build-crossfile" \
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
             -Dandroid-stub=true \
-            -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers= \
-            -Dglx=disabled \
+            -Dllvm=disabled \
+            -Dxlib-lease=disabled \
             -Degl=disabled \
             -Dgbm=disabled \
+            -Dglx=disabled \
             -Dopengl=false \
-            -Dshared-glapi=disabled \
-            -Dopencl=disabled \
-            -Dgallium-opencl=disabled \
-            -Dbuildtype=release \
-            --prefix=/tmp/panvk
+            -Dosmesa=false \
+            -Dvulkan-drivers=panfrost \
+            -Dgallium-drivers= \
+            -Dshared-glapi=false \
+            -Dbuildtype=release
 
-          ninja -C build-android install
+          ninja -C "build-android" install
 
-      - name: Package results
+      - name: Package and optimize for G610
         run: |
           cd mesa/build-android
           
           echo "Built libraries:"
           find . -name "*.so" -type f | head -20
           
-          mkdir -p output/system/lib64
-          mkdir -p output/system/vendor/lib64/hw
+          # 创建针对 G610 的优化包
+          mkdir -p g610-package/system/lib64
+          mkdir -p g610-package/system/vendor/lib64/hw
           
           # 复制 PanVk 驱动
           if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
-            cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
-            cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/vendor/lib64/hw/vulkan.panfrost.so
-            echo "Found and copied libvulkan_panfrost.so"
+            cp src/panfrost/vulkan/libvulkan_panfrost.so g610-package/system/lib64/
+            cp src/panfrost/vulkan/libvulkan_panfrost.so g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
+            echo "Found and copied libvulkan_panfrost.so for G610"
           else
-            find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
-            find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/vendor/lib64/hw/vulkan.panfrost.so \;
-            echo "Copied libvulkan_panfrost.so via search"
+            find . -name "libvulkan_panfrost.so" -type f -exec cp {} g610-package/system/lib64/ \;
+            find . -name "libvulkan_panfrost.so" -type f -exec cp {} g610-package/system/vendor/lib64/hw/vulkan.panfrost.so \;
+            echo "Copied libvulkan_panfrost.so via search for G610"
           fi
           
           # 验证文件
-          if ls output/system/lib64/*.so >/dev/null 2>&1; then
-            echo "Build successful!"
-            ls -la output/system/lib64/
-            file output/system/lib64/*.so
+          if ls g610-package/system/lib64/*.so >/dev/null 2>&1; then
+            echo "G610 build successful!"
+            ls -la g610-package/system/lib64/
+            file g610-package/system/lib64/*.so
           else
-            echo "Error: No shared libraries found"
+            echo "Error: No shared libraries found for G610"
             exit 1
           fi
           
-          # 创建安装包
-          cd output
-          tar -czf ../../panvk-android-26-25.3.0-$(date +%Y%m%d).tar.gz system/
+          # 创建 G610 专用安装包
+          cd g610-package
+          tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
 
-      - name: Upload artifacts
+      - name: Upload G610 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-android-26-25.3.0
+          name: panvk-g610-25.3.0
           path: |
-            mesa/panvk-android-26-25.3.0-*.tar.gz
-            mesa/build-android/output/system/lib64/*.so
+            mesa/panvk-g610-*.tar.gz
+            mesa/build-android/g610-package/system/lib64/*.so
           retention-days: 30
