@@ -84,7 +84,6 @@ jobs:
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           
-          # 尝试不同的标签格式
           git checkout mesa-25.3.0 
           
           echo "Using Mesa version: $(git describe --tags)"
