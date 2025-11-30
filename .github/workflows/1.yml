@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  NDK_VERSION: 'r25c'
+  NDK_VERSION: '29.0.14206865'
   BUILD_TYPE: 'release'
 
 jobs:
