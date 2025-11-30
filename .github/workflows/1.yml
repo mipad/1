@@ -42,14 +42,11 @@ jobs:
         TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
         echo "TOOLCHAIN_DIR=$TOOLCHAIN_DIR" >> $GITHUB_ENV
         
-        # 验证工具存在
         echo "Toolchain directory: $TOOLCHAIN_DIR"
         ls -la "$TOOLCHAIN_DIR" | grep -E "aarch64|llvm" | head -10
         
-        # 检查具体工具
         "$TOOLCHAIN_DIR/aarch64-linux-android21-clang" --version || echo "Clang not found"
         
-        # 检查 ar 工具
         if [ -f "$TOOLCHAIN_DIR/llvm-ar" ]; then
           echo "Using llvm-ar"
           echo "AR_TOOL=$TOOLCHAIN_DIR/llvm-ar" >> $GITHUB_ENV
@@ -70,16 +67,15 @@ jobs:
       run: |
         cd mesa-src
         
-        # 设置环境变量
         export PATH="$TOOLCHAIN_DIR:$PATH"
         
-        # 创建交叉编译配置文件
-        cat > android-cross.txt << 'CROSS_FILE'
+        # 使用实际路径创建交叉编译文件
+        cat > android-cross.txt << EOF
         [binaries]
-        c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
-        cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
-        ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-        strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+         c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+        ar = '$TOOLCHAIN_DIR/llvm-ar'
+        strip = '$TOOLCHAIN_DIR/llvm-strip'
         pkg-config = 'pkg-config'
 
         [host_machine]
@@ -87,12 +83,11 @@ jobs:
         cpu_family = 'aarch64'
         cpu = 'aarch64'
         endian = 'little'
-        CROSS_FILE
-         
+        EOF
+        
         echo "Cross file content:"
         cat android-cross.txt
         
-        # 配置Mesa构建
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
