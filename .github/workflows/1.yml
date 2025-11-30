@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Build PanVk for aarch64"
+    name: "Build PanVk"
     runs-on: ubuntu-latest
 
     steps:
@@ -16,54 +16,49 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y \
-            meson ninja-build pkg-config \
+          sudo apt install -y ninja-build pkg-config \
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
             python3-pip wget unzip gettext
-          pip3 install mako
+          # 安装更新版本的 Meson
+          pip3 install meson>=1.4.0 mako
+          meson --version
 
       - name: Setup Android NDK
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
           echo "NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
 
-      - name: Create cross-compilation files
+      - name: Build Mesa PanVk
         run: |
-          # 创建交叉编译配置文件
-          cat > android-aarch64 << 'EOF'
+          # 创建交叉编译文件 - 修复 pkgconfig 弃用警告
+          cat > android-crossfile << EOF
           [binaries]
-          c = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
-          cpp = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
-          ar = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-          strip = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
-          pkgconfig = 'pkg-config'
+           c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
+           cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
+            ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+            strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+            pkg-config = 'pkg-config'
 
-          [properties]
-          pkg_config_libdir = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/pkgconfig'
-
-          [host_machine]
+           [host_machine]
           system = 'linux'
           cpu_family = 'aarch64'
           cpu = 'aarch64'
           endian = 'little'
-          EOF
+           EOF
 
-      - name: Clone and build Mesa with PanVk
-        run: |
-          # 克隆 Mesa 仓库
+          # 克隆和构建 Mesa
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
+          # 关闭 detached HEAD 警告
+          git config advice.detachedHead false
 
-          # 设置环境变量
           export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 专注于 PanVk
           meson setup build-android \
-            --cross-file ../android-aarch64 \
+            --cross-file ../android-crossfile \
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
             -Dandroid-stub=true \
@@ -75,38 +70,35 @@ jobs:
             -Dopengl=false \
             -Dosmesa=false \
             -Dshared-glapi=false \
-            -Dllvm=disabled \
             -Dbuildtype=release \
             --prefix=/tmp/panvk
 
-          # 构建
           ninja -C build-android install
 
-      - name: Package artifacts
+      - name: Package and upload results
         run: |
           cd mesa/build-android
           
           # 查找生成的库文件
+          echo "Built libraries:"
           find . -name "*.so" -type f | head -10
           
           # 创建输出目录
           mkdir -p output/system/lib64
-          mkdir -p output/system/vendor/lib64/hw
           
           # 复制 PanVk 驱动
           if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
             cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
-            cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/vendor/lib64/hw/
+            echo "Found libvulkan_panfrost.so"
           else
             find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
-            find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/vendor/lib64/hw/ \;
+            echo "Copied libvulkan_panfrost.so via search"
           fi
           
           # 验证文件
           if ls output/system/lib64/*.so >/dev/null 2>&1; then
-            echo "Build successful! Found libraries:"
+            echo "Build successful!"
             ls -la output/system/lib64/
-            file output/system/lib64/*.so
           else
             echo "Error: No shared libraries found"
             exit 1
@@ -114,12 +106,12 @@ jobs:
           
           # 创建安装包
           cd output
-          tar -czf ../../panvk-android-$(date +%Y%m%d).tar.gz system/
+          tar -czf ../../panvk-android-25.3.0-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-android-driver
+          name: panvk-android-25.3.0
           path: |
             mesa/panvk-android-*.tar.gz
             mesa/build-android/output/system/lib64/*.so
