@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  NDK_VERSION: '29.0.14206865'
+  NDK_VERSION: 'r25c'
   BUILD_TYPE: 'release'
 
 jobs:
@@ -25,46 +25,65 @@ jobs:
           libdrm-dev libelf-dev gettext bison flex \
           wget unzip git cmake make
         
-    - name: Install latest Meson
+    - name: Install Meson
       run: |
-        # 安装最新版本的Meson
         pip3 install --upgrade pip
         pip3 install meson mako
         meson --version
         
     - name: Download Android NDK
       run: |
-        # 使用更新的NDK版本
         wget -q https://dl.google.com/android/repository/android-ndk-${{ env.NDK_VERSION }}-linux.zip
         unzip -q android-ndk-${{ env.NDK_VERSION }}-linux.zip
         echo "NDK_HOME=$(pwd)/android-ndk-${{ env.NDK_VERSION }}" >> $GITHUB_ENV
         
-    - name: Verify NDK tools
+    - name: Verify NDK tools with full path
       run: |
-        echo "Checking NDK toolchain..."
-        ls -la $NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/ | grep aarch64 | head -10
-        # 检查关键工具是否存在
-        $NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang --version || echo "Clang not found"
+        echo "Checking NDK toolchain with full path..."
+        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        
+        # 检查工具是否存在
+        ls -la $TOOLCHAIN_DIR | grep -E "aarch64|llvm" | head -20
+        
+        # 检查具体工具
+        $TOOLCHAIN_DIR/aarch64-linux-android21-clang --version || echo "Clang not found"
+        
+        # 检查 ar 工具
+        if [ -f "$TOOLCHAIN_DIR/llvm-ar" ]; then
+          echo "Found llvm-ar, using that instead"
+          echo "USE_LLVM_AR=true" >> $GITHUB_ENV
+        elif [ -f "$TOOLCHAIN_DIR/aarch64-linux-android-ar" ]; then
+          echo "Found aarch64-linux-android-ar"
+          echo "USE_LLVM_AR=false" >> $GITHUB_ENV
+        else
+          echo "No ar tool found, listing available tools:"
+          ls -la $TOOLCHAIN_DIR | grep -E "ar$" || true
+        fi
         
     - name: Clone Mesa repository
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
-        
-        
-        git checkout mesa-25.3.0
+        # 使用已知存在的版本
+        git checkout 25.3.0 || git checkout mesa-25.3.0 || git checkout 24.1.0
         
     - name: Configure PanVk build for G610
       run: |
         cd mesa-src
         
-        # 创建正确的交叉编译配置文件
-        cat > android-cross.txt << 'EOF'
+        # 设置环境变量
+        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        export PATH="$TOOLCHAIN_DIR:$PATH"
+        
+        # 根据可用的工具创建交叉编译配置
+        if [ "$USE_LLVM_AR" = "true" ]; then
+          echo "Using llvm-ar instead of aarch64-linux-android-ar"
+          cat > android-cross.txt << 'EOF'
         [binaries]
-        c = 'aarch64-linux-android21-clang'
-        cpp = 'aarch64-linux-android21-clang++'
-        ar = 'aarch64-linux-android-ar'
-        strip = 'aarch64-linux-android-strip'
+        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+        ar = '$TOOLCHAIN_DIR/llvm-ar'
+        strip = '$TOOLCHAIN_DIR/llvm-strip'
         pkg-config = 'pkg-config'
 
         [host_machine]
@@ -73,11 +92,24 @@ jobs:
         cpu = 'aarch64'
         endian = 'little'
         EOF
+        else
+          cat > android-cross.txt << 'EOF'
+        [binaries]
+        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+        ar = '$TOOLCHAIN_DIR/aarch64-linux-android-ar'
+        strip = '$TOOLCHAIN_DIR/aarch64-linux-android-strip'
+        pkg-config = 'pkg-config'
+
+        [host_machine]
+        system = 'linux'
+        cpu_family = 'aarch64'
+        cpu = 'aarch64'
+        endian = 'little'
+        EOF
+        fi
         
-        # 设置环境变量
-        export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-        
-        # 配置Mesa构建 - 修复选项
+        # 配置Mesa构建 - 简化选项
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
@@ -103,7 +135,8 @@ jobs:
     - name: Build PanVk driver
       run: |
         cd mesa-src/build-android
-        export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        export PATH="$TOOLCHAIN_DIR:$PATH"
         ninja -j$(nproc --all)
         
     - name: Extract and package artifacts
@@ -111,11 +144,11 @@ jobs:
         cd mesa-src/build-android
         
         # 查找生成的库文件
-        find . -name "*.so" -type f | head -10
+        echo "Searching for built libraries..."
+        find . -name "*.so" -type f | head -20
         
         # 创建输出目录
         mkdir -p output/system/lib64
-        mkdir -p output/system/vendor/lib64/hw
         
         # 复制PanVk驱动
         if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
@@ -125,11 +158,10 @@ jobs:
           find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
           echo "Found libvulkan_panfrost.so via search"
         else
-          echo "Warning: libvulkan_panfrost.so not found"
-          # 列出所有so文件用于调试
-          find . -name "*.so" -type f
+          echo "Searching for alternative Vulkan drivers..."
           # 尝试其他可能的路径
-          find src/ -name "*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
+          find src/ -name "*vulkan*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
+          find . -path "*/panfrost/*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
         fi
         
         # 验证文件
@@ -138,11 +170,13 @@ jobs:
           ls -la output/system/lib64/
           file output/system/lib64/*.so
         else
-          echo "Error: No shared libraries found"
+          echo "Error: No shared libraries found in output directory"
+          echo "All built .so files:"
+          find . -name "*.so" -type f
           exit 1
         fi
         
-        # 创建简单的安装包
+        # 创建安装包
         cd output
         tar -czf ../panvk-g610-$(date +%Y%m%d).tar.gz system/
         
