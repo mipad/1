@@ -85,7 +85,7 @@ jobs:
           cd mesa
           
           # 尝试不同的标签格式
-          git checkout 25.3.0 || git checkout mesa-25.3.0 || (echo "Available tags:" && git tag -l | grep -E '^25\.' | head -10 && exit 1)
+          git checkout mesa-25.3.0 
           
           echo "Using Mesa version: $(git describe --tags)"
 
