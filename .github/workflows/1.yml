@@ -37,27 +37,27 @@ jobs:
         unzip -q android-ndk-${{ env.NDK_VERSION }}-linux.zip
         echo "NDK_HOME=$(pwd)/android-ndk-${{ env.NDK_VERSION }}" >> $GITHUB_ENV
         
-    - name: Verify NDK tools with full path
+    - name: Setup toolchain paths
       run: |
-        echo "Checking NDK toolchain with full path..."
         export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        echo "TOOLCHAIN_DIR=$TOOLCHAIN_DIR" >> $GITHUB_ENV
         
-        # 检查工具是否存在
-        ls -la $TOOLCHAIN_DIR | grep -E "aarch64|llvm" | head -20
+        # 验证工具存在
+        echo "Toolchain directory: $TOOLCHAIN_DIR"
+        ls -la "$TOOLCHAIN_DIR" | grep -E "aarch64|llvm" | head -10
         
         # 检查具体工具
-        $TOOLCHAIN_DIR/aarch64-linux-android21-clang --version || echo "Clang not found"
+        "$TOOLCHAIN_DIR/aarch64-linux-android21-clang" --version || echo "Clang not found"
         
         # 检查 ar 工具
         if [ -f "$TOOLCHAIN_DIR/llvm-ar" ]; then
-          echo "Found llvm-ar, using that instead"
-          echo "USE_LLVM_AR=true" >> $GITHUB_ENV
-        elif [ -f "$TOOLCHAIN_DIR/aarch64-linux-android-ar" ]; then
-          echo "Found aarch64-linux-android-ar"
-          echo "USE_LLVM_AR=false" >> $GITHUB_ENV
+          echo "Using llvm-ar"
+          echo "AR_TOOL=$TOOLCHAIN_DIR/llvm-ar" >> $GITHUB_ENV
+          echo "STRIP_TOOL=$TOOLCHAIN_DIR/llvm-strip" >> $GITHUB_ENV
         else
-          echo "No ar tool found, listing available tools:"
-          ls -la $TOOLCHAIN_DIR | grep -E "ar$" || true
+          echo "Using aarch64-linux-android-ar"
+          echo "AR_TOOL=$TOOLCHAIN_DIR/aarch64-linux-android-ar" >> $GITHUB_ENV
+          echo "STRIP_TOOL=$TOOLCHAIN_DIR/aarch64-linux-android-strip" >> $GITHUB_ENV
         fi
         
     - name: Clone Mesa repository
@@ -72,44 +72,28 @@ jobs:
         cd mesa-src
         
         # 设置环境变量
-        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
         export PATH="$TOOLCHAIN_DIR:$PATH"
         
-        # 根据可用的工具创建交叉编译配置
-        if [ "$USE_LLVM_AR" = "true" ]; then
-          echo "Using llvm-ar instead of aarch64-linux-android-ar"
-          cat > android-cross.txt << 'EOF'
-        [binaries]
-        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-        ar = '$TOOLCHAIN_DIR/llvm-ar'
-        strip = '$TOOLCHAIN_DIR/llvm-strip'
-        pkg-config = 'pkg-config'
+        # 创建交叉编译配置文件，使用实际路径
+        cat > android-cross.txt << EOF
+[binaries]
+c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+ar = '$AR_TOOL'
+strip = '$STRIP_TOOL'
+pkg-config = 'pkg-config'
 
-        [host_machine]
-        system = 'linux'
-        cpu_family = 'aarch64'
-        cpu = 'aarch64'
-        endian = 'little'
-        EOF
-        else
-          cat > android-cross.txt << 'EOF'
-        [binaries]
-        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-        ar = '$TOOLCHAIN_DIR/aarch64-linux-android-ar'
-        strip = '$TOOLCHAIN_DIR/aarch64-linux-android-strip'
-        pkg-config = 'pkg-config'
-
-        [host_machine]
-        system = 'linux'
-        cpu_family = 'aarch64'
-        cpu = 'aarch64'
-        endian = 'little'
-        EOF
-        fi
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+EOF
         
-        # 配置Mesa构建 - 简化选项
+        echo "Cross file content:"
+        cat android-cross.txt
+        
+        # 配置Mesa构建
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
@@ -135,7 +119,6 @@ jobs:
     - name: Build PanVk driver
       run: |
         cd mesa-src/build-android
-        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
         export PATH="$TOOLCHAIN_DIR:$PATH"
         ninja -j$(nproc --all)
         
