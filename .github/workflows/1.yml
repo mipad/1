@@ -23,7 +23,8 @@ jobs:
         sudo apt-get install -y \
           python3 python3-pip ninja-build pkg-config \
           libdrm-dev libelf-dev gettext bison flex \
-          wget unzip git cmake make
+          wget unzip git cmake make \
+          libclc-dev  # 添加 libclc 开发包
         
     - name: Install Meson
       run: |
@@ -73,21 +74,22 @@ jobs:
         cat > android-cross.txt << EOF
         [binaries]
          c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-        ar = '$TOOLCHAIN_DIR/llvm-ar'
-        strip = '$TOOLCHAIN_DIR/llvm-strip'
-        pkg-config = 'pkg-config'
+         cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+         ar = '$TOOLCHAIN_DIR/llvm-ar'
+         strip = '$TOOLCHAIN_DIR/llvm-strip'
+         pkg-config = 'pkg-config'
 
-        [host_machine]
-        system = 'linux'
-        cpu_family = 'aarch64'
-        cpu = 'aarch64'
-        endian = 'little'
-        EOF
+         [host_machine]
+         system = 'linux'
+         cpu_family = 'aarch64'
+         cpu = 'aarch64'
+         endian = 'little'
+         EOF
         
         echo "Cross file content:"
         cat android-cross.txt
         
+        # 配置Mesa构建 - 禁用不需要的组件
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
@@ -104,6 +106,8 @@ jobs:
           -Dvalgrind=disabled \
           -Dlibunwind=disabled \
           -Dlmsensors=disabled \
+          -Dgallium-opencl=disabled \
+          -Dopencl=disabled \
           -Dbuildtype=${{ env.BUILD_TYPE }} \
           -Db_ndebug=true \
           -Dcpp_rtti=true \
