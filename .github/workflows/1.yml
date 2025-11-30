@@ -1,168 +1,126 @@
-name: Build PanVk for Mali-G610
+name: Build PanVk for Android
 
 on:
   push:
     branches: [main, panvk-android]
   workflow_dispatch:
 
-env:
-  NDK_VERSION: 'r25c'
-  BUILD_TYPE: 'release'
-
 jobs:
-  build-panvk:
-    runs-on: ubuntu-22.04
-    
-    steps:
-    - name: Checkout workflow files
-      uses: actions/checkout@v4
-      
-    - name: Setup build environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          python3 python3-pip ninja-build pkg-config \
-          libdrm-dev libelf-dev gettext bison flex \
-          wget unzip git cmake make \
-          libclc-dev libwayland-dev wayland-protocols
-        
-    - name: Install Meson
-      run: |
-        pip3 install --upgrade pip
-        pip3 install meson mako
-        meson --version
-        
-    - name: Download Android NDK
-      run: |
-        wget -q https://dl.google.com/android/repository/android-ndk-${{ env.NDK_VERSION }}-linux.zip
-        unzip -q android-ndk-${{ env.NDK_VERSION }}-linux.zip
-        echo "NDK_HOME=$(pwd)/android-ndk-${{ env.NDK_VERSION }}" >> $GITHUB_ENV
-        
-    - name: Setup toolchain paths
-      run: |
-        TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
-        echo "TOOLCHAIN_DIR=$TOOLCHAIN_DIR" >> $GITHUB_ENV
-        
-        echo "Toolchain directory: $TOOLCHAIN_DIR"
-        ls -la "$TOOLCHAIN_DIR" | grep -E "aarch64|llvm" | head -10
-        
-        "$TOOLCHAIN_DIR/aarch64-linux-android21-clang" --version || echo "Clang not found"
-        
-        if [ -f "$TOOLCHAIN_DIR/llvm-ar" ]; then
-          echo "Using llvm-ar"
-          echo "AR_TOOL=$TOOLCHAIN_DIR/llvm-ar" >> $GITHUB_ENV
-          echo "STRIP_TOOL=$TOOLCHAIN_DIR/llvm-strip" >> $GITHUB_ENV
-        else
-          echo "Using aarch64-linux-android-ar"
-          echo "AR_TOOL=$TOOLCHAIN_DIR/aarch64-linux-android-ar" >> $GITHUB_ENV
-          echo "STRIP_TOOL=$TOOLCHAIN_DIR/aarch64-linux-android-strip" >> $GITHUB_ENV
-        fi
-        
-    - name: Clone Mesa repository
-      run: |
-        git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
-        cd mesa-src
-        git checkout 25.3.0
-        
-    - name: Configure PanVk build
-      run: |
-        cd mesa-src
-        
-        export PATH="$TOOLCHAIN_DIR:$PATH"
-        
-        # 创建正确格式的交叉编译文件 - 注意缩进和格式
-        cat > android-cross.txt << 'EOF'
-        [binaries]
-         c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-         cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-         ar = '$TOOLCHAIN_DIR/llvm-ar'
-         strip = '$TOOLCHAIN_DIR/llvm-strip'
-        pkg-config = 'pkg-config'
+  build:
+    name: "Build PanVk for aarch64"
+    runs-on: ubuntu-latest
 
-        [host_machine]
-        system = 'linux'
-         cpu_family = 'aarch64'
-         cpu = 'aarch64'
-         endian = 'little'
-         EOF
-        
-        echo "Cross file content:"
-        cat android-cross.txt
-        
-        # 配置Mesa构建
-        meson setup build-android \
-          --cross-file android-cross.txt \
-          -Dplatforms=android \
-          -Dvulkan-drivers=panfrost \
-          -Dgallium-drivers= \
-          -Dandroid-stub=true \
-          -Dshader-cache=enabled \
-          -Dglx=disabled \
-          -Degl=disabled \
-          -Dgles1=disabled \
-          -Dgles2=disabled \
-          -Dopengl=false \
-          -Dopencl=disabled \
-          -Dgallium-opencl=disabled \
-          -Dbuildtype=${{ env.BUILD_TYPE }} \
-          -Dprefix=/system
-        
-    - name: Verify build directory
-      run: |
-        cd mesa-src
-        if [ -d "build-android" ]; then
-          echo "Build directory exists"
-          ls -la build-android/
-        else
-          echo "Error: Build directory was not created"
-          exit 1
-        fi
-        
-    - name: Build PanVk driver
-      run: |
-        cd mesa-src/build-android
-        export PATH="$TOOLCHAIN_DIR:$PATH"
-        ninja -j$(nproc --all)
-        
-    - name: Extract and package artifacts
-      run: |
-        cd mesa-src/build-android
-        
-        echo "Searching for built libraries..."
-        find . -name "*.so" -type f | head -20
-        
-        mkdir -p output/system/lib64
-        
-        if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
-          cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
-          echo "Found libvulkan_panfrost.so in standard location"
-        elif find . -name "libvulkan_panfrost.so" -type f | head -1; then
-          find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
-          echo "Found libvulkan_panfrost.so via search"
-        else
-          echo "Searching for alternative Vulkan drivers..."
-          find src/ -name "*vulkan*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
-          find . -path "*/panfrost/*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
-        fi
-        
-        if ls output/system/lib64/*.so >/dev/null 2>&1; then
-          echo "Build successful! Found libraries:"
-          ls -la output/system/lib64/
-          file output/system/lib64/*.so
-        else
-          echo "Error: No shared libraries found in output directory"
-          find . -name "*.so" -type f
-          exit 1
-        fi
-        
-        cd output
-        tar -czf ../panvk-g610-$(date +%Y%m%d).tar.gz system/
-        
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: panvk-g610-driver
-        path: |
-          mesa-src/build-android/panvk-g610-*.tar.gz
-          mesa-src/build-android/output/system/lib64/*.so
-        retention-days: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            meson ninja-build pkg-config \
+            libxrandr-dev libxxf86vm-dev libxcb-*-dev \
+            libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
+            python3-pip wget unzip gettext
+          pip3 install mako
+
+      - name: Setup Android NDK
+        run: |
+          wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+          unzip -q android-ndk-r25c-linux.zip
+          echo "NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
+
+      - name: Create cross-compilation files
+        run: |
+          # 创建交叉编译配置文件
+          cat > android-aarch64 << 'EOF'
+          [binaries]
+          c = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
+          cpp = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
+          ar = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+          strip = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+          pkgconfig = 'pkg-config'
+
+          [properties]
+          pkg_config_libdir = '/home/runner/work/1/1/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/pkgconfig'
+
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
+          EOF
+
+      - name: Clone and build Mesa with PanVk
+        run: |
+          # 克隆 Mesa 仓库
+          git clone https://gitlab.freedesktop.org/mesa/mesa.git
+          cd mesa
+          git checkout 25.3.0
+
+          # 设置环境变量
+          export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+
+          # 配置 Mesa 构建 - 专注于 PanVk
+          meson setup build-android \
+            --cross-file ../android-aarch64 \
+            -Dplatforms=android \
+            -Dplatform-sdk-version=26 \
+            -Dandroid-stub=true \
+            -Dvulkan-drivers=panfrost \
+            -Dgallium-drivers= \
+            -Dglx=disabled \
+            -Degl=disabled \
+            -Dgbm=disabled \
+            -Dopengl=false \
+            -Dosmesa=false \
+            -Dshared-glapi=false \
+            -Dllvm=disabled \
+            -Dbuildtype=release \
+            --prefix=/tmp/panvk
+
+          # 构建
+          ninja -C build-android install
+
+      - name: Package artifacts
+        run: |
+          cd mesa/build-android
+          
+          # 查找生成的库文件
+          find . -name "*.so" -type f | head -10
+          
+          # 创建输出目录
+          mkdir -p output/system/lib64
+          mkdir -p output/system/vendor/lib64/hw
+          
+          # 复制 PanVk 驱动
+          if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
+            cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
+            cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/vendor/lib64/hw/
+          else
+            find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
+            find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/vendor/lib64/hw/ \;
+          fi
+          
+          # 验证文件
+          if ls output/system/lib64/*.so >/dev/null 2>&1; then
+            echo "Build successful! Found libraries:"
+            ls -la output/system/lib64/
+            file output/system/lib64/*.so
+          else
+            echo "Error: No shared libraries found"
+            exit 1
+          fi
+          
+          # 创建安装包
+          cd output
+          tar -czf ../../panvk-android-$(date +%Y%m%d).tar.gz system/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: panvk-android-driver
+          path: |
+            mesa/panvk-android-*.tar.gz
+            mesa/build-android/output/system/lib64/*.so
+          retention-days: 30
