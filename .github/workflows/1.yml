@@ -24,7 +24,7 @@ jobs:
           python3 python3-pip ninja-build pkg-config \
           libdrm-dev libelf-dev gettext bison flex \
           wget unzip git cmake make \
-          libclc-dev  # 添加 libclc 开发包
+          libclc-dev libwayland-dev wayland-protocols
         
     - name: Install Meson
       run: |
@@ -62,7 +62,9 @@ jobs:
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
-        git checkout 25.3.0 || git checkout mesa-25.3.0 || git checkout 24.1.0
+        # 使用更稳定的25.3.0版本
+        git checkout 25.3.0
+        echo "Using Mesa 25.3.0"
         
     - name: Configure PanVk build
       run: |
@@ -70,26 +72,26 @@ jobs:
         
         export PATH="$TOOLCHAIN_DIR:$PATH"
         
-        # 使用实际路径创建交叉编译文件
+        # 创建交叉编译文件
         cat > android-cross.txt << EOF
         [binaries]
-         c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-         cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-         ar = '$TOOLCHAIN_DIR/llvm-ar'
-         strip = '$TOOLCHAIN_DIR/llvm-strip'
+        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+        ar = '$TOOLCHAIN_DIR/llvm-ar'
+        strip = '$TOOLCHAIN_DIR/llvm-strip'
          pkg-config = 'pkg-config'
 
-         [host_machine]
+        [host_machine]
          system = 'linux'
-         cpu_family = 'aarch64'
-         cpu = 'aarch64'
-         endian = 'little'
-         EOF
+        cpu_family = 'aarch64'
+        cpu = 'aarch64'
+        endian = 'little'
+        EOF
         
         echo "Cross file content:"
         cat android-cross.txt
         
-        # 配置Mesa构建 - 禁用不需要的组件
+        # 尝试配置构建 - 使用更简单的配置
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
@@ -102,23 +104,29 @@ jobs:
           -Dgles1=disabled \
           -Dgles2=disabled \
           -Dopengl=false \
-          -Dvulkan-beta=true \
-          -Dvalgrind=disabled \
-          -Dlibunwind=disabled \
-          -Dlmsensors=disabled \
-          -Dgallium-opencl=disabled \
           -Dopencl=disabled \
+          -Dgallium-opencl=disabled \
           -Dbuildtype=${{ env.BUILD_TYPE }} \
-          -Db_ndebug=true \
-          -Dcpp_rtti=true \
-          -Db_lto=false \
-          -Dprefix=/system
+          -Dprefix=/system || (echo "Configuration failed, checking logs..." && cat build-android/meson-logs/meson-log.txt && exit 1)
+        
+        echo "Configuration successful!"
+        
+    - name: Verify build directory
+      run: |
+        cd mesa-src
+        if [ -d "build-android" ]; then
+          echo "Build directory exists"
+          ls -la build-android/
+        else
+          echo "Error: Build directory was not created"
+          exit 1
+        fi
         
     - name: Build PanVk driver
       run: |
         cd mesa-src/build-android
         export PATH="$TOOLCHAIN_DIR:$PATH"
-        ninja -j$(nproc --all)
+        ninja -j$(nproc --all) || (echo "Build failed" && exit 1)
         
     - name: Extract and package artifacts
       run: |
