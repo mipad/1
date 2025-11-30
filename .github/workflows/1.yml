@@ -30,7 +30,7 @@ jobs:
 
       - name: Build libdrm
         run: |
-          # 使用 echo 创建交叉编译文件 - 修复引号问题
+          # 创建 DRM 交叉编译文件
           echo '[binaries]' > build-crossfile-drm
           echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile-drm
           echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile-drm
@@ -41,14 +41,10 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
           echo '' >> build-crossfile-drm
           echo '[host_machine]' >> build-crossfile-drm
-          echo "system = 'linux'" >> build-crossfile-drm  # 修复：使用单引号
-          echo "cpu_family = 'arm'" >> build-crossfile-drm  # 修复：使用单引号
-          echo "cpu = 'armv8'" >> build-crossfile-drm  # 修复：使用单引号
-          echo "endian = 'little'" >> build-crossfile-drm  # 修复：使用单引号
-
-          # 验证文件内容
-          echo "DRM cross file content:"
-          cat build-crossfile-drm
+          echo "system = 'linux'" >> build-crossfile-drm
+          echo "cpu_family = 'arm'" >> build-crossfile-drm
+          echo "cpu = 'armv8'" >> build-crossfile-drm
+          echo "endian = 'little'" >> build-crossfile-drm
 
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
           cd drm
@@ -68,7 +64,7 @@ jobs:
 
       - name: Build Mesa with PanVk for G610
         run: |
-          # 使用 echo 创建 Mesa 交叉编译文件 - 修复引号问题
+          # 创建 Mesa 交叉编译文件
           echo '[binaries]' > build-crossfile
           echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile
           echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile
@@ -79,19 +75,19 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
           echo '' >> build-crossfile
           echo '[host_machine]' >> build-crossfile
-          echo "system = 'linux'" >> build-crossfile  # 修复：使用单引号
-          echo "cpu_family = 'arm'" >> build-crossfile  # 修复：使用单引号
-          echo "cpu = 'armv8'" >> build-crossfile  # 修复：使用单引号
-          echo "endian = 'little'" >> build-crossfile  # 修复：使用单引号
+          echo "system = 'linux'" >> build-crossfile
+          echo "cpu_family = 'arm'" >> build-crossfile
+          echo "cpu = 'armv8'" >> build-crossfile
+          echo "endian = 'little'" >> build-crossfile
 
-          # 验证文件内容
-          echo "Mesa cross file content:"
-          cat build-crossfile
-
-          # 克隆 Mesa 25.3.0
+          # 克隆 Mesa 并使用正确的标签
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
-          git checkout mesa-25.3.0
+          
+          # 尝试不同的标签格式
+          git checkout 25.3.0 || git checkout mesa-25.3.0 || (echo "Available tags:" && git tag -l | grep -E '^25\.' | head -10 && exit 1)
+          
+          echo "Using Mesa version: $(git describe --tags)"
 
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
@@ -150,12 +146,12 @@ jobs:
           
           # 创建 G610 专用安装包
           cd g610-package
-          tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
+          tar -czf ../../panvk-g610-$(git describe --tags)-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload G610 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-g610-25.3.0
+          name: panvk-g610
           path: |
             mesa/panvk-g610-*.tar.gz
             mesa/build-android/g610-package/system/lib64/*.so
