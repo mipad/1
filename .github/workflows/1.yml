@@ -51,8 +51,8 @@ jobs:
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
         
-        # 尝试不同的版本格式
-        git checkout 25.3.0 || git checkout mesa-25.3.0
+        
+        git checkout mesa-25.3.0
         
     - name: Configure PanVk build for G610
       run: |
