@@ -1,0 +1,132 @@
+name: Build PanVk for Mali-G610
+
+on:
+  push:
+    branches: [ main, panvk-android ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日自动构建
+
+env:
+  MESA_VERSION: '24.1.0'
+  NDK_VERSION: 'r26b'
+  BUILD_TYPE: 'release'
+
+jobs:
+  build-panvk:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout Mesa source
+      uses: actions/checkout@v4
+      with:
+        repository: mesa/mesa
+        ref: ${{ env.MESA_VERSION }}
+        path: mesa
+        
+    - name: Setup Android NDK
+      uses: android-actions/setup-android-ndk@v2
+      with:
+        ndk-version: ${{ env.NDK_VERSION }}
+        
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip ninja-build pkg-config \
+          libdrm-dev libelf-dev gettext
+        
+    - name: Setup Python dependencies
+      run: |
+        pip3 install meson mako
+        
+    - name: Configure build for Mali-G610
+      run: |
+        cd mesa
+        mkdir -p build-android-g610
+        
+        # Mali-G610特定优化配置
+        meson setup build-android-g610 \
+          --cross-file android-aarch64 \
+          -Dplatforms=android \
+          -Dvulkan-drivers=panfrost \
+          -Dgallium-drivers= \
+          -Dandroid-stub=true \
+          -Dshader-cache=enabled \
+          -Dshared-glapi=disabled \
+          -Dvulkan-beta=true \
+          -Dvalgrind=disabled \
+          -Dlibunwind=disabled \
+          -Dlmsensors=disabled \
+          -Dbuildtype=${{ env.BUILD_TYPE }} \
+          -Db_ndebug=true \
+          -Dcpp_rtti=false \
+          -Doptimization=3 \
+          -Db_lto=true \
+          -Dpanfrost-kmstype=atomic \
+          --werror \
+          --prefix=/opt/panvk-g610
+        
+    - name: Build PanVk driver
+      run: |
+        cd mesa/build-android-g610
+        ninja -j$(nproc)
+        
+    - name: Run tests (basic)
+      run: |
+        cd mesa/build-android-g610
+        # 基本编译测试
+        ninja test
+        
+    - name: Create release package
+      run: |
+        cd mesa/build-android-g610
+        ninja install
+        mkdir -p panvk-g610-package/system/lib64
+        cp /opt/panvk-g610/lib/libvulkan_panfrost.so panvk-g610-package/system/lib64/
+        
+        # 创建安装脚本
+        cat > panvk-g610-package/install.sh << 'EOF'
+        #!/system/bin/sh
+        echo "Installing PanVk for Mali-G610..."
+        cp /sdcard/panvk-g610-package/system/lib64/libvulkan_panfrost.so /system/lib64/
+        chmod 644 /system/lib64/libvulkan_panfrost.so
+        echo "Installation complete. Please reboot."
+        EOF
+        
+        chmod +x panvk-g610-package/install.sh
+        
+        # 创建Magisk模块结构
+        mkdir -p panvk-g610-magisk/system/vendor/lib64/hw
+        cp /opt/panvk-g610/lib/libvulkan_panfrost.so panvk-g610-magisk/system/vendor/lib64/hw/
+        
+        cat > panvk-g610-magisk/module.prop << 'EOF'
+        id=panvk-g610
+        name=PanVk for Mali-G610
+        version=v1.0
+        versionCode=1
+        author=Mesa CI
+        description=PanVk Vulkan driver for Mali-G610 GPU
+        EOF
+        
+        # 打包
+        tar -czf panvk-g610-$(date +%Y%m%d).tar.gz panvk-g610-package/
+        zip -r panvk-g610-magisk-$(date +%Y%m%d).zip panvk-g610-magisk/
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: panvk-g610-build-${{ github.sha }}
+        path: |
+          mesa/build-android-g610/panvk-g610-*.tar.gz
+          mesa/build-android-g610/panvk-g610-magisk-*.zip
+        retention-days: 30
+        
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          mesa/build-android-g610/panvk-g610-*.tar.gz
+          mesa/build-android-g610/panvk-g610-magisk-*.zip
