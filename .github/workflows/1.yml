@@ -49,7 +49,7 @@ jobs:
           # 克隆和构建 Mesa
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
-          git checkout 25.3.0
+          git checkout mesa-25.3.0
 
           export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
