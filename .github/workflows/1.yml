@@ -52,7 +52,7 @@ jobs:
         cd mesa-src
         
         # 使用已知能编译的版本
-        git checkout 25.3.0  # 这个版本更稳定
+        git checkout mesa-25.3.0  # 这个版本更稳定
         
     - name: Configure PanVk build for G610
       run: |
