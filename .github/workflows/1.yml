@@ -62,7 +62,7 @@ jobs:
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
-        git checkout 25.3.0 || git checkout mesa-25.3.0 
+        git checkout 25.3.0
         
     - name: Configure PanVk build
       run: |
@@ -70,26 +70,26 @@ jobs:
         
         export PATH="$TOOLCHAIN_DIR:$PATH"
         
-        # 创建交叉编译文件
-        cat > android-cross.txt << EOF
+        # 创建正确格式的交叉编译文件 - 注意缩进和格式
+        cat > android-cross.txt << 'EOF'
         [binaries]
-        c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-        cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-        ar = '$TOOLCHAIN_DIR/llvm-ar'
-        strip = '$TOOLCHAIN_DIR/llvm-strip'
-         pkg-config = 'pkg-config'
+         c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
+         cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
+         ar = '$TOOLCHAIN_DIR/llvm-ar'
+         strip = '$TOOLCHAIN_DIR/llvm-strip'
+        pkg-config = 'pkg-config'
 
         [host_machine]
-         system = 'linux'
-        cpu_family = 'aarch64'
-        cpu = 'aarch64'
-        endian = 'little'
-        EOF
+        system = 'linux'
+         cpu_family = 'aarch64'
+         cpu = 'aarch64'
+         endian = 'little'
+         EOF
         
         echo "Cross file content:"
         cat android-cross.txt
         
-        # 尝试配置构建 - 使用更简单的配置
+        # 配置Mesa构建
         meson setup build-android \
           --cross-file android-cross.txt \
           -Dplatforms=android \
@@ -105,9 +105,7 @@ jobs:
           -Dopencl=disabled \
           -Dgallium-opencl=disabled \
           -Dbuildtype=${{ env.BUILD_TYPE }} \
-          -Dprefix=/system || (echo "Configuration failed, checking logs..." && cat build-android/meson-logs/meson-log.txt && exit 1)
-        
-        echo "Configuration successful!"
+          -Dprefix=/system
         
     - name: Verify build directory
       run: |
@@ -124,7 +122,7 @@ jobs:
       run: |
         cd mesa-src/build-android
         export PATH="$TOOLCHAIN_DIR:$PATH"
-        ninja -j$(nproc --all) || (echo "Build failed" && exit 1)
+        ninja -j$(nproc --all)
         
     - name: Extract and package artifacts
       run: |
