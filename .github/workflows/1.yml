@@ -46,14 +46,14 @@ jobs:
           # 全局关闭 detached HEAD 警告
           git config --global advice.detachedHead false
 
-          # 克隆和构建 Mesa
+          # 克隆和构建 Mesa，使用 mesa-25.3.0 标签
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
 
           export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 移除不存在的 osmesa 选项
+          # 配置 Mesa 构建 - 修复 shared-glapi 选项
           meson setup build-android \
             --cross-file ../android-crossfile \
             -Dplatforms=android \
@@ -65,7 +65,7 @@ jobs:
             -Degl=disabled \
             -Dgbm=disabled \
             -Dopengl=false \
-            -Dshared-glapi=false \
+            -Dshared-glapi=disabled \
             -Dbuildtype=release \
             --prefix=/tmp/panvk
 
@@ -104,13 +104,13 @@ jobs:
           
           # 创建安装包
           cd output
-          tar -czf ../../panvk-android-25.3.0-$(date +%Y%m%d).tar.gz system/
+          tar -czf ../../panvk-android-mesa-25.3.0-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-android-25.3.0
+          name: panvk-android-mesa-25.3.0
           path: |
-            mesa/panvk-android-*.tar.gz
+            mesa/panvk-android-mesa-25.3.0-*.tar.gz
             mesa/build-android/output/system/lib64/*.so
           retention-days: 30
