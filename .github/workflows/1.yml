@@ -3,15 +3,10 @@ name: Build PanVk for Mali-G610
 on:
   push:
     branches: [ main, panvk-android ]
-  workflow_dispatch:  # 允许手动触发
-    inputs:
-      mesa_version:
-        description: 'Mesa version'
-        required: false
-        default: '25.3.0'
+  workflow_dispatch:
 
 env:
-  NDK_VERSION: 'r25b'
+  NDK_VERSION: 'r25c'
   BUILD_TYPE: 'release'
 
 jobs:
@@ -22,90 +17,84 @@ jobs:
     - name: Checkout workflow files
       uses: actions/checkout@v4
       
-    - name: Determine Mesa version
-      id: mesa_version
-      run: |
-        # 使用手动输入的版本或默认值
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "MESA_VERSION=${{ github.event.inputs.mesa_version }}" >> $GITHUB_OUTPUT
-        else
-          echo "MESA_VERSION=25.3.0" >> $GITHUB_OUTPUT
-        fi
-        echo "Using Mesa version: ${{ steps.mesa_version.outputs.MESA_VERSION }}"
-        
     - name: Setup build environment
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          python3-pip ninja-build pkg-config \
+          python3 python3-pip ninja-build pkg-config \
           libdrm-dev libelf-dev gettext bison flex \
-          wget unzip git cmake
+          wget unzip git cmake make
         
-    - name: Install Meson
-      run: pip3 install meson mako
-      
+    - name: Install latest Meson
+      run: |
+        # 安装最新版本的Meson
+        pip3 install --upgrade pip
+        pip3 install meson==1.4.0 mako
+        meson --version
+        
     - name: Download Android NDK
       run: |
+        # 使用更新的NDK版本
         wget -q https://dl.google.com/android/repository/android-ndk-${{ env.NDK_VERSION }}-linux.zip
         unzip -q android-ndk-${{ env.NDK_VERSION }}-linux.zip
         echo "NDK_HOME=$(pwd)/android-ndk-${{ env.NDK_VERSION }}" >> $GITHUB_ENV
+        
+    - name: Verify NDK tools
+      run: |
+        echo "Checking NDK toolchain..."
+        ls -la $NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/ | grep aarch64 | head -10
+        # 检查关键工具是否存在
+        $NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang --version || echo "Clang not found"
         
     - name: Clone Mesa repository
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
         
-        # 列出可用标签来调试
-        echo "Available Mesa tags:"
-        git tag -l | grep -E '^[0-9]' | sort -V | tail -10
-        
-        # 尝试检出指定版本
-        MESA_TAG="${{ steps.mesa_version.outputs.MESA_VERSION }}"
-        echo "Trying to checkout: $MESA_TAG"
-        
-        # 尝试不同的标签格式
-        if git checkout $MESA_TAG 2>/dev/null; then
-          echo "Checked out $MESA_TAG successfully"
-        elif git checkout mesa-$MESA_TAG 2>/dev/null; then
-          echo "Checked out mesa-$MESA_TAG successfully"
-        else
-          # 如果特定版本不存在，使用最新稳定分支
-          LATEST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
-          echo "Version $MESA_TAG not found, using latest: $LATEST_TAG"
-          git checkout $LATEST_TAG
-        fi
+        # 使用已知能编译的版本
+        git checkout 24.1.0  # 这个版本更稳定
         
     - name: Configure PanVk build for G610
       run: |
         cd mesa-src
         
-        # 创建交叉编译配置文件
-        cat > android-aarch64.ini << EOF
+        # 创建正确的交叉编译配置文件
+        cat > android-cross.txt << 'EOF'
         [binaries]
-        c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
-        cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
-        ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar'
-        strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-strip'
+        c = ['aarch64-linux-android21-clang']
+        cpp = ['aarch64-linux-android21-clang++']
+        ar = 'aarch64-linux-android-ar'
+        strip = 'aarch64-linux-android-strip'
         pkgconfig = 'pkg-config'
+
+        [properties]
+        sys_root = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot'
+        pkg_config_libdir = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/pkgconfig'
 
         [host_machine]
         system = 'linux'
         cpu_family = 'aarch64'
         cpu = 'aarch64'
         endian = 'little'
-
-        [properties]
-        needs_exe_wrapper = true
         EOF
         
-        # 配置Mesa构建
+        # 设置环境变量
+        export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+        
+        # 配置Mesa构建 - 使用更新的选项
         meson setup build-android \
-          --cross-file android-aarch64.ini \
+          --cross-file android-cross.txt \
           -Dplatforms=android \
           -Dvulkan-drivers=panfrost \
           -Dgallium-drivers= \
           -Dandroid-stub=true \
           -Dshader-cache=enabled \
+          -Dglx=disabled \
+          -Degl=disabled \
+          -Dgles1=disabled \
+          -Dgles2=disabled \
+          -Dopengl=false \
+          -Dosmesa=false \
           -Dshared-glapi=disabled \
           -Dvulkan-beta=true \
           -Dvalgrind=disabled \
@@ -121,90 +110,49 @@ jobs:
     - name: Build PanVk driver
       run: |
         cd mesa-src/build-android
+        export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
         ninja -j$(nproc --all)
         
-    - name: Extract built libraries
+    - name: Extract and package artifacts
       run: |
         cd mesa-src/build-android
-        mkdir -p artifacts/system/lib64
         
-        # 查找并复制PanVk驱动
-        find . -name "libvulkan_panfrost.so" -exec cp {} artifacts/system/lib64/ \;
+        # 查找生成的库文件
+        find . -name "*.so" -type f | head -10
+        
+        # 创建输出目录
+        mkdir -p output/system/lib64
+        mkdir -p output/system/vendor/lib64/hw
+        
+        # 复制PanVk驱动
+        if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
+          cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
+        elif find . -name "libvulkan_panfrost.so" -type f | head -1; then
+          find . -name "libvulkan_panfrost.so" -type f -exec cp {} output/system/lib64/ \;
+        else
+          echo "Warning: libvulkan_panfrost.so not found"
+          # 列出所有so文件用于调试
+          find . -name "*.so" -type f
+        fi
         
         # 验证文件
-        echo "Built libraries:"
-        file artifacts/system/lib64/*.so || echo "No libraries found"
-        
-    - name: Create installation package
-      run: |
-        cd mesa-src/build-android/artifacts
-        
-        # 创建安装脚本
-        cat > install-panvk.sh << 'EOF'
-        #!/system/bin/sh
-        echo "Installing PanVk for Mali-G610..."
-        
-        # 检查root权限
-        if [ "$(whoami)" != "root" ]; then
-            echo "Error: This script requires root privileges"
-            exit 1
+        if [ -f "output/system/lib64/libvulkan_panfrost.so" ]; then
+          file output/system/lib64/libvulkan_panfrost.so
+          echo "Build successful!"
+        else
+          echo "Error: No PanVk driver found"
+          exit 1
         fi
         
-        # 备份原有驱动
-        if [ -f "/system/lib64/libvulkan.so" ]; then
-            cp /system/lib64/libvulkan.so /system/lib64/libvulkan.so.backup
-            echo "Backed up existing Vulkan driver"
-        fi
-        
-        # 安装新驱动
-        cp /sdcard/panvk-g610/system/lib64/libvulkan_panfrost.so /system/lib64/
-        chmod 644 /system/lib64/libvulkan_panfrost.so
-        chown root:root /system/lib64/libvulkan_panfrost.so
-        
-        echo "PanVk driver installed successfully!"
-        echo "Please reboot your device for changes to take effect."
-        EOF
-        
-        chmod +x install-panvk.sh
-        
-        # 创建Magisk模块
-        mkdir -p magisk-module/system/vendor/lib64/hw
-        cp system/lib64/libvulkan_panfrost.so magisk-module/system/vendor/lib64/hw/
-        
-        cat > magisk-module/module.prop << EOF
-        id=panvk-g610
-        name=PanVk for Mali-G610
-        version=v1.0-${{ github.sha }}
-        versionCode=1
-        author=GitHub CI
-        description=PanVk Vulkan driver optimized for Mali-G610
-        EOF
-        
-        cat > magisk-module/service.sh << 'EOF'
-        #!/system/bin/sh
-        # Magisk模块服务脚本
-        echo "PanVk G610 module loaded"
-        EOF
-        
-        chmod +x magisk-module/service.sh
-        
-        # 打包
-        tar -czf panvk-g610-$(date +%Y%m%d).tar.gz system/ install-panvk.sh
-        cd magisk-module && zip -r ../panvk-g610-magisk-$(date +%Y%m%d).zip ./*
+        # 创建简单的安装包
+        cd output
+        tar -czf ../panvk-g610-$(date +%Y%m%d).tar.gz system/
         
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: panvk-g610-${{ github.sha }}
+        name: panvk-g610-driver
         path: |
-          mesa-src/build-android/artifacts/panvk-g610-*.tar.gz
-          mesa-src/build-android/artifacts/panvk-g610-magisk-*.zip
+          mesa-src/build-android/panvk-g610-*.tar.gz
+          mesa-src/build-android/output/system/lib64/*.so
         retention-days: 30
-        
-    - name: Create release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          mesa-src/build-android/artifacts/panvk-g610-*.tar.gz
-          mesa-src/build-android/artifacts/panvk-g610-magisk-*.zip
