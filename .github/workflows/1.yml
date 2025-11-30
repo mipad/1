@@ -18,7 +18,8 @@ jobs:
           sudo apt update
           sudo apt install -y \
             meson ninja-build pkg-config \
-            python3-pip wget unzip
+            python3-pip wget unzip \
+            libclc-dev  # 安装 libclc 开发包
           pip3 install --upgrade meson mako
 
       - name: Setup Android NDK
@@ -29,10 +30,10 @@ jobs:
 
       - name: Build Mesa with PanVk
         run: |
-          # 创建简单的交叉编译文件
+          # 创建交叉编译文件 - 使用 Android 26
           echo '[binaries]' > android-crossfile
-          echo "c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'" >> android-crossfile
-          echo "cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'" >> android-crossfile
+          echo "c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang'" >> android-crossfile
+          echo "cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++'" >> android-crossfile
           echo "ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-crossfile
           echo "strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> android-crossfile
           echo "pkg-config = 'pkg-config'" >> android-crossfile
@@ -46,14 +47,14 @@ jobs:
           # 全局关闭 detached HEAD 警告
           git config --global advice.detachedHead false
 
-          # 克隆和构建 Mesa，使用 mesa-25.3.0 标签
+          # 克隆和构建 Mesa
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
 
           export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 修复 shared-glapi 选项
+          # 配置 Mesa 构建 - 禁用 OpenCL 相关功能
           meson setup build-android \
             --cross-file ../android-crossfile \
             -Dplatforms=android \
@@ -66,6 +67,8 @@ jobs:
             -Dgbm=disabled \
             -Dopengl=false \
             -Dshared-glapi=disabled \
+            -Dopencl=disabled \
+            -Dgallium-opencl=disabled \
             -Dbuildtype=release \
             --prefix=/tmp/panvk
 
@@ -104,13 +107,13 @@ jobs:
           
           # 创建安装包
           cd output
-          tar -czf ../../panvk-android-mesa-25.3.0-$(date +%Y%m%d).tar.gz system/
+          tar -czf ../../panvk-android-26-25.3.0-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-android-mesa-25.3.0
+          name: panvk-android-26-25.3.0
           path: |
-            mesa/panvk-android-mesa-25.3.0-*.tar.gz
+            mesa/panvk-android-26-25.3.0-*.tar.gz
             mesa/build-android/output/system/lib64/*.so
           retention-days: 30
