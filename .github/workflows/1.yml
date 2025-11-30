@@ -20,8 +20,7 @@ jobs:
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
             python3-pip wget unzip gettext
-          # 安装更新版本的 Meson
-          pip3 install meson>=1.4.0 mako
+          pip3 install --upgrade meson mako
           meson --version
 
       - name: Setup Android NDK
@@ -32,27 +31,26 @@ jobs:
 
       - name: Build Mesa PanVk
         run: |
-          # 创建交叉编译文件 - 修复 pkgconfig 弃用警告
-          cat > android-crossfile << EOF
+          # 正确创建交叉编译文件 - 修复 Here-Document 语法
+          cat > android-crossfile << 'EOF'
           [binaries]
-           c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
-           cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
-            ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-            strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
-            pkg-config = 'pkg-config'
+          c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
+          cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
+           ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+           strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+           pkg-config = 'pkg-config'
 
            [host_machine]
-          system = 'linux'
-          cpu_family = 'aarch64'
-          cpu = 'aarch64'
-          endian = 'little'
-           EOF
+           system = 'linux'
+           cpu_family = 'aarch64'
+           cpu = 'aarch64'
+            endian = 'little'
+             EOF
 
           # 克隆和构建 Mesa
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
-          # 关闭 detached HEAD 警告
           git config advice.detachedHead false
 
           export PATH="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
@@ -79,14 +77,11 @@ jobs:
         run: |
           cd mesa/build-android
           
-          # 查找生成的库文件
           echo "Built libraries:"
           find . -name "*.so" -type f | head -10
           
-          # 创建输出目录
           mkdir -p output/system/lib64
           
-          # 复制 PanVk 驱动
           if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
             cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
             echo "Found libvulkan_panfrost.so"
@@ -95,7 +90,6 @@ jobs:
             echo "Copied libvulkan_panfrost.so via search"
           fi
           
-          # 验证文件
           if ls output/system/lib64/*.so >/dev/null 2>&1; then
             echo "Build successful!"
             ls -la output/system/lib64/
@@ -104,7 +98,6 @@ jobs:
             exit 1
           fi
           
-          # 创建安装包
           cd output
           tar -czf ../../panvk-android-25.3.0-$(date +%Y%m%d).tar.gz system/
 
