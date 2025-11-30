@@ -75,20 +75,20 @@ jobs:
         
         # 创建交叉编译配置文件
         cat > android-cross.txt << 'CROSS_FILE'
-[binaries]
-c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
-cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
-ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
-pkg-config = 'pkg-config'
+        [binaries]
+        c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
+        cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
+        ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+        strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+        pkg-config = 'pkg-config'
 
-[host_machine]
-system = 'linux'
-cpu_family = 'aarch64'
-cpu = 'aarch64'
-endian = 'little'
-CROSS_FILE
-        
+        [host_machine]
+        system = 'linux'
+        cpu_family = 'aarch64'
+        cpu = 'aarch64'
+        endian = 'little'
+        CROSS_FILE
+         
         echo "Cross file content:"
         cat android-cross.txt
         
