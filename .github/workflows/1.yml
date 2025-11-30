@@ -62,9 +62,7 @@ jobs:
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
-        # 使用更稳定的25.3.0版本
-        git checkout 25.3.0
-        echo "Using Mesa 25.3.0"
+        git checkout 25.3.0 || git checkout mesa-25.3.0 
         
     - name: Configure PanVk build
       run: |
