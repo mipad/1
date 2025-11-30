@@ -32,7 +32,7 @@ jobs:
 
       - name: Build libdrm first
         run: |
-          # 使用 echo 命令安全地创建文件
+          # 使用正确的单引号创建文件
           echo '[binaries]' > android-drm-crossfile
           echo "ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-drm-crossfile
           echo "c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> android-drm-crossfile
@@ -43,10 +43,10 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> android-drm-crossfile
           echo '' >> android-drm-crossfile
           echo '[host_machine]' >> android-drm-crossfile
-          echo 'system = "linux"' >> android-drm-crossfile
-          echo 'cpu_family = "arm"' >> android-drm-crossfile
-          echo 'cpu = "armv8"' >> android-drm-crossfile
-          echo 'endian = "little"' >> android-drm-crossfile
+          echo "system = 'linux'" >> android-drm-crossfile
+          echo "cpu_family = 'arm'" >> android-drm-crossfile
+          echo "cpu = 'armv8'" >> android-drm-crossfile
+          echo "endian = 'little'" >> android-drm-crossfile
 
           # 验证文件内容
           echo "DRM cross file content:"
@@ -75,7 +75,7 @@ jobs:
 
       - name: Build Mesa with PanVk
         run: |
-          # 使用 echo 命令安全地创建 Mesa 交叉编译文件
+          # 使用正确的单引号创建 Mesa 交叉编译文件
           echo '[binaries]' > android-mesa-crossfile
           echo "ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-mesa-crossfile
           echo "c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> android-mesa-crossfile
@@ -86,10 +86,10 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> android-mesa-crossfile
           echo '' >> android-mesa-crossfile
           echo '[host_machine]' >> android-mesa-crossfile
-          echo 'system = "linux"' >> android-mesa-crossfile
-          echo 'cpu_family = "arm"' >> android-mesa-crossfile
-          echo 'cpu = "armv8"' >> android-mesa-crossfile
-          echo 'endian = "little"' >> android-mesa-crossfile
+          echo "system = 'linux'" >> android-mesa-crossfile
+          echo "cpu_family = 'arm'" >> android-mesa-crossfile
+          echo "cpu = 'armv8'" >> android-mesa-crossfile
+          echo "endian = 'little'" >> android-mesa-crossfile
 
           # 验证文件内容
           echo "Mesa cross file content:"
