@@ -2,7 +2,7 @@ name: Build PanVk for Mali-G610
 
 on:
   push:
-    branches: [ main, panvk-android ]
+    branches: [main, panvk-android]
   workflow_dispatch:
 
 env:
@@ -39,7 +39,7 @@ jobs:
         
     - name: Setup toolchain paths
       run: |
-        export TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        TOOLCHAIN_DIR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
         echo "TOOLCHAIN_DIR=$TOOLCHAIN_DIR" >> $GITHUB_ENV
         
         # 验证工具存在
@@ -64,23 +64,22 @@ jobs:
       run: |
         git clone https://gitlab.freedesktop.org/mesa/mesa.git mesa-src
         cd mesa-src
-        # 使用已知存在的版本
         git checkout 25.3.0 || git checkout mesa-25.3.0 || git checkout 24.1.0
         
-    - name: Configure PanVk build for G610
+    - name: Configure PanVk build
       run: |
         cd mesa-src
         
         # 设置环境变量
         export PATH="$TOOLCHAIN_DIR:$PATH"
         
-        # 创建交叉编译配置文件，使用实际路径
-        cat > android-cross.txt << EOF
+        # 创建交叉编译配置文件
+        cat > android-cross.txt << 'CROSS_FILE'
 [binaries]
-c = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang'
-cpp = '$TOOLCHAIN_DIR/aarch64-linux-android21-clang++'
-ar = '$AR_TOOL'
-strip = '$STRIP_TOOL'
+c = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang'
+cpp = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++'
+ar = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+strip = '$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
 pkg-config = 'pkg-config'
 
 [host_machine]
@@ -88,7 +87,7 @@ system = 'linux'
 cpu_family = 'aarch64'
 cpu = 'aarch64'
 endian = 'little'
-EOF
+CROSS_FILE
         
         echo "Cross file content:"
         cat android-cross.txt
@@ -126,14 +125,11 @@ EOF
       run: |
         cd mesa-src/build-android
         
-        # 查找生成的库文件
         echo "Searching for built libraries..."
         find . -name "*.so" -type f | head -20
         
-        # 创建输出目录
         mkdir -p output/system/lib64
         
-        # 复制PanVk驱动
         if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
           cp src/panfrost/vulkan/libvulkan_panfrost.so output/system/lib64/
           echo "Found libvulkan_panfrost.so in standard location"
@@ -142,24 +138,20 @@ EOF
           echo "Found libvulkan_panfrost.so via search"
         else
           echo "Searching for alternative Vulkan drivers..."
-          # 尝试其他可能的路径
           find src/ -name "*vulkan*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
           find . -path "*/panfrost/*.so" -type f -exec cp {} output/system/lib64/ \; 2>/dev/null || true
         fi
         
-        # 验证文件
         if ls output/system/lib64/*.so >/dev/null 2>&1; then
           echo "Build successful! Found libraries:"
           ls -la output/system/lib64/
           file output/system/lib64/*.so
         else
           echo "Error: No shared libraries found in output directory"
-          echo "All built .so files:"
           find . -name "*.so" -type f
           exit 1
         fi
         
-        # 创建安装包
         cd output
         tar -czf ../panvk-g610-$(date +%Y%m%d).tar.gz system/
         
