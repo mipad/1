@@ -30,7 +30,7 @@ jobs:
 
       - name: Build libdrm
         run: |
-          # 使用 echo 创建交叉编译文件
+          # 使用 echo 创建交叉编译文件 - 修复引号问题
           echo '[binaries]' > build-crossfile-drm
           echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile-drm
           echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile-drm
@@ -41,10 +41,14 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
           echo '' >> build-crossfile-drm
           echo '[host_machine]' >> build-crossfile-drm
-          echo 'system = "linux"' >> build-crossfile-drm
-          echo 'cpu_family = "arm"' >> build-crossfile-drm
-          echo 'cpu = "armv8"' >> build-crossfile-drm
-          echo 'endian = "little"' >> build-crossfile-drm
+          echo "system = 'linux'" >> build-crossfile-drm  # 修复：使用单引号
+          echo "cpu_family = 'arm'" >> build-crossfile-drm  # 修复：使用单引号
+          echo "cpu = 'armv8'" >> build-crossfile-drm  # 修复：使用单引号
+          echo "endian = 'little'" >> build-crossfile-drm  # 修复：使用单引号
+
+          # 验证文件内容
+          echo "DRM cross file content:"
+          cat build-crossfile-drm
 
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
           cd drm
@@ -64,7 +68,7 @@ jobs:
 
       - name: Build Mesa with PanVk for G610
         run: |
-          # 使用 echo 创建 Mesa 交叉编译文件
+          # 使用 echo 创建 Mesa 交叉编译文件 - 修复引号问题
           echo '[binaries]' > build-crossfile
           echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile
           echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile
@@ -75,12 +79,16 @@ jobs:
           echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
           echo '' >> build-crossfile
           echo '[host_machine]' >> build-crossfile
-          echo 'system = "linux"' >> build-crossfile
-          echo 'cpu_family = "arm"' >> build-crossfile
-          echo 'cpu = "armv8"' >> build-crossfile
-          echo 'endian = "little"' >> build-crossfile
+          echo "system = 'linux'" >> build-crossfile  # 修复：使用单引号
+          echo "cpu_family = 'arm'" >> build-crossfile  # 修复：使用单引号
+          echo "cpu = 'armv8'" >> build-crossfile  # 修复：使用单引号
+          echo "endian = 'little'" >> build-crossfile  # 修复：使用单引号
 
-          # 克隆 Mesa 25.3.0 而不是 panvk 分支
+          # 验证文件内容
+          echo "Mesa cross file content:"
+          cat build-crossfile
+
+          # 克隆 Mesa 25.3.0
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
