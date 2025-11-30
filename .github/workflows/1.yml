@@ -32,23 +32,25 @@ jobs:
 
       - name: Build libdrm first
         run: |
-          # 创建 DRM 交叉编译文件
-          cat > android-drm-crossfile << 'EOF'
-          [binaries]
-          ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-          c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
-          cpp = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
-          c_ld = 'lld'
-          cpp_ld = 'lld'
-           strip = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
-          pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
+          # 使用 echo 命令安全地创建文件
+          echo '[binaries]' > android-drm-crossfile
+          echo "ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-drm-crossfile
+          echo "c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> android-drm-crossfile
+          echo "cpp = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> android-drm-crossfile
+          echo "c_ld = 'lld'" >> android-drm-crossfile
+          echo "cpp_ld = 'lld'" >> android-drm-crossfile
+          echo "strip = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> android-drm-crossfile
+          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> android-drm-crossfile
+          echo '' >> android-drm-crossfile
+          echo '[host_machine]' >> android-drm-crossfile
+          echo 'system = "linux"' >> android-drm-crossfile
+          echo 'cpu_family = "arm"' >> android-drm-crossfile
+          echo 'cpu = "armv8"' >> android-drm-crossfile
+          echo 'endian = "little"' >> android-drm-crossfile
 
-          [host_machine]
-          system = 'linux'
-          cpu_family = 'arm'
-           cpu = 'armv8'
-           endian = 'little'
-            EOF
+          # 验证文件内容
+          echo "DRM cross file content:"
+          cat android-drm-crossfile
 
           # 克隆和构建 libdrm
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
@@ -73,23 +75,25 @@ jobs:
 
       - name: Build Mesa with PanVk
         run: |
-          # 创建 Mesa 交叉编译文件，包含 DRM 路径
-          cat > android-mesa-crossfile << 'EOF'
-          [binaries]
-          ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-          c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
-          cpp = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
-          c_ld = 'lld'
-          cpp_ld = 'lld'
-          strip = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
-          pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']
+          # 使用 echo 命令安全地创建 Mesa 交叉编译文件
+          echo '[binaries]' > android-mesa-crossfile
+          echo "ar = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> android-mesa-crossfile
+          echo "c = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> android-mesa-crossfile
+          echo "cpp = ['ccache', '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> android-mesa-crossfile
+          echo "c_ld = 'lld'" >> android-mesa-crossfile
+          echo "cpp_ld = 'lld'" >> android-mesa-crossfile
+          echo "strip = '$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> android-mesa-crossfile
+          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> android-mesa-crossfile
+          echo '' >> android-mesa-crossfile
+          echo '[host_machine]' >> android-mesa-crossfile
+          echo 'system = "linux"' >> android-mesa-crossfile
+          echo 'cpu_family = "arm"' >> android-mesa-crossfile
+          echo 'cpu = "armv8"' >> android-mesa-crossfile
+          echo 'endian = "little"' >> android-mesa-crossfile
 
-          [host_machine]
-           system = 'linux'
-           cpu_family = 'arm'
-           cpu = 'armv8'
-           endian = 'little'
-           EOF
+          # 验证文件内容
+          echo "Mesa cross file content:"
+          cat android-mesa-crossfile
 
           # 克隆和构建 Mesa
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
