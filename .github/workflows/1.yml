@@ -84,7 +84,7 @@ jobs:
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           
-          git checkout mesa-25.3.0 
+          git checkout mesa-25.3
           
           echo "Using Mesa version: $(git describe --tags)"
 
