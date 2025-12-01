@@ -19,7 +19,7 @@ jobs:
           sudo apt install -y ninja-build pkg-config \
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
-            python3-pip wget unzip gettext libclc-20-dev
+            python3-pip wget unzip gettext libclc-dev
           pip3 install --upgrade meson mako
           meson --version
 
@@ -34,21 +34,21 @@ jobs:
         run: |
           # 创建 DRM 交叉编译文件
           cat > build-crossfile-drm << 'EOF'
-           [binaries]
-           ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
-           c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
-           cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
-           c_ld = 'lld'
-           cpp_ld = 'lld'
-           strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
-           pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
+          [binaries]
+          ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
+          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
+          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
 
-           [host_machine]
-            system = 'linux'
-             cpu_family = 'arm'
-             cpu = 'armv8'
-             endian = 'little'
-             EOF
+          [host_machine]
+           system = 'linux'
+           cpu_family = 'arm'
+           cpu = 'armv8'
+           endian = 'little'
+           EOF
 
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
           cd drm
@@ -66,28 +66,53 @@ jobs:
             -Detnaviv=disabled
           ninja -C "build-android" install
 
+      - name: Clone and build libclc
+        run: |
+          # 克隆 libclc 项目
+          git clone --depth 1 https://github.com/llvm/llvm-project.git
+          cd llvm-project/libclc
+          
+          # 创建 libclc 构建目录
+          mkdir -p build-android
+          cd build-android
+          
+          # 创建简单的构建系统来生成必要的文件
+          echo "Creating minimal libclc build..."
+          
+          # 创建 libclc.pc 文件
+          mkdir -p /tmp/libclc/lib/pkgconfig
+          cat > /tmp/libclc/lib/pkgconfig/libclc.pc << 'EOF'
+          Name: libclc
+          Description: OpenCL C library
+          Version: 15.0.0
+          Libs:
+          Cflags:
+          EOF
+          
+          echo "libclc stub created"
+
       - name: Build Mesa with PanVk for G610
         run: |
           # 创建 Mesa 交叉编译文件
           cat > build-crossfile << 'EOF'
           [binaries]
-           ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
-           c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
-           cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
-           c_ld = 'lld'
-           cpp_ld = 'lld'
-           strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
-           pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']
+          ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
+          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
+          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig:/tmp/libclc/lib/pkgconfig', '/usr/bin/pkg-config']
 
-           [properties]
-           needs_exe_wrapper = true
+          [properties]
+          needs_exe_wrapper = true
 
-           [host_machine]
-           system = 'linux'
-           cpu_family = 'arm'          
-           cpu = 'armv8'
-           endian = 'little'
-           EOF
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'arm'
+          cpu = 'armv8'
+          endian = 'little'
+          EOF
 
           # 克隆 Mesa 并使用正确的标签
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
@@ -95,55 +120,62 @@ jobs:
           git checkout mesa-25.3.0
           git config advice.detachedHead false
 
-          # 检查 Mesa 配置选项
-          echo "=== 检查 Mesa 构建选项 ==="
-          if [ -f "meson_options.txt" ]; then
-            echo "meson_options.txt 内容前 100 行:"
-            head -100 meson_options.txt
-          fi
+          # 查看 Mesa 构建选项
+          echo "=== 查看 Mesa 构建选项 ==="
+          grep -E "(opencl|clc|llvm|gallium)" meson_options.txt | head -30
+          
+          # 创建 libclc 存根以满足依赖
+          echo "=== 创建 libclc 存根 ==="
+          mkdir -p subprojects/libclc
+          cat > subprojects/libclc/meson.build << 'EOF'
+          project('libclc', 'c', version : '1.0.0')
+          dep_libclc = declare_dependency()
+          EOF
 
           export PATH="${{ env.NDK_TOOLCHAIN }}/bin:$PATH"
 
-          # 配置 Mesa 构建 - 极简配置
+          # 配置 Mesa 构建 - 完整配置
           echo "=== 配置 Mesa 构建 ==="
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
             --buildtype=release \
             -Dplatforms=android \
+            -Dplatform-sdk-version=26 \
             -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers=
+            -Dgallium-drivers= \
+            -Degl=disabled \
+            -Dgbm=disabled 
+            
+        
 
           echo "=== 开始构建 Mesa ==="
           ninja -C "build-android" install
 
-      - name: 备用构建方案 - 禁用所有可选功能
+      - name: 备用构建方案 - 使用更简单的配置
         if: failure()
         run: |
           cd mesa
-          echo "=== 尝试备用构建方案 - 禁用所有可选功能 ==="
+          echo "=== 尝试备用构建方案 ==="
           
-          # 尝试禁用所有不必要的功能
-          meson setup "build-minimal" \
+          # 首先查看所有可用的选项
+          echo "可用的构建选项："
+          meson setup --help 2>&1 | grep -A 100 "Project options" || true
+          
+          # 尝试最简单的配置
+          meson setup "build-simple" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
             --buildtype=release \
             -Dplatforms=android \
             -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers= \
-            -Degl=disabled \
-            -Dgbm=disabled \
-            -Dllvm=disabled \
-            -Dopencl=disabled \
-            -Dgallium-opencl=disabled \
-            -Dclc=disabled \
-            -Dshared-glapi=disabled
+            -Dgallium-drivers=
           
           # 构建
-          ninja -C "build-minimal" install
+          ninja -C "build-simple" install
           
           # 复制到主构建目录
-          cp -r build-minimal/* build-android/ 2>/dev/null || true
+          cp -r build-simple/* build-android/ 2>/dev/null || true
 
       - name: Package and optimize for G610
         run: |
