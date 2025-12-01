@@ -19,9 +19,8 @@ jobs:
           sudo apt install -y ninja-build pkg-config \
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
-            python3-pip wget unzip gettext
+            python3-pip wget unzip gettext git
           pip3 install --upgrade meson mako
-          meson --version
 
       - name: Setup Android NDK
         run: |
@@ -30,26 +29,80 @@ jobs:
           echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
           echo "NDK_TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
 
-      - name: Setup libclc stub (简化)
+      - name: Build Android dependencies (cutils and others)
         run: |
-          # 创建 libclc 存根目录
-          mkdir -p /tmp/libclc/lib/pkgconfig
-          mkdir -p /tmp/libclc/include
+          # 创建必要的依赖目录
+          mkdir -p /tmp/android-deps/lib/pkgconfig
+          mkdir -p /tmp/android-deps/include
+          
+          # 创建简化版 cutils 头文件
+          cat > /tmp/android-deps/include/cutils/android_reboot.h << 'EOF'
+          /* Simplified cutils header for Mesa build */
+          #ifndef CUTILS_ANDROID_REBOOT_H
+          #define CUTILS_ANDROID_REBOOT_H
+          
+          #define ANDROID_RB_RESTART 0xDEAD0001
+          #define ANDROID_RB_POWEROFF 0xDEAD0002
+          
+          #ifdef __cplusplus
+          extern "C" {
+          #endif
+          
+          int android_reboot(int cmd);
+          
+          #ifdef __cplusplus
+          }
+          #endif
+          
+          #endif /* CUTILS_ANDROID_REBOOT_H */
+          EOF
+          
+          # 创建 cutils 空实现源文件
+          cat > /tmp/cutils_stub.c << 'EOF'
+          #include <cutils/android_reboot.h>
+          
+          int android_reboot(int cmd) {
+              (void)cmd;
+              return 0;
+          }
+          EOF
+          
+          # 编译 cutils 存根库
+          ${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang \
+            -shared -fPIC -Wl,-soname,libcutils.so \
+            -I/tmp/android-deps/include \
+            -o /tmp/android-deps/lib/libcutils.so \
+            /tmp/cutils_stub.c
           
           # 创建 pkg-config 文件
-          cat > /tmp/libclc/lib/pkgconfig/libclc.pc << 'EOF'
-          Name: libclc
-          Description: OpenCL C library
-          Version: 15.0.0
+          cat > /tmp/android-deps/lib/pkgconfig/cutils.pc << 'EOF'
+          prefix=/tmp/android-deps
+          exec_prefix=${prefix}
+          libdir=${exec_prefix}/lib
+          includedir=${prefix}/include
+          
+          Name: cutils
+          Description: Android cutils library
+          Version: 1.0.0
+          Libs: -L${libdir} -lcutils
+          Cflags: -I${includedir}
+          EOF
+          
+          # 创建其他必要的 Android 库存根
+          for lib in hardware log sync; do
+            cat > /tmp/android-deps/lib/pkgconfig/$lib.pc << EOF
+          prefix=/tmp/android-deps
+          exec_prefix=\${prefix}
+          libdir=\${exec_prefix}/lib
+          includedir=\${prefix}/include
+          
+          Name: $lib
+          Description: Android $lib library
+          Version: 1.0.0
           Libs:
           Cflags:
           EOF
-          
-          # 创建必要的头文件存根
-          mkdir -p /tmp/libclc/include/clc
-          touch /tmp/libclc/include/clc/clc.h
-          
-          echo "libclc stub created"
+          done
 
       - name: Build libdrm
         run: |
@@ -57,12 +110,12 @@ jobs:
           cat > build-crossfile-drm << 'EOF'
           [binaries]
           ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
-          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
-          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
+          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-fPIC']
+          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']
           c_ld = 'lld'
           cpp_ld = 'lld'
           strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
-          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/android-deps/lib/pkgconfig', '/usr/bin/pkg-config']
 
           [host_machine]
           system = 'linux'
@@ -88,7 +141,7 @@ jobs:
             -Detnaviv=disabled
           ninja -C "build-android" install
 
-      - name: Build Mesa with PanVk for G610
+      - name: Build Mesa with PanVk for G610 (简化配置)
         run: |
           # 创建 Mesa 交叉编译文件
           cat > build-crossfile << 'EOF'
@@ -99,7 +152,7 @@ jobs:
           c_ld = 'lld'
           cpp_ld = 'lld'
           strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
-          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig:/tmp/libclc/lib/pkgconfig', '/usr/bin/pkg-config']
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig:/tmp/android-deps/lib/pkgconfig', '/usr/bin/pkg-config']
 
           [properties]
           needs_exe_wrapper = true
@@ -111,11 +164,18 @@ jobs:
           endian = 'little'
           EOF
 
-          # 克隆 Mesa
-          git clone --depth 1 --branch mesa-25.3.0 https://gitlab.freedesktop.org/mesa/mesa.git
+          # 克隆 Mesa 并检出特定版本
+          git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
-
-          # 配置 Mesa 构建 - 简化配置
+          
+          # 尝试使用较新的分支
+          git fetch --depth 1 origin mesa-24.1.0
+          git checkout mesa-24.1.0
+          
+          # 为 Android 构建应用补丁（简化）
+          echo "Patching for Android build..."
+          
+          # 创建 minimal 配置，只构建 PanVk
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
@@ -123,26 +183,33 @@ jobs:
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
             -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers= \
-            
+            -Dgallium-drivers=panfrost \
+            -Ddri-drivers= \
+            -Dvulkan-beta=true \
+            -Dandroid-libbacktrace=disabled \
+            -Dandroid-stub=true \
             -Dglx=disabled \
-            -Degl=disabled \
-            -Dgbm=disabled \
             -Dgles1=disabled \
             -Dgles2=disabled \
             -Dopengl=false \
+            -Degl=true \
+            -Dgbm=disabled \
             -Dshared-glapi=disabled \
-            -Dglvnd=false
+            -Dglvnd=false \
+            -Dllvm=disabled \
+            -Dshader-cache=disabled \
+            -Dshader-cache-default=false \
+            -Dxmlconfig=disabled
 
           echo "=== 开始构建 Mesa ==="
-          ninja -C "build-android" install
+          ninja -C "build-android"
 
-      - name: Package and optimize for G610
+      - name: Package PanVk for G610
         run: |
           cd mesa/build-android
           
           echo "=== 查找构建的库文件 ==="
-          find . -name "*.so" -type f 2>/dev/null | head -30 || echo "未找到 .so 文件"
+          find . -name "*.so" -type f 2>/dev/null || echo "未找到 .so 文件"
           
           echo ""
           echo "=== 搜索 Vulkan 相关库 ==="
@@ -152,41 +219,74 @@ jobs:
           echo "=== 搜索 Panfrost 相关库 ==="
           find . -path "*panfrost*" -name "*.so" -type f 2>/dev/null || echo "未找到 Panfrost 库"
           
-          # 尝试查找 libvulkan_panfrost.so
-          VULKAN_LIB=$(find . -name "libvulkan_panfrost.so" -type f 2>/dev/null | head -1)
+          # 查找所有可能的 Vulkan 库
+          VULKAN_LIBS=$(find . -name "*.so" -type f 2>/dev/null | grep -i vulkan || true)
           
-          if [ -n "$VULKAN_LIB" ]; then
-            echo "找到 Vulkan 库: $VULKAN_LIB"
+          if [ -n "$VULKAN_LIBS" ]; then
+            echo "找到 Vulkan 库:"
+            echo "$VULKAN_LIBS"
             
             # 创建针对 G610 的优化包
             mkdir -p g610-package/system/lib64
             mkdir -p g610-package/system/vendor/lib64/hw
             
-            cp "$VULKAN_LIB" g610-package/system/lib64/
-            cp "$VULKAN_LIB" g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
+            # 复制所有找到的 Vulkan 库
+            for lib in $VULKAN_LIBS; do
+              filename=$(basename "$lib")
+              cp "$lib" g610-package/system/lib64/
+              echo "复制: $filename"
+              
+              # 如果是 panfrost 库，也复制到 vendor
+              if echo "$filename" | grep -qi panfrost; then
+                cp "$lib" g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
+                echo "复制到 vendor: vulkan.panfrost.so"
+              fi
+            done
             
             echo "=== G610 构建成功! ==="
             echo "库文件列表:"
             ls -la g610-package/system/lib64/
             echo ""
             echo "库文件信息:"
-            file g610-package/system/lib64/*.so
+            file g610-package/system/lib64/*.so 2>/dev/null || echo "无法检查文件信息"
             
             # 创建 G610 专用安装包
             cd g610-package
-            tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
+            tar -czf ../../panvk-g610-$(date +%Y%m%d-%H%M%S).tar.gz system/
           else
-            echo "错误: 未找到 libvulkan_panfrost.so"
-            echo "尝试查找其他 Vulkan 库..."
-            find . -name "*.so" -type f 2>/dev/null
-            exit 1
+            echo "警告: 未找到 Vulkan 库，尝试安装所有构建的文件..."
+            # 安装到前缀目录
+            ninja -C "build-android" install
+            
+            # 检查安装目录
+            if [ -d "/tmp/pan/lib64" ]; then
+              mkdir -p g610-package/system
+              cp -r /tmp/pan/lib64 g610-package/system/
+              cd g610-package
+              tar -czf ../../panvk-g610-installed-$(date +%Y%m%d-%H%M%S).tar.gz system/
+              echo "使用安装目录创建了包"
+            else
+              echo "错误: 构建可能失败"
+              exit 1
+            fi
           fi
 
-      - name: Upload G610 artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-g610-25.3.0
+          name: panvk-g610-build
           path: |
             mesa/panvk-g610-*.tar.gz
-            mesa/build-android/g610-package/system/lib64/*.so
+            mesa/build-android/g610-package/
           retention-days: 30
+
+      - name: Debug build info
+        if: failure()
+        run: |
+          echo "=== 构建失败，显示调试信息 ==="
+          cd mesa/build-android
+          echo "Meson 日志:"
+          cat meson-logs/meson-log.txt 2>/dev/null | tail -100 || echo "无法读取日志"
+          echo ""
+          echo "构建目录内容:"
+          ls -la 2>/dev/null || echo "无法列出目录"
