@@ -16,11 +16,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y meson ninja-build pkg-config \
+          sudo apt install -y ninja-build pkg-config \
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
             python3-pip wget unzip gettext
-          pip3 install mako
+          # 安装最新版 Meson，不使用系统自带的旧版本
+          pip3 install --upgrade meson mako
+          meson --version
 
       - name: Setup Android NDK
         run: |
@@ -38,7 +40,7 @@ jobs:
           echo "c_ld = 'lld'" >> build-crossfile-drm
           echo "cpp_ld = 'lld'" >> build-crossfile-drm
           echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile-drm
-          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
+          echo "pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
           echo '' >> build-crossfile-drm
           echo '[host_machine]' >> build-crossfile-drm
           echo "system = 'linux'" >> build-crossfile-drm
@@ -72,7 +74,7 @@ jobs:
           echo "c_ld = 'lld'" >> build-crossfile
           echo "cpp_ld = 'lld'" >> build-crossfile
           echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile
-          echo "pkgconfig = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
+          echo "pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
           echo '' >> build-crossfile
           echo '[host_machine]' >> build-crossfile
           echo "system = 'linux'" >> build-crossfile
@@ -80,11 +82,11 @@ jobs:
           echo "cpu = 'armv8'" >> build-crossfile
           echo "endian = 'little'" >> build-crossfile
 
+          # 克隆 Mesa 并使用正确的标签
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           git checkout mesa-25.3.0
-          
-          echo "Using Mesa version: $(git describe --tags)"
+          git config advice.detachedHead false
 
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
@@ -143,12 +145,12 @@ jobs:
           
           # 创建 G610 专用安装包
           cd g610-package
-          tar -czf ../../panvk-g610-$(git describe --tags)-$(date +%Y%m%d).tar.gz system/
+          tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload G610 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: panvk-g610
+          name: panvk-g610-25.3.0
           path: |
             mesa/panvk-g610-*.tar.gz
             mesa/build-android/g610-package/system/lib64/*.so
