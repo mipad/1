@@ -104,7 +104,7 @@ jobs:
             -Dopengl=false \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
-            -Dshared-glapi=false \
+            -Dshared-glapi=disabled \
             -Dbuildtype=release
 
           ninja -C "build-android" install
