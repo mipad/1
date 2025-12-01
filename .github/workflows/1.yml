@@ -28,24 +28,30 @@ jobs:
           wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
           unzip -q android-ndk-r25c-linux.zip
           echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
+          echo "NDK_TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
 
       - name: Build libdrm
         run: |
-          # 创建 DRM 交叉编译文件
-          echo '[binaries]' > build-crossfile-drm
-          echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile-drm
-          echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile-drm
-          echo "cpp = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> build-crossfile-drm
-          echo "c_ld = 'lld'" >> build-crossfile-drm
-          echo "cpp_ld = 'lld'" >> build-crossfile-drm
-          echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile-drm
-          echo "pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']" >> build-crossfile-drm
-          echo '' >> build-crossfile-drm
-          echo '[host_machine]' >> build-crossfile-drm
-          echo "system = 'linux'" >> build-crossfile-drm
-          echo "cpu_family = 'arm'" >> build-crossfile-drm
-          echo "cpu = 'armv8'" >> build-crossfile-drm
-          echo "endian = 'little'" >> build-crossfile-drm
+          # 创建 DRM 交叉编译文件 - 改进版
+          cat > build-crossfile-drm << 'EOF'
+          [binaries]
+          ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
+          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
+          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++', '-fno-rtti']
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
+
+          [properties]
+          needs_exe_wrapper = true
+
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'arm'
+          cpu = 'armv8'
+          endian = 'little'
+          EOF
 
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
           cd drm
@@ -65,21 +71,26 @@ jobs:
 
       - name: Build Mesa with PanVk for G610
         run: |
-          # 创建 Mesa 交叉编译文件
-          echo '[binaries]' > build-crossfile
-          echo "ar = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'" >> build-crossfile
-          echo "c = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']" >> build-crossfile
-          echo "cpp = ['$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++']" >> build-crossfile
-          echo "c_ld = 'lld'" >> build-crossfile
-          echo "cpp_ld = 'lld'" >> build-crossfile
-          echo "strip = '$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'" >> build-crossfile
-          echo "pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']" >> build-crossfile
-          echo '' >> build-crossfile
-          echo '[host_machine]' >> build-crossfile
-          echo "system = 'linux'" >> build-crossfile
-          echo "cpu_family = 'arm'" >> build-crossfile
-          echo "cpu = 'armv8'" >> build-crossfile
-          echo "endian = 'little'" >> build-crossfile
+          # 创建改进的 Mesa 交叉编译文件
+          cat > build-crossfile << 'EOF'
+          [binaries]
+          ar = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-ar'
+          c = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC']
+          cpp = ['${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang++', '-O3', '-DVK_USE_PLATFORM_ANDROID_KHR', '-fPIC', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-static-libstdc++', '-fno-rtti']
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          strip = '${{ env.NDK_TOOLCHAIN }}/bin/llvm-strip'
+          pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.:/tmp/drm-static/lib/pkgconfig', '/usr/bin/pkg-config']
+
+          [properties]
+          needs_exe_wrapper = true
+
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'arm'
+          cpu = 'armv8'
+          endian = 'little'
+          EOF
 
           # 克隆 Mesa 并使用正确的标签
           git clone https://gitlab.freedesktop.org/mesa/mesa.git
@@ -87,21 +98,26 @@ jobs:
           git checkout mesa-25.3.0
           git config advice.detachedHead false
 
-          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          export PATH="${{ env.NDK_TOOLCHAIN }}/bin:$PATH"
 
-          # 配置 Mesa 构建 - 彻底禁用 OpenCL 和 CLC
+          # 配置 Mesa 构建 - 基于 AOSP 构建脚本的优化配置
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
+            -Dbuildtype=release \
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
-            -Dandroid-stub=true \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
+            -Degl=disabled \
+            -Dgbm=enabled \
+            -Dgbm-backends-path=/vendor/lib64 \
+            -Dllvm=disabled \
+            -Dcpp_rtti=false \
+            -Dlmsensors=disabled \
+            -Dandroid-libbacktrace=disabled \
             -Dshared-glapi=disabled \
-            -Dopencl=disabled \
-            -Dgallium-opencl=disabled \
-            -Dbuildtype=release
+            -Dgallium-opencl=disabled
 
           ninja -C "build-android" install
 
@@ -115,6 +131,7 @@ jobs:
           # 创建针对 G610 的优化包
           mkdir -p g610-package/system/lib64
           mkdir -p g610-package/system/vendor/lib64/hw
+          mkdir -p g610-package/system/vendor/lib64/egl
           
           # 复制 PanVk 驱动
           if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
@@ -127,11 +144,18 @@ jobs:
             echo "Copied libvulkan_panfrost.so via search for G610"
           fi
           
+          # 复制其他可能的必要库
+          if [ -f "src/gallium/targets/dri/libgallium_dri.so" ]; then
+            cp src/gallium/targets/dri/libgallium_dri.so g610-package/system/lib64/ 2>/dev/null || true
+          fi
+          
           # 验证文件
           if ls g610-package/system/lib64/*.so >/dev/null 2>&1; then
             echo "G610 build successful!"
-            ls -la g610-package/system/lib64/
+            echo "Library details:"
             file g610-package/system/lib64/*.so
+            echo -e "\nLibrary dependencies:"
+            ${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android-readelf -d g610-package/system/lib64/*.so || true
           else
             echo "Error: No shared libraries found for G610"
             exit 1
