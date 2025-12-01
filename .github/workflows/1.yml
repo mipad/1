@@ -1,3 +1,4 @@
+
 name: Build PanVk for G610
 
 on:
@@ -29,90 +30,80 @@ jobs:
           echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
           echo "NDK_TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
 
-      - name: Build Android dependencies (cutils and others)
+      - name: Build Android dependencies (simplified)
         run: |
-          # 创建必要的依赖目录
+          # 确保目录存在
           mkdir -p /tmp/android-deps/lib/pkgconfig
-          mkdir -p /tmp/android-deps/include
+          mkdir -p /tmp/android-deps/include/cutils
           
-          # 创建简化版 cutils 头文件
-          cat << 'EOF' > /tmp/android-deps/include/cutils/android_reboot.h
-          /* Simplified cutils header for Mesa build */
-          #ifndef CUTILS_ANDROID_REBOOT_H
-          #define CUTILS_ANDROID_REBOOT_H
+          # 创建 cutils/android_reboot.h 文件
+          echo '/* Simplified cutils header for Mesa build */' > /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#ifndef CUTILS_ANDROID_REBOOT_H' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#define CUTILS_ANDROID_REBOOT_H' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#define ANDROID_RB_RESTART 0xDEAD0001' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#define ANDROID_RB_POWEROFF 0xDEAD0002' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#ifdef __cplusplus' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo 'extern "C" {' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#endif' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo 'int android_reboot(int cmd);' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#ifdef __cplusplus' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '}' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#endif' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '' >> /tmp/android-deps/include/cutils/android_reboot.h
+          echo '#endif /* CUTILS_ANDROID_REBOOT_H */' >> /tmp/android-deps/include/cutils/android_reboot.h
           
-          #define ANDROID_RB_RESTART 0xDEAD0001
-          #define ANDROID_RB_POWEROFF 0xDEAD0002
-          
-          #ifdef __cplusplus
-          extern "C" {
-          #endif
-          
-          int android_reboot(int cmd);
-          
-          #ifdef __cplusplus
-          }
-          #endif
-          
-          #endif /* CUTILS_ANDROID_REBOOT_H */
-          EOF
-          
-          # 创建临时目录和 cutils 存根文件
-          TEMP_DIR=$(mktemp -d)
-          cat << 'EOF' > $TEMP_DIR/cutils_stub.c
-          #include <cutils/android_reboot.h>
-          
-          int android_reboot(int cmd) {
-              (void)cmd;
-              return 0;
-          }
-          EOF
+          # 创建 cutils_stub.c 文件
+          echo '#include <cutils/android_reboot.h>' > /tmp/cutils_stub.c
+          echo '' >> /tmp/cutils_stub.c
+          echo 'int android_reboot(int cmd) {' >> /tmp/cutils_stub.c
+          echo '    (void)cmd;' >> /tmp/cutils_stub.c
+          echo '    return 0;' >> /tmp/cutils_stub.c
+          echo '}' >> /tmp/cutils_stub.c
           
           # 编译 cutils 存根库
           ${{ env.NDK_TOOLCHAIN }}/bin/aarch64-linux-android26-clang \
             -shared -fPIC -Wl,-soname,libcutils.so \
             -I/tmp/android-deps/include \
             -o /tmp/android-deps/lib/libcutils.so \
-            $TEMP_DIR/cutils_stub.c
+            /tmp/cutils_stub.c
           
-          # 创建 cutils pkg-config 文件
-          cat << 'EOF' > /tmp/android-deps/lib/pkgconfig/cutils.pc
-          prefix=/tmp/android-deps
-          exec_prefix=${prefix}
-          libdir=${exec_prefix}/lib
-          includedir=${prefix}/include
+          # 创建 cutils.pc 文件
+          echo 'prefix=/tmp/android-deps' > /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'exec_prefix=${prefix}' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'libdir=${exec_prefix}/lib' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'includedir=${prefix}/include' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo '' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'Name: cutils' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'Description: Android cutils library' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'Version: 1.0.0' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'Libs: -L${libdir} -lcutils' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
+          echo 'Cflags: -I${includedir}' >> /tmp/android-deps/lib/pkgconfig/cutils.pc
           
-          Name: cutils
-          Description: Android cutils library
-          Version: 1.0.0
-          Libs: -L${libdir} -lcutils
-          Cflags: -I${includedir}
-          EOF
-          
-          # 创建其他必要的 Android 库存根
+          # 创建其他必要的 pkg-config 文件
           for lib in hardware log sync; do
-            cat << EOF > /tmp/android-deps/lib/pkgconfig/$lib.pc
-          prefix=/tmp/android-deps
-          exec_prefix=\${prefix}
-          libdir=\${exec_prefix}/lib
-          includedir=\${prefix}/include
-          
-          Name: $lib
-          Description: Android $lib library
-          Version: 1.0.0
-          Libs:
-          Cflags:
-          EOF
+            echo "prefix=/tmp/android-deps" > /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'exec_prefix=${prefix}' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'libdir=${exec_prefix}/lib' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'includedir=${prefix}/include' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo '' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo "Name: $lib" >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo "Description: Android $lib library" >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'Version: 1.0.0' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'Libs:' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
+            echo 'Cflags:' >> /tmp/android-deps/lib/pkgconfig/$lib.pc
           done
           
           echo "Android 依赖已构建完成"
-          echo "创建的库:"
+          echo "检查创建的文件:"
           ls -la /tmp/android-deps/lib/
-          echo ""
-          echo "创建的头文件:"
           ls -la /tmp/android-deps/include/
+          ls -la /tmp/android-deps/include/cutils/
 
-      - name: Build Mesa with PanVk for Android (简化方法)
+      - name: Build Mesa with PanVk for Android
         run: |
           # 创建 Mesa 交叉编译文件
           cat > build-crossfile << 'EOF'
@@ -135,18 +126,17 @@ jobs:
           endian = 'little'
           EOF
 
-          # 克隆 Mesa - 使用更稳定的版本
+          # 克隆 Mesa
           git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
           
-          # 尝试使用已知能构建 Android 的分支
-          git fetch --depth 1 origin mesa-23.3.0
-          git checkout mesa-23.3.0
+          # 使用已知稳定的版本
+          git fetch --depth 1 origin mesa-24.0.0
+          git checkout mesa-24.0.0
           
           echo "=== 配置 Mesa 构建 ==="
           
-          # 创建 minimal 配置，只构建 PanVk
-          # 使用更简化的配置，避免复杂的 Android 依赖
+          # 配置构建 - 更简单的配置
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
@@ -154,12 +144,12 @@ jobs:
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
             -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers= \
+            -Dgallium-drivers=panfrost \
             -Ddri-drivers= \
             -Dglx=disabled \
-            -Degl=disabled \
+            -Degl=enabled \
             -Dgles1=disabled \
-            -Dgles2=disabled \
+            -Dgles2=enabled \
             -Dopengl=false \
             -Dgbm=disabled \
             -Dshared-glapi=disabled \
@@ -171,42 +161,26 @@ jobs:
             -Dlibunwind=disabled \
             -Dlmsensors=disabled \
             -Dbuild-tests=false \
-            -Dbuild-aco-tests=false
+            -Dbuild-aco-tests=false \
+            -Dshader-cache=false
 
           echo "=== 开始构建 Mesa ==="
-          ninja -C "build-android"
+          ninja -C "build-android" -j4
 
-      - name: Extract and package PanVk for G610
+      - name: Package PanVk for G610
         run: |
           cd mesa/build-android
           
-          echo "=== 检查构建目录 ==="
+          echo "=== 查找构建的库文件 ==="
           find . -name "*.so" -type f 2>/dev/null | head -20 || echo "未找到 .so 文件"
           
-          echo ""
-          echo "=== 查找所有库文件 ==="
-          find . -type f -name "*.so*" 2>/dev/null | while read file; do
-            echo "找到: $file"
-            file "$file" || true
-          done
+          # 查找 libvulkan_panfrost.so
+          VULKAN_LIB=$(find . -name "libvulkan_panfrost.so" -type f 2>/dev/null | head -1)
           
-          echo ""
-          echo "=== 查找 Vulkan ICD 文件 ==="
-          # 查找可能的 Vulkan ICD 文件
-          if find . -name "*vulkan*" -type f 2>/dev/null | grep -q .; then
-            echo "找到 Vulkan 相关文件:"
-            find . -name "*vulkan*" -type f 2>/dev/null
-          else
-            echo "尝试查找其他 Vulkan 文件..."
-            # 检查 src/panfrost/vulkan 目录
-            if [ -d "./src/panfrost/vulkan" ]; then
-              echo "检查 panfrost/vulkan 目录..."
-              find ./src/panfrost/vulkan -type f 2>/dev/null || true
-            fi
+          if [ -z "$VULKAN_LIB" ]; then
+            echo "尝试查找其他 Vulkan 库..."
+            VULKAN_LIB=$(find . -name "*vulkan*.so" -type f 2>/dev/null | head -1)
           fi
-          
-          # 查找 libvulkan_panfrost.so 或类似文件
-          VULKAN_LIB=$(find . -name "*vulkan*panfrost*.so" -o -name "*panfrost*vulkan*.so" 2>/dev/null | head -1)
           
           if [ -n "$VULKAN_LIB" ]; then
             echo "找到 Vulkan 库: $VULKAN_LIB"
@@ -226,28 +200,35 @@ jobs:
             cd g610-package
             tar -czf ../../panvk-g610-$(date +%Y%m%d-%H%M%S).tar.gz system/
           else
-            echo "警告: 未找到特定的 Vulkan 库，尝试安装所有构建的文件..."
+            echo "警告: 未找到特定的 Vulkan 库，尝试安装..."
             
             # 安装到前缀目录
             ninja -C "build-android" install
             
             # 检查安装目录
-            if [ -d "/tmp/pan/lib" ]; then
-              mkdir -p g610-package/system
-              # 复制所有库文件
-              find /tmp/pan -name "*.so" -type f 2>/dev/null | while read lib; do
-                echo "复制: $lib"
-                cp "$lib" g610-package/system/lib64/ 2>/dev/null || true
-              done
+            if [ -d "/tmp/pan/lib" ] || [ -d "/tmp/pan/lib64" ]; then
+              mkdir -p g610-package/system/lib64
+              
+              # 查找并复制所有 .so 文件
+              if [ -d "/tmp/pan/lib" ]; then
+                find /tmp/pan/lib -name "*.so" -type f 2>/dev/null | while read lib; do
+                  cp "$lib" g610-package/system/lib64/ 2>/dev/null || true
+                done
+              fi
+              
+              if [ -d "/tmp/pan/lib64" ]; then
+                find /tmp/pan/lib64 -name "*.so" -type f 2>/dev/null | while read lib; do
+                  cp "$lib" g610-package/system/lib64/ 2>/dev/null || true
+                done
+              fi
               
               cd g610-package
               tar -czf ../../panvk-g610-installed-$(date +%Y%m%d-%H%M%S).tar.gz system/
               echo "使用安装目录创建了包"
             else
-              echo "错误: 构建可能失败，尝试手动构建..."
-              echo "当前目录:"
-              pwd
-              ls -la
+              echo "错误: 构建失败"
+              echo "检查构建日志..."
+              cat meson-logs/meson-log.txt 2>/dev/null | tail -50 || true
               exit 1
             fi
           fi
@@ -261,16 +242,13 @@ jobs:
             mesa/build-android/g610-package/
           retention-days: 30
 
-      - name: Debug build info
+      - name: Debug if failed
         if: failure()
         run: |
-          echo "=== 构建失败，显示调试信息 ==="
-          cd mesa/build-android 2>/dev/null || cd mesa
-          echo "Meson 日志最后100行:"
-          cat meson-logs/meson-log.txt 2>/dev/null | tail -100 || echo "无法读取日志"
-          echo ""
+          echo "=== 构建失败调试信息 ==="
+          cd mesa/build-android 2>/dev/null || cd mesa 2>/dev/null || true
           echo "构建目录内容:"
-          ls -la 2>/dev/null || echo "无法列出目录"
+          ls -la 2>/dev/null || true
           echo ""
-          echo "配置信息:"
-          cat meson-info/intro-buildoptions.txt 2>/dev/null || echo "无法读取配置"
+          echo "Meson 日志最后部分:"
+          cat meson-logs/meson-log.txt 2>/dev/null | tail -100 || true
