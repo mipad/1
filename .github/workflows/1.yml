@@ -116,8 +116,8 @@ jobs:
             -Dcpp_rtti=false \
             -Dlmsensors=disabled \
             -Dandroid-libbacktrace=disabled \
-            -Dshared-glapi=disabled \
-            -Dgallium-opencl=disabled
+            -Dshared-glapi=disabled 
+            
 
           ninja -C "build-android" install
 
