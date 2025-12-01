@@ -112,7 +112,7 @@ jobs:
             -Degl=disabled \
             -Dgbm=enabled \
             -Dgbm-backends-path=/vendor/lib64 \
-            -Dllvm=disabled \
+            
             -Dcpp_rtti=false \
             -Dlmsensors=disabled \
             -Dandroid-libbacktrace=disabled \
