@@ -89,22 +89,18 @@ jobs:
 
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 移除不存在的 osmesa 选项
+          # 配置 Mesa 构建 - 彻底禁用 OpenCL 和 CLC
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
             -Dplatforms=android \
             -Dplatform-sdk-version=26 \
             -Dandroid-stub=true \
-            -Dllvm=disabled \
-            -Dxlib-lease=disabled \
-            -Degl=disabled \
-            -Dgbm=disabled \
-            -Dglx=disabled \
-            -Dopengl=false \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
             -Dshared-glapi=disabled \
+            -Dopencl=disabled \
+            -Dgallium-opencl=disabled \
             -Dbuildtype=release
 
           ninja -C "build-android" install
