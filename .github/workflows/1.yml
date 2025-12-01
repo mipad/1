@@ -80,11 +80,9 @@ jobs:
           echo "cpu = 'armv8'" >> build-crossfile
           echo "endian = 'little'" >> build-crossfile
 
-          # 克隆 Mesa 并使用正确的标签
-          git clone --depth 1 https://gitlab.freedesktop.org/mesa/mesa.git
+          git clone https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
-          
-          git checkout 25.3
+          git checkout mesa-25.3.0
           
           echo "Using Mesa version: $(git describe --tags)"
 
