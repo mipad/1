@@ -19,7 +19,7 @@ jobs:
           sudo apt install -y ninja-build pkg-config \
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
-            python3-pip wget unzip gettext libclc-dev
+            python3-pip wget unzip gettext
           pip3 install --upgrade meson mako
           meson --version
 
@@ -29,6 +29,27 @@ jobs:
           unzip -q android-ndk-r25c-linux.zip
           echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
           echo "NDK_TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
+
+      - name: Setup libclc stub (简化)
+        run: |
+          # 创建 libclc 存根目录
+          mkdir -p /tmp/libclc/lib/pkgconfig
+          mkdir -p /tmp/libclc/include
+          
+          # 创建 pkg-config 文件
+          cat > /tmp/libclc/lib/pkgconfig/libclc.pc << 'EOF'
+          Name: libclc
+          Description: OpenCL C library
+          Version: 15.0.0
+          Libs:
+          Cflags:
+          EOF
+          
+          # 创建必要的头文件存根
+          mkdir -p /tmp/libclc/include/clc
+          touch /tmp/libclc/include/clc/clc.h
+          
+          echo "libclc stub created"
 
       - name: Build libdrm
         run: |
@@ -44,17 +65,18 @@ jobs:
           pkg-config = ['env', 'PKG_CONFIG_LIBDIR=.', '/usr/bin/pkg-config']
 
           [host_machine]
-           system = 'linux'
-           cpu_family = 'arm'
-           cpu = 'armv8'
-           endian = 'little'
-           EOF
+          system = 'linux'
+          cpu_family = 'arm'
+          cpu = 'armv8'
+          endian = 'little'
+          EOF
 
-          git clone --depth 1 https://gitlab.freedesktop.org/mesa/drm.git
+          git clone --depth 1 --branch libdrm-2.4.120 https://gitlab.freedesktop.org/mesa/drm.git
           cd drm
           meson setup "build-android" \
             --prefix=/tmp/drm-static \
             --cross-file "../build-crossfile-drm" \
+            --buildtype=release \
             -Ddefault_library=static \
             -Dintel=disabled \
             -Dradeon=disabled \
@@ -65,31 +87,6 @@ jobs:
             -Dvc4=disabled \
             -Detnaviv=disabled
           ninja -C "build-android" install
-
-      - name: Clone and build libclc
-        run: |
-          # 克隆 libclc 项目
-          git clone --depth 1 https://github.com/llvm/llvm-project.git
-          cd llvm-project/libclc
-          
-          # 创建 libclc 构建目录
-          mkdir -p build-android
-          cd build-android
-          
-          # 创建简单的构建系统来生成必要的文件
-          echo "Creating minimal libclc build..."
-          
-          # 创建 libclc.pc 文件
-          mkdir -p /tmp/libclc/lib/pkgconfig
-          cat > /tmp/libclc/lib/pkgconfig/libclc.pc << 'EOF'
-          Name: libclc
-          Description: OpenCL C library
-          Version: 15.0.0
-          Libs:
-          Cflags:
-          EOF
-          
-          echo "libclc stub created"
 
       - name: Build Mesa with PanVk for G610
         run: |
@@ -114,28 +111,11 @@ jobs:
           endian = 'little'
           EOF
 
-          # 克隆 Mesa 并使用正确的标签
-          git clone https://gitlab.freedesktop.org/mesa/mesa.git
+          # 克隆 Mesa
+          git clone --depth 1 --branch mesa-25.3.0 https://gitlab.freedesktop.org/mesa/mesa.git
           cd mesa
-          git checkout mesa-25.3.0
-          git config advice.detachedHead false
 
-          # 查看 Mesa 构建选项
-          echo "=== 查看 Mesa 构建选项 ==="
-          grep -E "(opencl|clc|llvm|gallium)" meson_options.txt | head -30
-          
-          # 创建 libclc 存根以满足依赖
-          echo "=== 创建 libclc 存根 ==="
-          mkdir -p subprojects/libclc
-          cat > subprojects/libclc/meson.build << 'EOF'
-          project('libclc', 'c', version : '1.0.0')
-          dep_libclc = declare_dependency()
-          EOF
-
-          export PATH="${{ env.NDK_TOOLCHAIN }}/bin:$PATH"
-
-          # 配置 Mesa 构建 - 完整配置
-          echo "=== 配置 Mesa 构建 ==="
+          # 配置 Mesa 构建 - 简化配置
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
@@ -144,114 +124,63 @@ jobs:
             -Dplatform-sdk-version=26 \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
+            -Ddri-drivers= \
+            -Dglx=disabled \
             -Degl=disabled \
-            -Dgbm=disabled 
-            
-        
+            -Dgbm=disabled \
+            -Dgles1=disabled \
+            -Dgles2=disabled \
+            -Dopengl=false \
+            -Dshared-glapi=disabled \
+            -Dglvnd=false
 
           echo "=== 开始构建 Mesa ==="
           ninja -C "build-android" install
-
-      - name: 备用构建方案 - 使用更简单的配置
-        if: failure()
-        run: |
-          cd mesa
-          echo "=== 尝试备用构建方案 ==="
-          
-          # 首先查看所有可用的选项
-          echo "可用的构建选项："
-          meson setup --help 2>&1 | grep -A 100 "Project options" || true
-          
-          # 尝试最简单的配置
-          meson setup "build-simple" \
-            --prefix=/tmp/pan \
-            --cross-file "../build-crossfile" \
-            --buildtype=release \
-            -Dplatforms=android \
-            -Dvulkan-drivers=panfrost \
-            -Dgallium-drivers=
-          
-          # 构建
-          ninja -C "build-simple" install
-          
-          # 复制到主构建目录
-          cp -r build-simple/* build-android/ 2>/dev/null || true
 
       - name: Package and optimize for G610
         run: |
           cd mesa/build-android
           
           echo "=== 查找构建的库文件 ==="
-          find . -name "*.so" -type f | head -30
+          find . -name "*.so" -type f 2>/dev/null | head -30 || echo "未找到 .so 文件"
           
           echo ""
           echo "=== 搜索 Vulkan 相关库 ==="
-          find . -name "*vulkan*" -type f
+          find . -name "*vulkan*" -type f 2>/dev/null || echo "未找到 Vulkan 库"
           
           echo ""
           echo "=== 搜索 Panfrost 相关库 ==="
-          find . -name "*panfrost*" -type f
+          find . -path "*panfrost*" -name "*.so" -type f 2>/dev/null || echo "未找到 Panfrost 库"
           
-          # 创建针对 G610 的优化包
-          mkdir -p g610-package/system/lib64
-          mkdir -p g610-package/system/vendor/lib64/hw
+          # 尝试查找 libvulkan_panfrost.so
+          VULKAN_LIB=$(find . -name "libvulkan_panfrost.so" -type f 2>/dev/null | head -1)
           
-          # 搜索并复制库文件
-          echo "=== 复制库文件 ==="
-          
-          # 方法1：查找特定文件
-          if [ -f "src/panfrost/vulkan/libvulkan_panfrost.so" ]; then
-            cp src/panfrost/vulkan/libvulkan_panfrost.so g610-package/system/lib64/
-            cp src/panfrost/vulkan/libvulkan_panfrost.so g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
-            echo "从 src/panfrost/vulkan/ 复制了 libvulkan_panfrost.so"
-          fi
-          
-          # 方法2：全局搜索
-          if [ ! -f "g610-package/system/lib64/libvulkan_panfrost.so" ]; then
-            echo "尝试全局搜索..."
-            vulkan_lib=$(find . -name "libvulkan_panfrost.so" -type f | head -1)
-            if [ -n "$vulkan_lib" ]; then
-              cp "$vulkan_lib" g610-package/system/lib64/
-              cp "$vulkan_lib" g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
-              echo "从 $vulkan_lib 复制了 libvulkan_panfrost.so"
-            fi
-          fi
-          
-          # 方法3：查找任何 vulkan 库
-          if [ ! -f "g610-package/system/lib64/libvulkan_panfrost.so" ]; then
-            echo "查找任何 vulkan 库..."
-            for lib in $(find . -name "libvulkan*.so" -type f); do
-              libname=$(basename "$lib")
-              cp "$lib" g610-package/system/lib64/
-              echo "复制了 $libname"
-              
-              # 如果名称包含 panfrost，也复制到 vendor
-              if [[ "$libname" == *panfrost* ]]; then
-                cp "$lib" g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
-                echo "复制 $libname 到 vendor 目录"
-              fi
-            done
-          fi
-          
-          # 验证文件
-          if ls g610-package/system/lib64/*.so >/dev/null 2>&1; then
+          if [ -n "$VULKAN_LIB" ]; then
+            echo "找到 Vulkan 库: $VULKAN_LIB"
+            
+            # 创建针对 G610 的优化包
+            mkdir -p g610-package/system/lib64
+            mkdir -p g610-package/system/vendor/lib64/hw
+            
+            cp "$VULKAN_LIB" g610-package/system/lib64/
+            cp "$VULKAN_LIB" g610-package/system/vendor/lib64/hw/vulkan.panfrost.so
+            
             echo "=== G610 构建成功! ==="
             echo "库文件列表:"
             ls -la g610-package/system/lib64/
             echo ""
             echo "库文件信息:"
             file g610-package/system/lib64/*.so
+            
+            # 创建 G610 专用安装包
+            cd g610-package
+            tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
           else
-            echo "错误: 未找到共享库文件"
-            echo "当前目录: $(pwd)"
-            echo "所有 .so 文件:"
-            find . -name "*.so" -type f
+            echo "错误: 未找到 libvulkan_panfrost.so"
+            echo "尝试查找其他 Vulkan 库..."
+            find . -name "*.so" -type f 2>/dev/null
             exit 1
           fi
-          
-          # 创建 G610 专用安装包
-          cd g610-package
-          tar -czf ../../panvk-g610-25.3.0-$(date +%Y%m%d).tar.gz system/
 
       - name: Upload G610 artifacts
         uses: actions/upload-artifact@v4
