@@ -131,8 +131,8 @@ jobs:
           cd mesa
           
           # 使用已知稳定的版本
-          git fetch --depth 1 origin mesa-24.0.0
-          git checkout mesa-24.0.0
+          git fetch --depth 1 origin mesa-25.3.0
+          git checkout mesa-25.3.0
           
           echo "=== 配置 Mesa 构建 ==="
           
