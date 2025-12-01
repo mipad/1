@@ -20,7 +20,6 @@ jobs:
             libxrandr-dev libxxf86vm-dev libxcb-*-dev \
             libx11-xcb-dev libxfixes-dev libdrm-dev libx11-dev \
             python3-pip wget unzip gettext
-          # 安装最新版 Meson，不使用系统自带的旧版本
           pip3 install --upgrade meson mako
           meson --version
 
@@ -90,7 +89,7 @@ jobs:
 
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 
-          # 配置 Mesa 构建 - 针对 G610 优化，启用 PanVk
+          # 配置 Mesa 构建 - 移除不存在的 osmesa 选项
           meson setup "build-android" \
             --prefix=/tmp/pan \
             --cross-file "../build-crossfile" \
@@ -103,7 +102,6 @@ jobs:
             -Dgbm=disabled \
             -Dglx=disabled \
             -Dopengl=false \
-            -Dosmesa=false \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
             -Dshared-glapi=false \
