@@ -124,7 +124,7 @@ jobs:
             -Dplatform-sdk-version=26 \
             -Dvulkan-drivers=panfrost \
             -Dgallium-drivers= \
-            -Ddri-drivers= \
+            
             -Dglx=disabled \
             -Degl=disabled \
             -Dgbm=disabled \
