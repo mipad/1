@@ -1,1 +1,1 @@
-# 1
+# Learning is nothing
