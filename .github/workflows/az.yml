@@ -2,9 +2,9 @@ name: Android CI Fixed
 
 on: 
   push:
-    branches: [ "main" ]  
+    branches: [ "稳4" ]  
   pull_request:
-    branches: [ "main" ]
+    branches: [ "稳4" ]
 
 jobs:
   build:
@@ -26,8 +26,10 @@ jobs:
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
       with:
-        # 指定 GitLab 私有仓库地址（必须以 .git 结尾）
-        repository: https://gitlab.com/mipad1-group/Test-ryu.git
+        # 指定 GitLab 服务器地址
+        github-server-url: https://gitlab.com
+        # 仓库格式为 owner/repo
+        repository: mipad1-group/Test-ryu
         ref: 稳4
         path: Test-ryu
         # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
