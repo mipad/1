@@ -2,9 +2,9 @@ name: Android CI Fixed
    
 on: 
   push:
-    branches: [ "main" ]  
+    branches: [ "1" ]  
   pull_request:
-    branches: [ "main" ]
+    branches: [ "1" ]
 
 jobs:
   build:
