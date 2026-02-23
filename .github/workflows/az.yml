@@ -30,7 +30,7 @@ jobs:
         github-server-url: https://gitlab.com
         # 仓库格式为 owner/repo
         repository: mipad1-group/Test-ryu
-        ref: f263-2  
+        ref: f261-1
         path: Test-ryu
         # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
         token: ${{ secrets.GITLAB_TOKEN }}
