@@ -1,5 +1,5 @@
 name: Android CI Fixed   
-                                     
+                                    
 on:                        
   push: 
     branches: [ "v2-astc" ]  
@@ -26,13 +26,10 @@ jobs:
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
       with:
-        # 指定 GitLab 服务器地址
         github-server-url: https://gitlab.com
-        # 仓库格式为 owner/repo
         repository: mipad1-group/Test-ryu
         ref: v2-astc
         path: Test-ryu
-        # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
         token: ${{ secrets.GITLAB_TOKEN }}
 
     # ========== 2. 环境配置 ==========
@@ -100,7 +97,6 @@ jobs:
     - name: Configure Environment Paths
       shell: bash
       run: |
-        # 显式定义 ANDROID_NDK_HOME，避免路径拼接错误
         ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION }}"
         LLVM_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
         LIB_DIR="$LLVM_PATH/sysroot/usr/lib/aarch64-linux-android/${{ env.ANDROID_API_LEVEL }}"
@@ -137,12 +133,10 @@ jobs:
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
       run: |
-        # 调试输出：关键环境变量
         echo "LLVM_PATH: $LLVM_PATH"
         echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 
-        # 执行构建
         ./gradlew clean assembleRelease \
           -DllvmToolchainPath=$LLVM_PATH \
           -Dopenssl.root=$OPENSSL_ROOT_DIR \
@@ -166,7 +160,22 @@ jobs:
         find app/build/outputs/apk -name "*.apk" -print
         echo "========== 列表完成 =========="
 
-    # ========== 8. 产物处理 ==========
+    # ========== 8. 诊断：列出 astc-encoder 构建产物 ==========
+    - name: List astc-encoder build artifacts
+      if: always()
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
+      run: |
+        echo "========== Listing _deps/astcenc-build directory =========="
+        ls -la app/.cxx/Release/*/arm64-v8a/_deps/astcenc-build/ || true
+        echo "========== Listing _deps/astcenc-src directory =========="
+        ls -la app/.cxx/Release/*/arm64-v8a/_deps/astcenc-src/ || true
+        echo "========== Searching for libastcenc*.a =========="
+        find app/.cxx -name "libastcenc*.a" -print || true
+        echo "========== Searching for libastcenc*.so =========="
+        find app/.cxx -name "libastcenc*.so" -print || true
+        echo "========== Done =========="
+
+    # ========== 9. 产物处理 ==========
     - name: Upload Native Libraries
       uses: actions/upload-artifact@v4
       with:
