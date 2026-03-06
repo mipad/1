@@ -1,6 +1,6 @@
 name: Android CI Fixed   
                                             
-on:                           
+on:                            
   push: 
     branches: [ "v2-astc" ]  
   pull_request:
