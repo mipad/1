@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: v2-astc暂时行1
+        ref: v2-astc暂时行2
         path: Test-ryu 
         token: ${{ secrets.GITLAB_TOKEN }}
 
