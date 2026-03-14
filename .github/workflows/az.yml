@@ -1,6 +1,6 @@
 name: Android CI Fixed   
                                                                                                                                
-on:                  
+on:                   
   push:
     branches: [ "1" ]  
   pull_request:
