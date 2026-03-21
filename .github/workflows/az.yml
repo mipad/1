@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 检出代码
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -20,45 +19,39 @@ jobs:
           ref: spv
           path: 1
 
-      # 2. 安装 glslangValidator
       - name: Install glslang-tools
         run: |
           sudo apt-get update
           sudo apt-get install -y glslang-tools
           glslangValidator --version
 
-      # 3. 创建输出目录
       - name: Create output directory
         run: mkdir -p spirv_output
 
-      # 4. 编译所有着色器文件
       - name: Compile shaders
         run: |
-          # 进入检出目录
-          cd 1
           # 编译计算着色器 (.comp)
-          for file in *.comp; do
+          for file in 1/*.comp; do
             if [ -f "$file" ]; then
-              echo "Compiling $file -> spirv_output/${file%.comp}.spv"
-              glslangValidator -V "$file" -o "spirv_output/${file%.comp}.spv"
+              base=$(basename "$file" .comp)
+              echo "Compiling $file -> spirv_output/${base}.spv"
+              glslangValidator -V "$file" -o "spirv_output/${base}.spv"
             fi
           done
-          
           # 可选：编译顶点/片段着色器 (.vert/.frag)
           for ext in vert frag; do
-            for file in *.$ext; do
+            for file in 1/*.$ext; do
               if [ -f "$file" ]; then
-                echo "Compiling $file -> spirv_output/${file%.$ext}.spv"
-                glslangValidator -V "$file" -o "spirv_output/${file%.$ext}.spv"
+                base=$(basename "$file" .$ext)
+                echo "Compiling $file -> spirv_output/${base}.spv"
+                glslangValidator -V "$file" -o "spirv_output/${base}.spv"
               fi
             done
           done
 
-      # 5. 列出编译结果
       - name: List compiled files
         run: ls -la spirv_output/
 
-      # 6. 上传编译产物（可选）
       - name: Upload SPIR-V artifacts
         uses: actions/upload-artifact@v4
         with:
