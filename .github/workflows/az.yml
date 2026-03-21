@@ -1,8 +1,8 @@
-name: Compile SPIR-V Shaders     
-                                                                                 
-on:                   
-  push: 
-    branches: [ "spv" ]  
+name: Compile SPIR-V Shaders
+
+on:
+  push:
+    branches: [ "spv" ]
   pull_request:
     branches: [ "spv" ]
 
@@ -10,31 +10,32 @@ jobs:
   compile-spirv:
     name: Compile GLSL to SPIR-V
     runs-on: ubuntu-latest
-    
+
     steps:
       # 1. 检出代码
       - name: Checkout code
         uses: actions/checkout@v4
-           with:
+        with:
           repository: mipad/1
-        ref: spv
-        path: 1
+          ref: spv
+          path: 1
 
       # 2. 安装 glslangValidator
       - name: Install glslang-tools
         run: |
           sudo apt-get update
           sudo apt-get install -y glslang-tools
-          # 验证安装
           glslangValidator --version
-      
+
       # 3. 创建输出目录
       - name: Create output directory
         run: mkdir -p spirv_output
-      
+
       # 4. 编译所有着色器文件
       - name: Compile shaders
         run: |
+          # 进入检出目录
+          cd 1
           # 编译计算着色器 (.comp)
           for file in *.comp; do
             if [ -f "$file" ]; then
@@ -52,11 +53,11 @@ jobs:
               fi
             done
           done
-      
+
       # 5. 列出编译结果
       - name: List compiled files
         run: ls -la spirv_output/
-      
+
       # 6. 上传编译产物（可选）
       - name: Upload SPIR-V artifacts
         uses: actions/upload-artifact@v4
