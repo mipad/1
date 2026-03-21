@@ -1,0 +1,65 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 4, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer Input {
+    uint data[];
+} inputBuffer;
+
+layout(set = 0, binding = 1, std430) buffer Output {
+    uint pixels[];
+} outputBuffer;
+
+uvec3 unpackUnorm565_int(uint c) {
+    uint r = (c >> 11) & 0x1Fu;
+    uint g = (c >> 5) & 0x3Fu;
+    uint b = c & 0x1Fu;
+    r = (r << 3) | (r >> 2);
+    g = (g << 2) | (g >> 4);
+    b = (b << 3) | (b >> 2);
+    return uvec3(r, g, b);
+}
+
+void decode_bc1_block_int(uint block0, uint block1, out uvec4 colors[16]) {
+    uint c0 = block0 & 0xFFFFu;
+    uint c1 = (block0 >> 16) & 0xFFFFu;
+
+    uvec3 col0 = unpackUnorm565_int(c0);
+    uvec3 col1 = unpackUnorm565_int(c1);
+
+    uvec3 palette[4];
+    palette[0] = col0;
+    palette[1] = col1;
+
+    if (c0 > c1) {
+        palette[2] = (col0 * 2u + col1) / 3u;
+        palette[3] = (col0 + col1 * 2u) / 3u;
+    } else {
+        palette[2] = (col0 + col1) / 2u;
+        palette[3] = uvec3(0u);
+    }
+
+    uint indices = block1;
+    for (int i = 0; i < 16; i++) {
+        uint idx = (indices >> (i * 2u)) & 3u;
+        colors[i] = uvec4(palette[idx], 255u);
+    }
+}
+
+void main() {
+    uint blockX = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    uint blockY = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
+    uint blockIndex = blockY * gl_NumWorkGroups.x * gl_WorkGroupSize.x + blockX;
+
+    uint block0 = inputBuffer.data[blockIndex * 2];
+    uint block1 = inputBuffer.data[blockIndex * 2 + 1];
+
+    uvec4 colors[16];
+    decode_bc1_block_int(block0, block1, colors);
+
+    uint outBase = blockIndex * 16;
+    for (int i = 0; i < 16; i++) {
+        outputBuffer.pixels[outBase + i] = colors[i].r | (colors[i].g << 8) |
+                                            (colors[i].b << 16) | (colors[i].a << 24);
+    }
+}
