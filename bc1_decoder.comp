@@ -22,4 +22,3 @@ void main() {
     outputBuffer.pixels[pixelIndex + 2] = uint8_t(0);
     outputBuffer.pixels[pixelIndex + 3] = uint8_t(255);
 }
-这里是获取线布局然后解码的吗？
