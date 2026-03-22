@@ -1,11 +1,11 @@
 #version 450
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(set = 0, binding = 0, std430) buffer Input { uint data[]; } inputBuffer;
 layout(set = 0, binding = 1, std430) buffer Output { uint pixels[]; } outputBuffer;
 
 void main() {
-    uint pixelX = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    uint pixelY = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
-    uint pixelIndex = pixelY * gl_NumWorkGroups.x * gl_WorkGroupSize.x + pixelX;
+    uint pixelX = gl_WorkGroupID.x;
+    uint pixelY = gl_WorkGroupID.y;
+    uint pixelIndex = pixelY * gl_NumWorkGroups.x + pixelX;
     outputBuffer.pixels[pixelIndex] = 0xff0000ff;
 }
