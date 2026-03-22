@@ -1,22 +1,5 @@
 #version 450
-
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-layout(set = 0, binding = 0, std430) buffer Input {
-    uint data[];
-} inputBuffer;
-
-layout(set = 0, binding = 1, std430) buffer Output {
-    uint pixels[];
-} outputBuffer;
-
-void main() {
-    uint blockX = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    uint blockY = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
-    uint blockIndex = blockY * gl_NumWorkGroups.x * gl_WorkGroupSize.x + blockX;
-
-    uint outBase = blockIndex * 16;
-    for (int i = 0; i < 16; i++) {
-        outputBuffer.pixels[outBase + i] = 0xff0000ff; // 全红
-    }
-}
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(set = 0, binding = 0, std430) buffer Input { uint data[]; } inputBuffer;
+layout(set = 0, binding = 1, std430) buffer Output { uint pixels[]; } outputBuffer;
+void main() { }
