@@ -1,46 +1,76 @@
 // 四重索引通道计算着色器
+// 将 Quads/QuadStrip 图元转换为 Triangles 索引
 
 #version 460 core
 
+// 工作组大小：每个工作组处理 1024 个图元
 layout (local_size_x = 1024) in;
 
+// Uniform buffer：传递参数（std140 布局）
 layout (std140, set = 0, binding = 0) uniform Params {
-    uint base_vertex;
-    uint index_shift; // 0: uint8, 1: uint16, 2: uint32
-    uint is_strip;
+    uint base_vertex;   // 基础顶点偏移
+    uint index_shift;   // 索引位宽偏移：0=8位, 1=16位, 2=32位
+    uint is_strip;      // 图元类型：0=Quads, 1=QuadStrip
 };
 
+// 输入索引缓冲区（只读）
 layout (std430, set = 0, binding = 1) readonly buffer InputBuffer {
     uint input_indexes[];
 };
 
+// 输出索引缓冲区（只写）
 layout (std430, set = 0, binding = 2) writeonly buffer OutputBuffer {
     uint output_indexes[];
 };
 
 void main() {
+    // 获取当前图元索引（从 0 开始）
     uint primitive = gl_GlobalInvocationID.x;
+    
+    // 边界检查：确保不会超出输出缓冲区
     if (primitive * 6u >= output_indexes.length()) {
         return;
     }
 
-    uint index_size = 8u << index_shift;
-    uint flipped_shift = 2u - index_shift;
-    uint mask = (1u << flipped_shift) - 1u;
+    // 计算索引位宽相关参数
+    uint index_size = 8u << index_shift;           // 索引位宽（字节数）
+    uint flipped_shift = 2u - index_shift;         // 打包偏移量
+    uint mask = (1u << flipped_shift) - 1u;        // 位掩码
 
-    const uint quads_swizzle[6] = uint[](0, 1, 2, 0, 2, 3);
-    const uint quad_strip_swizzle[6] = uint[](0, 3, 1, 0, 2, 3);
+    // 定义索引重映射表
+    const uint quads_swizzle[6] = uint[](
+        0, 1, 2,  // 第一个三角形
+        0, 2, 3   // 第二个三角形
+    );
+    
+    const uint quad_strip_swizzle[6] = uint[](
+        0, 3, 1,  // 第一个三角形（跨四边形）
+        0, 2, 3   // 第二个三角形
+    );
+
+    // 生成 6 个输出索引（2 个三角形）
     for (uint vertex = 0; vertex < 6; ++vertex) {
+        // 计算输入索引偏移量
         uint offset;
         if (is_strip == 0u) {
+            // Quads 模式：每 4 个顶点一组
             offset = primitive * 4u + quads_swizzle[vertex];
         } else {
+            // QuadStrip 模式：每 2 个顶点一组，共享前一组后两个顶点
             offset = primitive * 2u + quad_strip_swizzle[vertex];
         }
-        uint int_offset = offset >> flipped_shift;
-        uint bit_offset = (offset & mask) * index_size;
+        
+        // 计算在打包缓冲区中的位置
+        uint int_offset = offset >> flipped_shift;      // 32 位字索引
+        uint bit_offset = (offset & mask) * index_size; // 位偏移
+        
+        // 从输入缓冲区读取打包的索引
         uint packed_input = input_indexes[int_offset];
+        
+        // 提取指定位宽的索引值
         uint index = bitfieldExtract(packed_input, int(bit_offset), int(index_size));
+        
+        // 写入输出缓冲区，添加基础顶点偏移
         output_indexes[primitive * 6u + vertex] = index + base_vertex;
     }
 }
