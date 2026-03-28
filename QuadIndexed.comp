@@ -1,16 +1,17 @@
-// 四重索引通道计算着色器
+// QuadIndexed.comp - 针对 Mali GPU 性能优化
 // 将 Quads/QuadStrip 图元转换为 Triangles 索引
 
 #version 460 core
 
-// 工作组大小：每个工作组处理 1024 个图元
-layout (local_size_x = 1024) in;
+// Mali 建议工作组大小为 128 或 64，避免过大导致寄存器压力
+layout (local_size_x = 128) in;
 
-// Uniform buffer：传递参数（std140 布局）
+// Uniform buffer（std140 布局，确保 16 字节对齐）
 layout (std140, set = 0, binding = 0) uniform Params {
     uint base_vertex;   // 基础顶点偏移
     uint index_shift;   // 索引位宽偏移：0=8位, 1=16位, 2=32位
     uint is_strip;      // 图元类型：0=Quads, 1=QuadStrip
+    uint _pad;          // 填充到 16 字节（满足 std140 对齐要求）
 };
 
 // 输入索引缓冲区（只读）
@@ -24,53 +25,50 @@ layout (std430, set = 0, binding = 2) writeonly buffer OutputBuffer {
 };
 
 void main() {
-    // 获取当前图元索引（从 0 开始）
+    // 预取输出缓冲区长度，避免重复调用
+    uint out_len = output_indexes.length();
+
     uint primitive = gl_GlobalInvocationID.x;
-    
-    // 边界检查：确保不会超出输出缓冲区
-    if (primitive * 6u >= output_indexes.length()) {
-        return;
+    uint out_base = primitive * 6u;
+    if (out_base >= out_len) return;
+
+    // 预计算位宽相关参数
+    uint index_size = 8u << index_shift;
+    uint flipped_shift = 2u - index_shift;
+    uint mask = (1u << flipped_shift) - 1u;
+
+    // 根据图元类型预计算偏移基数
+    uint offset_base;
+    const uint* swizzle;
+    if (is_strip == 0u) {
+        offset_base = primitive * 4u;
+        swizzle = (const uint[])(0, 1, 2, 0, 2, 3);
+    } else {
+        offset_base = primitive * 2u;
+        swizzle = (const uint[])(0, 3, 1, 0, 2, 3);
     }
 
-    // 计算索引位宽相关参数
-    uint index_size = 8u << index_shift;           // 索引位宽（字节数）
-    uint flipped_shift = 2u - index_shift;         // 打包偏移量
-    uint mask = (1u << flipped_shift) - 1u;        // 位掩码
+    // 循环展开（6次，消除循环开销）
+    uint offset0 = offset_base + swizzle[0];
+    uint offset1 = offset_base + swizzle[1];
+    uint offset2 = offset_base + swizzle[2];
+    uint offset3 = offset_base + swizzle[3];
+    uint offset4 = offset_base + swizzle[4];
+    uint offset5 = offset_base + swizzle[5];
 
-    // 定义索引重映射表
-    const uint quads_swizzle[6] = uint[](
-        0, 1, 2,  // 第一个三角形
-        0, 2, 3   // 第二个三角形
-    );
-    
-    const uint quad_strip_swizzle[6] = uint[](
-        0, 3, 1,  // 第一个三角形（跨四边形）
-        0, 2, 3   // 第二个三角形
-    );
+    // 手动提取索引（使用移位掩码替代 bitfieldExtract，避免驱动 bug）
+    uint idx0 = (input_indexes[offset0 >> flipped_shift] >> ((offset0 & mask) * index_size)) & ((1u << index_size) - 1u);
+    uint idx1 = (input_indexes[offset1 >> flipped_shift] >> ((offset1 & mask) * index_size)) & ((1u << index_size) - 1u);
+    uint idx2 = (input_indexes[offset2 >> flipped_shift] >> ((offset2 & mask) * index_size)) & ((1u << index_size) - 1u);
+    uint idx3 = (input_indexes[offset3 >> flipped_shift] >> ((offset3 & mask) * index_size)) & ((1u << index_size) - 1u);
+    uint idx4 = (input_indexes[offset4 >> flipped_shift] >> ((offset4 & mask) * index_size)) & ((1u << index_size) - 1u);
+    uint idx5 = (input_indexes[offset5 >> flipped_shift] >> ((offset5 & mask) * index_size)) & ((1u << index_size) - 1u);
 
-    // 生成 6 个输出索引（2 个三角形）
-    for (uint vertex = 0; vertex < 6; ++vertex) {
-        // 计算输入索引偏移量
-        uint offset;
-        if (is_strip == 0u) {
-            // Quads 模式：每 4 个顶点一组
-            offset = primitive * 4u + quads_swizzle[vertex];
-        } else {
-            // QuadStrip 模式：每 2 个顶点一组，共享前一组后两个顶点
-            offset = primitive * 2u + quad_strip_swizzle[vertex];
-        }
-        
-        // 计算在打包缓冲区中的位置
-        uint int_offset = offset >> flipped_shift;      // 32 位字索引
-        uint bit_offset = (offset & mask) * index_size; // 位偏移
-        
-        // 从输入缓冲区读取打包的索引
-        uint packed_input = input_indexes[int_offset];
-        
-        // 提取指定位宽的索引值
-        uint index = bitfieldExtract(packed_input, int(bit_offset), int(index_size));
-        
-        // 写入输出缓冲区，添加基础顶点偏移
-        output_indexes[primitive * 6u + vertex] = index + base_vertex;
-    }
+    // 写入输出缓冲区（添加 base_vertex）
+    output_indexes[out_base + 0] = idx0 + base_vertex;
+    output_indexes[out_base + 1] = idx1 + base_vertex;
+    output_indexes[out_base + 2] = idx2 + base_vertex;
+    output_indexes[out_base + 3] = idx3 + base_vertex;
+    output_indexes[out_base + 4] = idx4 + base_vertex;
+    output_indexes[out_base + 5] = idx5 + base_vertex;
 }
