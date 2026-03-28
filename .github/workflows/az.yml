@@ -1,5 +1,5 @@
 name: Android CI - Multi Flavor Build
-  
+
 on:
   push:
     branches: [ "2" ]
@@ -154,27 +154,29 @@ jobs:
         find app/build -name "*.so" -print
         echo "========== 搜索完成 =========="
 
-    # 8. 上传产物（每个 flavor 单独上传，或打包上传）
-    - name: Upload APKs (all flavors)
+    # 8. 上传产物（每个 flavor 单独上传，无 all-apks）
+    - name: Upload APK - armv8
       uses: actions/upload-artifact@v4
       with:
-        name: all-apks
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/**/*.apk
+        name: android-armv8-release
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv8/release/*.apk
         retention-days: 7
 
-    # 可选：将每个 flavor 的 APK 分别上传（便于管理）
-    - name: Upload each flavor APK separately
-      if: always()
-      run: |
-        cd ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk
-        for apk in $(find . -name "*.apk"); do
-          flavor=$(basename $(dirname $(dirname "$apk")))  # 提取 flavor 名称
-          echo "Uploading $apk as $flavor-release.apk"
-          # 使用 GitHub CLI 或直接使用 upload-artifact 不支持动态名称，改用单个上传步骤
-          # 这里简化处理：已在上面统一上传，如需单独上传可添加多个 upload-artifact 步骤
-        done
-      # 实际单独上传需要多个 upload-artifact 步骤，上面只是示例说明
+    - name: Upload APK - armv82
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-armv82-release
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv82/release/*.apk
+        retention-days: 7
 
+    - name: Upload APK - armv82sve
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-armv82sve-release
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv82sve/release/*.apk
+        retention-days: 7
+
+    # 9. 上传 native 库和构建报告（可选）
     - name: Upload Native Libraries
       uses: actions/upload-artifact@v4
       with:
