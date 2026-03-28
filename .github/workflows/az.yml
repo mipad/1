@@ -1,5 +1,5 @@
 name: Android CI - Multi Flavor Build
- 
+
 on:
   push:
     branches: [ "2" ]
@@ -154,7 +154,7 @@ jobs:
         find app/build -name "*.so" -print
         echo "========== 搜索完成 =========="
 
-    # 8. 上传产物（每个 flavor 单独上传，无 all-apks）
+    # 8. 上传产物（每个 flavor 单独上传）
     - name: Upload APK - armv8
       uses: actions/upload-artifact@v4
       with:
@@ -169,11 +169,11 @@ jobs:
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv82/release/*.apk
         retention-days: 7
 
-    - name: Upload APK - armv82sve
+    - name: Upload APK - armv82_plus
       uses: actions/upload-artifact@v4
       with:
-        name: android-armv82sve-release
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv82sve/release/*.apk
+        name: android-armv82_plus-release
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/armv82_plus/release/*.apk
         retention-days: 7
 
     # 9. 上传 native 库和构建报告（可选）
