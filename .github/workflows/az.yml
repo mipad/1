@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: v6-优化1 
+        ref: v6-动态输
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
