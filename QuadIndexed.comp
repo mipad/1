@@ -1,66 +1,57 @@
 // QuadIndexed.comp - 针对 Mali GPU 性能优化
-// 将 Quads/QuadStrip 图元转换为 Triangles 索引
-
 #version 460 core
 
-// 工作组大小：128 是 Mali 友好值
 layout (local_size_x = 128) in;
 
-// Uniform buffer（std140 布局，确保 16 字节对齐）
 layout (std140, set = 0, binding = 0) uniform Params {
     uint base_vertex;   // 基础顶点偏移
     uint index_shift;   // 索引位宽偏移：0=8位, 1=16位, 2=32位
     uint is_strip;      // 图元类型：0=Quads, 1=QuadStrip
-    uint _pad;          // 填充到 16 字节（满足 std140 对齐要求）
+    uint _pad;          // 填充到 16 字节
 };
 
-// 输入索引缓冲区（只读）
 layout (std430, set = 0, binding = 1) readonly buffer InputBuffer {
     uint input_indexes[];
 };
 
-// 输出索引缓冲区（只写）
 layout (std430, set = 0, binding = 2) writeonly buffer OutputBuffer {
     uint output_indexes[];
 };
 
-// 全局常量数组（避免函数内动态数组）
 const uint quads_swizzle[6] = uint[](0, 1, 2, 0, 2, 3);
 const uint quad_strip_swizzle[6] = uint[](0, 3, 1, 0, 2, 3);
 
 void main() {
-    // 预取输出缓冲区长度，避免重复调用
     uint out_len = output_indexes.length();
-
     uint primitive = gl_GlobalInvocationID.x;
     uint out_base = primitive * 6u;
     if (out_base >= out_len) return;
 
-    // 预计算位宽相关参数
     uint index_size = 8u << index_shift;
     uint flipped_shift = 2u - index_shift;
     uint mask = (1u << flipped_shift) - 1u;
 
-    // 根据图元类型预计算偏移基数和选择重映射表
     uint offset_base;
-    const uint* swizzle;
+    uint offset0, offset1, offset2, offset3, offset4, offset5;
+
     if (is_strip == 0u) {
         offset_base = primitive * 4u;
-        swizzle = quads_swizzle;
+        offset0 = offset_base + quads_swizzle[0];
+        offset1 = offset_base + quads_swizzle[1];
+        offset2 = offset_base + quads_swizzle[2];
+        offset3 = offset_base + quads_swizzle[3];
+        offset4 = offset_base + quads_swizzle[4];
+        offset5 = offset_base + quads_swizzle[5];
     } else {
         offset_base = primitive * 2u;
-        swizzle = quad_strip_swizzle;
+        offset0 = offset_base + quad_strip_swizzle[0];
+        offset1 = offset_base + quad_strip_swizzle[1];
+        offset2 = offset_base + quad_strip_swizzle[2];
+        offset3 = offset_base + quad_strip_swizzle[3];
+        offset4 = offset_base + quad_strip_swizzle[4];
+        offset5 = offset_base + quad_strip_swizzle[5];
     }
 
-    // 循环展开（6次，消除循环开销）
-    uint offset0 = offset_base + swizzle[0];
-    uint offset1 = offset_base + swizzle[1];
-    uint offset2 = offset_base + swizzle[2];
-    uint offset3 = offset_base + swizzle[3];
-    uint offset4 = offset_base + swizzle[4];
-    uint offset5 = offset_base + swizzle[5];
-
-    // 手动提取索引（使用移位掩码替代 bitfieldExtract，避免驱动 bug）
     uint idx0 = (input_indexes[offset0 >> flipped_shift] >> ((offset0 & mask) * index_size)) & ((1u << index_size) - 1u);
     uint idx1 = (input_indexes[offset1 >> flipped_shift] >> ((offset1 & mask) * index_size)) & ((1u << index_size) - 1u);
     uint idx2 = (input_indexes[offset2 >> flipped_shift] >> ((offset2 & mask) * index_size)) & ((1u << index_size) - 1u);
@@ -68,7 +59,6 @@ void main() {
     uint idx4 = (input_indexes[offset4 >> flipped_shift] >> ((offset4 & mask) * index_size)) & ((1u << index_size) - 1u);
     uint idx5 = (input_indexes[offset5 >> flipped_shift] >> ((offset5 & mask) * index_size)) & ((1u << index_size) - 1u);
 
-    // 写入输出缓冲区，添加基础顶点偏移
     output_indexes[out_base + 0] = idx0 + base_vertex;
     output_indexes[out_base + 1] = idx1 + base_vertex;
     output_indexes[out_base + 2] = idx2 + base_vertex;
