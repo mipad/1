@@ -1,13 +1,12 @@
-// QuadIndexed.comp - 针对 Mali GPU 性能优化
 #version 460 core
 
-layout (local_size_x = 128) in;
+layout (local_size_x = 256) in;  // 可调整
 
 layout (std140, set = 0, binding = 0) uniform Params {
-    uint base_vertex;   // 基础顶点偏移
-    uint index_shift;   // 索引位宽偏移：0=8位, 1=16位, 2=32位
-    uint is_strip;      // 图元类型：0=Quads, 1=QuadStrip
-    uint _pad;          // 填充到 16 字节
+    uint base_vertex;
+    uint index_shift;
+    uint is_strip;
+    uint _pad;
 };
 
 layout (std430, set = 0, binding = 1) readonly buffer InputBuffer {
@@ -31,38 +30,15 @@ void main() {
     uint flipped_shift = 2u - index_shift;
     uint mask = (1u << flipped_shift) - 1u;
 
-    uint offset_base;
-    uint offset0, offset1, offset2, offset3, offset4, offset5;
+    uint offset_base = is_strip == 0u ? primitive * 4u : primitive * 2u;
+    const uint* swizzle = is_strip == 0u ? quads_swizzle : quad_strip_swizzle;
 
-    if (is_strip == 0u) {
-        offset_base = primitive * 4u;
-        offset0 = offset_base + quads_swizzle[0];
-        offset1 = offset_base + quads_swizzle[1];
-        offset2 = offset_base + quads_swizzle[2];
-        offset3 = offset_base + quads_swizzle[3];
-        offset4 = offset_base + quads_swizzle[4];
-        offset5 = offset_base + quads_swizzle[5];
-    } else {
-        offset_base = primitive * 2u;
-        offset0 = offset_base + quad_strip_swizzle[0];
-        offset1 = offset_base + quad_strip_swizzle[1];
-        offset2 = offset_base + quad_strip_swizzle[2];
-        offset3 = offset_base + quad_strip_swizzle[3];
-        offset4 = offset_base + quad_strip_swizzle[4];
-        offset5 = offset_base + quad_strip_swizzle[5];
+    for (uint vertex = 0; vertex < 6; ++vertex) {
+        uint offset = offset_base + swizzle[vertex];
+        uint int_offset = offset >> flipped_shift;
+        uint bit_offset = (offset & mask) * index_size;
+        uint packed_input = input_indexes[int_offset];
+        uint index = bitfieldExtract(packed_input, int(bit_offset), int(index_size));
+        output_indexes[out_base + vertex] = index + base_vertex;
     }
-
-    uint idx0 = (input_indexes[offset0 >> flipped_shift] >> ((offset0 & mask) * index_size)) & ((1u << index_size) - 1u);
-    uint idx1 = (input_indexes[offset1 >> flipped_shift] >> ((offset1 & mask) * index_size)) & ((1u << index_size) - 1u);
-    uint idx2 = (input_indexes[offset2 >> flipped_shift] >> ((offset2 & mask) * index_size)) & ((1u << index_size) - 1u);
-    uint idx3 = (input_indexes[offset3 >> flipped_shift] >> ((offset3 & mask) * index_size)) & ((1u << index_size) - 1u);
-    uint idx4 = (input_indexes[offset4 >> flipped_shift] >> ((offset4 & mask) * index_size)) & ((1u << index_size) - 1u);
-    uint idx5 = (input_indexes[offset5 >> flipped_shift] >> ((offset5 & mask) * index_size)) & ((1u << index_size) - 1u);
-
-    output_indexes[out_base + 0] = idx0 + base_vertex;
-    output_indexes[out_base + 1] = idx1 + base_vertex;
-    output_indexes[out_base + 2] = idx2 + base_vertex;
-    output_indexes[out_base + 3] = idx3 + base_vertex;
-    output_indexes[out_base + 4] = idx4 + base_vertex;
-    output_indexes[out_base + 5] = idx5 + base_vertex;
 }
