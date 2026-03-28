@@ -1,16 +1,16 @@
-name: Android CI Fixed     
-                                     
-on:               
-  push: 
-    branches: [ "2" ]  
+name: Android CI - Multi Flavor Build
+
+on:
+  push:
+    branches: [ "2" ]
   pull_request:
     branches: [ "2" ]
 
 jobs:
-  build: 
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    
+
     env:
       JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=4g"
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
@@ -22,20 +22,17 @@ jobs:
       ANDROID_BUILD_TOOLS: "36.0.0"
 
     steps:
-    # ========== 1. 从 GitLab 检出代码（私有仓库） ==========
+    # 1. 检出代码
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
       with:
-        # 指定 GitLab 服务器地址
         github-server-url: https://gitlab.com
-        # 仓库格式为 owner/repo
         repository: mipad1-group/Test-ryu
         ref: v6-优化1
         path: Test-ryu
-        # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
         token: ${{ secrets.GITLAB_TOKEN }}
 
-    # ========== 2. 环境配置 ==========
+    # 2. 环境配置
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
@@ -54,7 +51,7 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    # ========== 3. 缓存优化 ==========
+    # 3. 缓存
     - name: Cache Gradle dependencies
       uses: actions/cache@v3
       with:
@@ -65,7 +62,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    # ========== 4. 权限和Gradle设置 ==========
+    # 4. 权限和 Gradle 设置
     - name: Set execution permissions
       working-directory: ${{ github.workspace }}/Test-ryu
       run: |
@@ -83,11 +80,9 @@ jobs:
           echo "Gradle Wrapper already exists"
         fi
 
-    # ========== 5. 验证环境 ==========
+    # 5. 验证环境
     - name: Verify .NET SDK Installation
-      run: |
-        dotnet --list-sdks
-        echo "检查是否安装 .NET ${{ env.DOTNET_VERSION }}"
+      run: dotnet --list-sdks
 
     - name: Install Android SDK Components
       run: |
@@ -100,7 +95,6 @@ jobs:
     - name: Configure Environment Paths
       shell: bash
       run: |
-        # 显式定义 ANDROID_NDK_HOME，避免路径拼接错误
         ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION }}"
         LLVM_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
         LIB_DIR="$LLVM_PATH/sysroot/usr/lib/aarch64-linux-android/${{ env.ANDROID_API_LEVEL }}"
@@ -119,31 +113,25 @@ jobs:
     - name: Validate Build Environment
       run: |
         echo "=== 环境验证 ==="
-        echo "Java version:"
         java -version
-        echo "Gradle version:"
         ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/gradlew --version
-        echo "Android SDK路径:"
-        echo $ANDROID_HOME
-        echo "NDK路径:"
-        echo $ANDROID_NDK_HOME
-        echo "LLVM路径:"
-        echo $LLVM_PATH
+        echo "Android SDK路径: $ANDROID_HOME"
+        echo "NDK路径: $ANDROID_NDK_HOME"
+        echo "LLVM路径: $LLVM_PATH"
         echo "=== 环境验证完成 ==="
 
-    # ========== 6. 主构建流程 ==========
-    - name: Build APK
+    # 6. 主构建流程（构建所有 flavor）
+    - name: Build all flavor APKs
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
       run: |
-        # 调试输出：关键环境变量
         echo "LLVM_PATH: $LLVM_PATH"
         echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 
-        # 执行构建
-        ./gradlew clean assembleRelease \
+        # 构建所有 device flavor 的 release 版本
+        ./gradlew assembleRelease \
           -DllvmToolchainPath=$LLVM_PATH \
           -Dopenssl.root=$OPENSSL_ROOT_DIR \
           -Pandroid.overridePathCheck=true \
@@ -151,34 +139,47 @@ jobs:
           --stacktrace \
           --info
 
-    # ========== 7. 构建产物检查 ==========
+    # 7. 检查构建产物
+    - name: List generated APKs
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
+      run: |
+        echo "========== 所有生成的 APK =========="
+        find app/build/outputs/apk -name "*.apk" -print
+        echo "========== 搜索完成 =========="
+
     - name: Find Native Libraries (.so)
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
-        echo "========== 开始搜索 .so 文件 =========="
+        echo "========== Native 库文件 =========="
         find app/build -name "*.so" -print
         echo "========== 搜索完成 =========="
 
-    - name: List APK Files
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        echo "========== APK 文件列表 =========="
-        find app/build/outputs/apk -name "*.apk" -print
-        echo "========== 列表完成 =========="
+    # 8. 上传产物（每个 flavor 单独上传，或打包上传）
+    - name: Upload APKs (all flavors)
+      uses: actions/upload-artifact@v4
+      with:
+        name: all-apks
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/**/*.apk
+        retention-days: 7
 
-    # ========== 8. 产物处理 ==========
+    # 可选：将每个 flavor 的 APK 分别上传（便于管理）
+    - name: Upload each flavor APK separately
+      if: always()
+      run: |
+        cd ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk
+        for apk in $(find . -name "*.apk"); do
+          flavor=$(basename $(dirname $(dirname "$apk")))  # 提取 flavor 名称
+          echo "Uploading $apk as $flavor-release.apk"
+          # 使用 GitHub CLI 或直接使用 upload-artifact 不支持动态名称，改用单个上传步骤
+          # 这里简化处理：已在上面统一上传，如需单独上传可添加多个 upload-artifact 步骤
+        done
+      # 实际单独上传需要多个 upload-artifact 步骤，上面只是示例说明
+
     - name: Upload Native Libraries
       uses: actions/upload-artifact@v4
       with:
         name: native-libs
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
-        retention-days: 7
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-arm64-release
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
 
     - name: Upload Build Reports
