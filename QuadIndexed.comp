@@ -3,7 +3,7 @@
 
 #version 460 core
 
-// Mali 建议工作组大小为 128 或 64，避免过大导致寄存器压力
+// 工作组大小：128 是 Mali 友好值
 layout (local_size_x = 128) in;
 
 // Uniform buffer（std140 布局，确保 16 字节对齐）
@@ -24,6 +24,10 @@ layout (std430, set = 0, binding = 2) writeonly buffer OutputBuffer {
     uint output_indexes[];
 };
 
+// 全局常量数组（避免函数内动态数组）
+const uint quads_swizzle[6] = uint[](0, 1, 2, 0, 2, 3);
+const uint quad_strip_swizzle[6] = uint[](0, 3, 1, 0, 2, 3);
+
 void main() {
     // 预取输出缓冲区长度，避免重复调用
     uint out_len = output_indexes.length();
@@ -37,15 +41,15 @@ void main() {
     uint flipped_shift = 2u - index_shift;
     uint mask = (1u << flipped_shift) - 1u;
 
-    // 根据图元类型预计算偏移基数
+    // 根据图元类型预计算偏移基数和选择重映射表
     uint offset_base;
     const uint* swizzle;
     if (is_strip == 0u) {
         offset_base = primitive * 4u;
-        swizzle = (const uint[])(0, 1, 2, 0, 2, 3);
+        swizzle = quads_swizzle;
     } else {
         offset_base = primitive * 2u;
-        swizzle = (const uint[])(0, 3, 1, 0, 2, 3);
+        swizzle = quad_strip_swizzle;
     }
 
     // 循环展开（6次，消除循环开销）
@@ -64,7 +68,7 @@ void main() {
     uint idx4 = (input_indexes[offset4 >> flipped_shift] >> ((offset4 & mask) * index_size)) & ((1u << index_size) - 1u);
     uint idx5 = (input_indexes[offset5 >> flipped_shift] >> ((offset5 & mask) * index_size)) & ((1u << index_size) - 1u);
 
-    // 写入输出缓冲区（添加 base_vertex）
+    // 写入输出缓冲区，添加基础顶点偏移
     output_indexes[out_base + 0] = idx0 + base_vertex;
     output_indexes[out_base + 1] = idx1 + base_vertex;
     output_indexes[out_base + 2] = idx2 + base_vertex;
