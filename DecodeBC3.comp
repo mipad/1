@@ -1,12 +1,18 @@
 #version 450
-
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 2, rgba8) uniform image2DArray outputImage;
 
 void main() {
-    uint x = gl_GlobalInvocationID.x;
-    uint y = gl_GlobalInvocationID.y;
-    uint z = gl_GlobalInvocationID.z;
-    imageStore(outputImage, ivec3(x, y, z), vec4(0.0, 1.0, 0.0, 1.0));
+    uint blockX = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    uint blockY = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
+    uint blockZ = gl_WorkGroupID.z;
+
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            uint texX = blockX * 4 + x;
+            uint texY = blockY * 4 + y;
+            imageStore(outputImage, ivec3(texX, texY, blockZ), vec4(0.0, 1.0, 0.0, 1.0));
+        }
+    }
 }
