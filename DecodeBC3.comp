@@ -1,13 +1,9 @@
 #version 450
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-// 输入压缩数据（此处未使用）
 layout(set = 0, binding = 1, std430) buffer InputData { uint compressed[]; };
-
-// 输出缓冲区：RGBA 数据，每个像素一个 uint（0xAARRGGBB 或 0xRRGGBBAA，这里按 RGBA 顺序）
 layout(set = 0, binding = 2, std430) buffer OutputBuffer { uint rgba[]; };
-
-uniform Params {
+layout(set = 0, binding = 0, std140) uniform Params {
     uint width;
     uint height;
     uint depth;
@@ -24,8 +20,9 @@ void main() {
             uint texY = blockY * 4 + y;
             if (texX < params.width && texY < params.height) {
                 uint index = texY * params.width + texX;
-                // 写入纯绿色（R=0, G=255, B=0, A=255）
-                rgba[index] = 0xFF00FF00; // 注意：字节序需与目标格式匹配，若图像格式为 R8G8B8A8_UNORM，则 0xFF00FF00 表示 A=0xFF, R=0x00, G=0xFF, B=0x00
+                // 写入纯绿色，根据目标格式可能需要调整字节序
+                rgba[index] = 0xFF00FF00; // RGBA: A=0xFF, R=0x00, G=0xFF, B=0x00
+                // 如果显示异常，可尝试 0x00FF00FF
             }
         }
     }
