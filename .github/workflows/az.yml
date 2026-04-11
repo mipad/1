@@ -2,9 +2,9 @@ name: Android CI Fixed
                                                                                                                                                                                                                                                                                                                                      
 on:                                                                          
   push:   
-    branches: [ "v9" ]  
+    branches: [ "v8" ]  
   pull_request: 
-    branches: [ "v9" ]
+    branches: [ "v8" ]
 
 jobs: 
   build:
