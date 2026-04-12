@@ -30,7 +30,7 @@ jobs:
         github-server-url: https://gitlab.com
         # 仓库格式为 owner/repo
         repository: mipad1-group/Test-ryu
-        ref: v9-异步管线
+        ref: v10稳定-mali
         
         path: Test-ryu
         # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
