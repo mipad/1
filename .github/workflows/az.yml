@@ -1,7 +1,7 @@
 name: Android CI Fixe d    
                                  
 on:                  
-  push: 
+  push:  
     branches: [ "2" ]  
   pull_request:
     branches: [ "2" ]
