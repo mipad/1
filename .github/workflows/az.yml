@@ -16,11 +16,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: mipad/1      # 请替换为您的实际仓库
+          repository: mipad/1      # 请替换为您的实际仓库，例如 "YourName/YourRepo"
           ref: glsl
           path: shaders
 
-      # ===== 新增步骤：将 .spv.1 重命名为 .spv =====
+      # 将 .spv.1 重命名为 .spv
       - name: Rename .spv.1 files to .spv
         run: |
           echo "🔍 Searching for .spv.1 files..."
@@ -30,13 +30,11 @@ jobs:
             mv "$file" "$newname"
           done
           echo "✅ Rename completed."
-      # =========================================
 
       - name: Install spirv-cross
         run: |
           sudo apt-get update
           sudo apt-get install -y spirv-cross
-          spirv-cross --version
 
       - name: Create output directory
         run: mkdir -p glsl_output
