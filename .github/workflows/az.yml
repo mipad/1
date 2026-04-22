@@ -2,10 +2,10 @@ name: Disassemble SPIR-V Shaders
 
 on:
   push:
-    branches: [ "glsl" ]           # 当推送到 spv 分支时触发
+    branches: [ "glsl" ]
   pull_request:
     branches: [ "glsl" ]
-  workflow_dispatch:               # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   disassemble-spirv:
@@ -16,9 +16,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: mipad/1      # 替换为您的仓库（用户名/仓库名）
-          ref: glsl                 # 分支名
+          repository: mipad/1      # 请替换为您的实际仓库
+          ref: glsl
           path: shaders
+
+      # ===== 新增步骤：将 .spv.1 重命名为 .spv =====
+      - name: Rename .spv.1 files to .spv
+        run: |
+          echo "🔍 Searching for .spv.1 files..."
+          find shaders -type f -name "*.spv.1" -print0 | while IFS= read -r -d '' file; do
+            newname="${file%.spv.1}.spv"
+            echo "📝 Renaming $file -> $newname"
+            mv "$file" "$newname"
+          done
+          echo "✅ Rename completed."
+      # =========================================
 
       - name: Install spirv-cross
         run: |
