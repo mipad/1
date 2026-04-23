@@ -25,7 +25,7 @@ jobs:
     # ========== 1. 从 GitLab 检出代码（私有仓库） ==========
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
-      with:
+      with: 
         # 指定 GitLab 服务器地址
         github-server-url: https://gitlab.com
         # 仓库格式为 owner/repo
