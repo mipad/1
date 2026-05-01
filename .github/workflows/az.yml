@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    
+     
     env:
       JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=4g"
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
