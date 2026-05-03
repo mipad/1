@@ -1,33 +1,62 @@
 name: Analyze SPIR-V from crash log
 
 on:
-  workflow_dispatch:   # 允许在 GitHub 网页上手动点击触发
+  workflow_dispatch:
   push:
     paths:
-      - 'crash_log.txt'   # 当你更新日志文件时自动触发
+      - 'crash_log.txt'
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    container:
-      image: armswdev/mali-offline-compiler:latest   # ARM 官方 Mali 编译器容器
     steps:
+      # 1. 检出代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. 从 crash_log.txt 中提取 Base64 字符串并解码为 .spv 文件
       - name: Extract and decode SPIR-V
         run: |
           echo "Extracting SPIR-V chunks..."
           grep -E "SPV_CHUNK_" crash_log.txt | sed 's/.*SPV_CHUNK_[0-9]*://' | tr -d '\n' > spv_base64.txt
-          base64 -d spv_base64.txt > problem_frag.spv
-          echo "Decoded SPIR-V size: $(wc -c < problem_frag.spv) bytes"
+          if [ -s spv_base64.txt ]; then
+            base64 -d spv_base64.txt > problem_frag.spv
+            echo "Decoded SPIR-V size: $(wc -c < problem_frag.spv) bytes"
+          else
+            echo "No SPV_CHUNK_ found in crash_log.txt. Please check log file."
+            exit 1
+          fi
 
+      # 3. 下载并安装 Arm Performance Studio
+      - name: Install Mali Offline Compiler
+        run: |
+          echo "Downloading Arm Performance Studio..."
+          wget -q https://developer.arm.com/-/media/Files/downloads/arm-performance-studio/2025-04/Arm_Performance_Studio_2025.4_Ubuntu_22.04.deb \
+               -O arm-studio.deb
+          if [ $? -ne 0 ]; then
+            echo "Download failed. Please check URL or network."
+            exit 1
+          fi
+          sudo apt-get update
+          sudo apt-get install -y ./arm-studio.deb
+          
+          # 验证安装
+          which malioc || (echo "malioc not found in PATH after installation." && exit 1)
+
+      # 4. 使用 malioc 分析着色器
       - name: Run Mali Offline Compiler
         run: |
           echo "Running malioc..."
           malioc -c Valhall problem_frag.spv > malioc_output.txt 2>&1
+          if [ $? -ne 0 ]; then
+            echo "malioc analysis failed. See malioc_output.txt for details."
+            cat malioc_output.txt
+            exit 1
+          fi
+          echo "Success! Analysis complete."
           cat malioc_output.txt
 
+      # 5. 上传分析结果
       - name: Upload analysis results
         uses: actions/upload-artifact@v4
         with:
