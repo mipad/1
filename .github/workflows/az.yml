@@ -1,4 +1,4 @@
-name: Analyze SPIR-V from crash log
+name: Analyze SPIR-V (with fallback)
 
 on:
   workflow_dispatch:
@@ -10,11 +10,9 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 从 crash_log.txt 中提取 Base64 字符串并解码为 .spv 文件
       - name: Extract and decode SPIR-V
         run: |
           echo "Extracting SPIR-V chunks..."
@@ -27,40 +25,34 @@ jobs:
             exit 1
           fi
 
-      # 3. 下载并安装 Arm Performance Studio
-      - name: Install Mali Offline Compiler
+      # ---------- 尝试 A：使用公共的 malioc Docker 镜像 ----------
+      - name: Try malioc via Docker
+        id: malioc_docker
+        continue-on-error: true   # 失败不中断，走备用方案
         run: |
-          echo "Downloading Arm Performance Studio..."
-          wget -q https://developer.arm.com/-/media/Files/downloads/arm-performance-studio/2025-04/Arm_Performance_Studio_2025.4_Ubuntu_22.04.deb \
-               -O arm-studio.deb
-          if [ $? -ne 0 ]; then
-            echo "Download failed. Please check URL or network."
-            exit 1
-          fi
-          sudo apt-get update
-          sudo apt-get install -y ./arm-studio.deb
-          
-          # 验证安装
-          which malioc || (echo "malioc not found in PATH after installation." && exit 1)
-
-      # 4. 使用 malioc 分析着色器
-      - name: Run Mali Offline Compiler
-        run: |
-          echo "Running malioc..."
-          malioc -c Valhall problem_frag.spv > malioc_output.txt 2>&1
-          if [ $? -ne 0 ]; then
-            echo "malioc analysis failed. See malioc_output.txt for details."
-            cat malioc_output.txt
-            exit 1
-          fi
-          echo "Success! Analysis complete."
+          docker pull ryleck/mali-offline-compiler:latest
+          docker run --rm -v $PWD:/work ryleck/mali-offline-compiler:latest malioc -c Valhall /work/problem_frag.spv > malioc_output.txt 2>&1
           cat malioc_output.txt
 
-      # 5. 上传分析结果
+      # ---------- 尝试 B：如果 Docker 镜像不可用，则用 spirv-dis 分析 ----------
+      - name: Fallback to spirv-dis
+        if: steps.malioc_docker.outcome == 'failure'
+        run: |
+          echo "Malioc not available, performing basic SPIR-V analysis..."
+          sudo apt-get update && sudo apt-get install -y spirv-tools
+          spirv-dis problem_frag.spv > problem_frag.dis
+          echo "===== SPIR-V Disassembly (first 200 lines) =====" 
+          head -n 200 problem_frag.dis
+          echo ""
+          echo "===== Full disassembly saved to problem_frag.dis ====="
+
+      # ---------- 上传结果 ----------
       - name: Upload analysis results
         uses: actions/upload-artifact@v4
         with:
-          name: malioc-analysis
+          name: shader-analysis
           path: |
             problem_frag.spv
-            malioc_output.txt
+            problem_frag.dis          # 仅在 fallback 时存在
+            malioc_output.txt         # 仅在 malioc 成功时存在
+            spv_base64.txt            # 方便核对提取结果
