@@ -100,6 +100,8 @@ void main()
     int _119 = _77(_113, _115, _117);
     float _121 = texelFetch(fp_t_tcb_A, ivec2(_111, _119), 0).x;
     bool _125 = _121 == 0.0;
+    // 修复：添加缺失的 _127 声明
+    float _127 = _85;
     if (_125)
     {
         discard;
