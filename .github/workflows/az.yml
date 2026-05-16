@@ -27,13 +27,12 @@ jobs:
       - name: Create output directory
         run: mkdir -p spirv_output
 
-      - name: Compile fragment shaders (.frag)
+      - name: Compile shaders to SPIR-V
         run: |
-          # 递归查找所有 .frag 文件
-          find 1 -type f -name "*.frag" | while read file; do
-            # 获取相对路径并保持子目录结构
+          # 递归查找所有 .frag 和 .vert 文件
+          find 1 -type f \( -name "*.frag" -o -name "*.vert" \) | while read file; do
             rel_path="${file#1/}"
-            base="${rel_path%.frag}"
+            base="${rel_path%.*}"              # 去掉扩展名 .frag 或 .vert
             out_dir="spirv_output/$(dirname "$rel_path")"
             mkdir -p "$out_dir"
             echo "Compiling $file -> $out_dir/${base}.spv"
