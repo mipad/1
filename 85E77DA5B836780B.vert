@@ -45,8 +45,7 @@ layout(location = 1) in vec4 _63;
 
 void main()
 {
-    // ===== 原代码中的 gl_PointSize 和 gl_Position 硬编码清零已删除 =====
-
+    // 已删除：gl_PointSize = 1.0; gl_Position.x/y/z/w = 0.0/1.0;
     float _75 = _57.x;
     float _77 = _59.x;
     float _79 = _57.y;
@@ -176,14 +175,14 @@ void main()
     float _245 = fma(_85, vp_c3_1._m0[21].x, _231);
     _24.z = _243;
     float _247 = fma(_151, vp_c3_1._m0[20].z, _233);
-    precise float _923 = _137 * vp_c3_1._m0[23].z;
-    float _253 = _923;
+    float _249 = fma(_125, vp_c3_1._m0[22].x, _235);
+    _28.x = _245;
+    float _251 = fma(_85, vp_c3_1._m0[10].w, _239);
+    float _253 = _137 * vp_c3_1._m0[23].z;
     _24.w = _251;
     float _255 = fma(_151, vp_c3_1._m0[20].w, _241);
-    precise float _936 = _137 * vp_c3_1._m0[23].w;
-    float _257 = _936;
-    precise float _940 = _137 * vp_c3_1._m0[23].y;
-    float _259 = _940;
+    float _257 = _137 * vp_c3_1._m0[23].w;
+    float _259 = _137 * vp_c3_1._m0[23].y;
     float _261 = fma(_125, vp_c3_1._m0[22].z, _253);
     float _263 = fma(_85, vp_c3_1._m0[21].z, _247);
     float _265 = fma(_207, vp_c3_1._m0[0].z, _223);
@@ -318,6 +317,6 @@ void main()
     _40.y = _419;
     _36.z = _427;
 
-    // ===== 修复：将计算得到的正确裁剪空间坐标赋值给 gl_Position =====
+    // 修复：将计算出的正确的裁剪空间坐标赋值给 gl_Position
     gl_Position = vec4(_215, _199, _243, _251);
 }
