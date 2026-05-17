@@ -1,5 +1,15 @@
 #version 450
 
+// ========= 调试模式选择 =========
+// 0: 原始安全加固输出
+// 1: 输出纹理 fp_t_tcb_8
+// 2: 输出纹理 fp_t_tcb_10
+// 3: 输出纹理 fp_t_tcb_A
+// 4: 输出变量 _499 (clamp 后的值)
+// 5: 输出最终颜色的红色通道
+#define DEBUG_MODE 1
+// =================================
+
 // ========= 安全数学函数宏 =========
 #define SAFE_SQRT(x)   sqrt(max(x, 0.0))
 #define SAFE_INVSQRT(x) inversesqrt(max(x, 1e-7))
@@ -3628,14 +3638,22 @@ void main()
     _75.z = _5267;
     _75.w = _5261;
 
-    // ========= NaN 检测与调试 =========
-    // 先检测 NaN
-    if (any(isnan(_75))) {
-        _75 = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    // 再检测 Inf
-    if (any(isinf(_75))) {
-        _75 = vec4(0.0, 1.0, 0.0, 1.0);
-    }
-    // =================================
-    }
+    // ========= 调试模式 =========
+#if DEBUG_MODE == 1
+    // 输出纹理 fp_t_tcb_8
+    _75 = texture(fp_t_tcb_8, vec2(_82, _84));
+#elif DEBUG_MODE == 2
+    // 输出纹理 fp_t_tcb_10 (xyw -> xyz)
+    _75 = vec4(texture(fp_t_tcb_10, vec2(_82, _84)).xyw, 1.0);
+#elif DEBUG_MODE == 3
+    // 输出纹理 fp_t_tcb_A
+    _75 = vec4(texture(fp_t_tcb_A, vec2(_82, _84)).xyz, 1.0);
+#elif DEBUG_MODE == 4
+    // 输出变量 _499
+    _75 = vec4(_499, 0.0, 0.0, 1.0);
+#elif DEBUG_MODE == 5
+    // 输出最终颜色的红色通道
+    _75 = vec4(_75.r, 0.0, 0.0, 1.0);
+#endif
+    // ===========================
+}
