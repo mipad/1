@@ -5,9 +5,9 @@
 // 1: 输出纹理 fp_t_tcb_8
 // 2: 输出纹理 fp_t_tcb_10
 // 3: 输出纹理 fp_t_tcb_A
-// 4: 输出变量 _499 (clamp 后的值)
+// 4: 输出变量 _499
 // 5: 输出最终颜色的红色通道
-#define DEBUG_MODE 2
+#define DEBUG_MODE 0
 // =================================
 
 // ========= 安全数学函数宏 =========
@@ -71,18 +71,24 @@ void main()
     float _84 = _69[7].w;
     float _86 = _69[7].x;
     float _88 = _69[7].y;
-    vec4 _91 = texture(fp_t_tcb_8, vec2(_82, _84)).xyzw;
+
+    // ========= 纹理坐标钳制 =========
+    vec2 coord_7 = clamp(vec2(_82, _84), 0.0, 1.0);
+    vec2 coord_8 = clamp(vec2(_86, _88), 0.0, 1.0);
+    // =================================
+
+    vec4 _91 = texture(fp_t_tcb_8, coord_7).xyzw;
     float _93 = _91.x;
     float _95 = _91.y;
     float _97 = _91.z;
     float _99 = _91.w;
     uint _102 = packHalf2x16(vec2(_93, _95));
     uint _104 = packHalf2x16(vec2(_97, _99));
-    vec3 _108 = texture(fp_t_tcb_10, vec2(_82, _84)).xyw;
+    vec3 _108 = texture(fp_t_tcb_10, coord_7).xyw;
     float _110 = _108.x;
     float _112 = _108.y;
     float _114 = _108.z;
-    vec3 _116 = texture(fp_t_tcb_12, vec2(_86, _88)).xyz;
+    vec3 _116 = texture(fp_t_tcb_12, coord_8).xyz;
     float _118 = _116.x;
     float _120 = _116.y;
     float _122 = _116.z;
@@ -93,7 +99,7 @@ void main()
     {
         discard;
     }
-    vec3 _132 = texture(fp_t_tcb_A, vec2(_82, _84)).xyz;
+    vec3 _132 = texture(fp_t_tcb_A, coord_7).xyz;
     float _134 = _132.x;
     float _136 = _132.y;
     float _138 = _132.z;
@@ -3641,13 +3647,13 @@ void main()
     // ========= 调试模式 =========
 #if DEBUG_MODE == 1
     // 输出纹理 fp_t_tcb_8
-    _75 = texture(fp_t_tcb_8, vec2(_82, _84));
+    _75 = texture(fp_t_tcb_8, coord_7);
 #elif DEBUG_MODE == 2
     // 输出纹理 fp_t_tcb_10 (xyw -> xyz)
-    _75 = vec4(texture(fp_t_tcb_10, vec2(_82, _84)).xyw, 1.0);
+    _75 = vec4(texture(fp_t_tcb_10, coord_7).xyw, 1.0);
 #elif DEBUG_MODE == 3
     // 输出纹理 fp_t_tcb_A
-    _75 = vec4(texture(fp_t_tcb_A, vec2(_82, _84)).xyz, 1.0);
+    _75 = vec4(texture(fp_t_tcb_A, coord_7).xyz, 1.0);
 #elif DEBUG_MODE == 4
     // 输出变量 _499
     _75 = vec4(_499, 0.0, 0.0, 1.0);
