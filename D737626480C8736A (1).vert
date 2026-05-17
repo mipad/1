@@ -65,8 +65,8 @@ void main()
     _50 = vec4(0.0);
     _52 = vec4(0.0);
 
-    // 强制 false
-    bool _84 = false;
+    // 强制 true
+    bool _84 = true;
 
     float _87 = _55.x;
     float _89 = _57.y;
@@ -288,12 +288,17 @@ void main()
 
     int _392;
     int _394;
-    // 强制使用 else 分支（稳定路径）
-    float _398 = fma(_295, vp_c3_1._m0[46].x, vp_c3_1._m0[50].x);
-    float _400 = fma(_297, vp_c3_1._m0[46].y, vp_c3_1._m0[50].y);
-    _392 = floatBitsToInt(_398);
-    _394 = floatBitsToInt(_400);
-    _396 = false;
+    // 强制使用 true 分支
+    float _1109 = _199 + 0.5;
+    float _381 = _1109;
+    float _383 = _67.w;
+    float _385 = fma(_381, vp_c3_1._m0[49].w, vp_c3_1._m0[50].y);
+    float _1121 = _87 + _383;
+    float _387 = _1121;
+    float _389 = fma(_387, vp_c3_1._m0[49].z, vp_c3_1._m0[50].x);
+    _392 = floatBitsToInt(_389);
+    _394 = floatBitsToInt(_385);
+    _396 = true;
 
     int _402 = _392;
     int _404 = _394;
