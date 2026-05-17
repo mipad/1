@@ -66,6 +66,7 @@ void main()
     _52 = vec4(0.0);
 
     bool _84 = 0.0 < vp_c3_1._m0[49].z;
+    // 第1组：保持 mediump
     mediump float _87 = _55.x;
     mediump float _89 = _57.y;
     mediump float _91 = _57.x;
@@ -102,69 +103,54 @@ void main()
     mediump float _135 = _67.z;
     precise mediump float _677 = _101 * _97;
     mediump float _137 = _677;
-    mediump float _139 = fma(_121, 3.0, _117);
-    precise mediump float _685 = _101 * _91;
-    mediump float _141 = _685;
-    precise mediump float _688 = _101 * _93;
-    mediump float _143 = _688;
-    mediump float _145 = fma(_133, 3.0, _129);
-    mediump float _147 = _65.y;
-    mediump float _149 = fma(_137, 3.0, _125);
-    precise mediump float _699 = _139 + _103;
-    mediump float _151 = _699;
-    precise mediump float _702 = _107 * _107;
-    mediump float _153 = _702;
-    precise mediump float _705 = _101 * _87;
-    mediump float _155 = _705;
-    precise mediump float _708 = _101 * _89;
-    mediump float _157 = _708;
-    precise mediump float _711 = _145 + _115;
-    mediump float _159 = _711;
-    precise mediump float _714 = _149 + _111;
-    mediump float _161 = _714;
-    precise mediump float _717 = _151 * _119;
-    mediump float _163 = _717;
-    mediump float _165 = fma(_123, _123, _153);
-    mediump float _167 = fma(_155, _97, _141);
-    mediump float _169 = fma(_155, _99, _143);
-    precise mediump float _732 = _159 * _107;
-    mediump float _171 = _732;
-    precise mediump float _735 = _161 * _161;
-    mediump float _173 = _735;
-    mediump float _175 = -_163;
-    mediump float _177 = fma(_159, _123, _175);
-    mediump float _179 = fma(_119, _119, _165);
-    mediump float _181 = _69.x;
-    precise mediump float _750 = _161 * _123;
-    mediump float _183 = _750;
-    mediump float _185 = inversesqrt(_179);
-    mediump float _187 = -_171;
-    mediump float _189 = fma(_161, _119, _187);
-    mediump float _191 = _65.z;
-    mediump float _193 = fma(_151, _151, _173);
-    precise mediump float _767 = _177 * _177;
-    mediump float _195 = _767;
-    mediump float _197 = fma(_87, _111, _167);
-    mediump float _199 = _55.y;
-    mediump float _201 = -_183;
-    mediump float _203 = fma(_151, _107, _201);
-    mediump float _205 = fma(_87, _115, _169);
-    mediump float _207 = fma(_159, _159, _193);
-    mediump float _209 = fma(_189, _189, _195);
-    mediump float _211 = inversesqrt(_207);
-    precise mediump float _796 = _87 + (-0.5);
-    mediump float _213 = _796;
-    mediump float _215 = -_107;
-    precise mediump float _801 = _185 * _215;
-    mediump float _217 = _801;
-    mediump float _219 = -_119;
-    precise mediump float _806 = _185 * _219;
-    mediump float _221 = _806;
-    mediump float _223 = -_123;
-    precise mediump float _811 = _185 * _223;
-    mediump float _225 = _811;
 
-    // ========== 第3组：恢复为 highp (去掉 mediump) ==========
+    // ========== 第2组：恢复 highp ==========
+    float _139 = fma(_121, 3.0, _117);
+    float _141 = _101 * _91;
+    float _143 = _101 * _93;
+    float _145 = fma(_133, 3.0, _129);
+    float _147 = _65.y;
+    float _149 = fma(_137, 3.0, _125);
+    float _151 = _139 + _103;
+    float _153 = _107 * _107;
+    float _155 = _101 * _87;
+    float _157 = _101 * _89;
+    float _159 = _145 + _115;
+    float _161 = _149 + _111;
+    float _163 = _151 * _119;
+    float _165 = fma(_123, _123, _153);
+    float _167 = fma(_155, _97, _141);
+    float _169 = fma(_155, _99, _143);
+    float _171 = _159 * _107;
+    float _173 = _161 * _161;
+    float _175 = -_163;
+    float _177 = fma(_159, _123, _175);
+    float _179 = fma(_119, _119, _165);
+    float _181 = _69.x;
+    float _183 = _161 * _123;
+    float _185 = inversesqrt(_179);
+    float _187 = -_171;
+    float _189 = fma(_161, _119, _187);
+    float _191 = _65.z;
+    float _193 = fma(_151, _151, _173);
+    float _195 = _177 * _177;
+    float _197 = fma(_87, _111, _167);
+    float _199 = _55.y;
+    float _201 = -_183;
+    float _203 = fma(_151, _107, _201);
+    float _205 = fma(_87, _115, _169);
+    float _207 = fma(_159, _159, _193);
+    float _209 = fma(_189, _189, _195);
+    float _211 = inversesqrt(_207);
+    float _213 = _87 + (-0.5);
+    float _215 = -_107;
+    float _217 = _185 * _215;
+    float _219 = -_119;
+    float _221 = _185 * _219;
+    float _223 = -_123;
+    float _225 = _185 * _223;
+
+    // ========== 第3组：保持 highp（来自版本C） ==========
     float _227 = fma(_203, _203, _209);
     float _229 = _69.z;
     float _231 = -vp_c3_1._m0[47].x;
@@ -200,7 +186,7 @@ void main()
     float _291 = _189 * _235;
     float _293 = _71.y;
 
-    // ========== 第4组：保持 mediump (与版本B相同) ==========
+    // ========== 第4组：保持 mediump ==========
     mediump float _295 = fma(_275, _249, _285);
     mediump float _297 = fma(_281, _249, _287);
     _24.x = _295;
