@@ -1,7 +1,5 @@
 #version 450
 
-precision highp float;  // 强制高精度
-
 layout(set = 0, binding = 0, std140) uniform support_buffer
 {
     uint _m0;
@@ -45,78 +43,36 @@ layout(location = 1) in vec4 _67;
 layout(location = 2) in vec4 _69;
 layout(location = 0) in vec4 _71;
 
+// 安全版本的 inversesqrt 和 sqrt
+float safe_inversesqrt(float x) {
+    return inversesqrt(max(x, 1e-10));
+}
+float safe_sqrt(float x) {
+    return sqrt(max(x, 0.0));
+}
+
 void main()
 {
     bool _396 = false;
     gl_PointSize = 1.0;
-    gl_Position.x = 0.0;
-    gl_Position.y = 0.0;
-    gl_Position.z = 0.0;
-    gl_Position.w = 1.0;
-    _22.x = 0.0;
-    _22.y = 0.0;
-    _22.z = 0.0;
-    _22.w = 1.0;
-    _24.x = 0.0;
-    _24.y = 0.0;
-    _24.z = 0.0;
-    _24.w = 1.0;
-    _26.x = 0.0;
-    _26.y = 0.0;
-    _26.z = 0.0;
-    _26.w = 1.0;
-    _28.x = 0.0;
-    _28.y = 0.0;
-    _28.z = 0.0;
-    _28.w = 1.0;
-    _30.x = 0.0;
-    _30.y = 0.0;
-    _30.z = 0.0;
-    _30.w = 1.0;
-    _32.x = 0.0;
-    _32.y = 0.0;
-    _32.z = 0.0;
-    _32.w = 1.0;
-    _34.x = 0.0;
-    _34.y = 0.0;
-    _34.z = 0.0;
-    _34.w = 1.0;
-    _36.x = 0.0;
-    _36.y = 0.0;
-    _36.z = 0.0;
-    _36.w = 1.0;
-    _38.x = 0.0;
-    _38.y = 0.0;
-    _38.z = 0.0;
-    _38.w = 1.0;
-    _40.x = 0.0;
-    _40.y = 0.0;
-    _40.z = 0.0;
-    _40.w = 1.0;
-    _42.x = 0.0;
-    _42.y = 0.0;
-    _42.z = 0.0;
-    _42.w = 1.0;
-    _44.x = 0.0;
-    _44.y = 0.0;
-    _44.z = 0.0;
-    _44.w = 1.0;
-    _46.x = 0.0;
-    _46.y = 0.0;
-    _46.z = 0.0;
-    _46.w = 1.0;
-    _48.x = 0.0;
-    _48.y = 0.0;
-    _48.z = 0.0;
-    _48.w = 1.0;
-    _50.x = 0.0;
-    _50.y = 0.0;
-    _50.z = 0.0;
-    _50.w = 1.0;
-    _52.x = 0.0;
-    _52.y = 0.0;
-    _52.z = 0.0;
-    _52.w = 1.0;
+    gl_Position = vec4(0.0);
+    _22 = vec4(0.0, 0.0, 0.0, 1.0);
+    _24 = vec4(0.0);
+    _26 = vec4(0.0);
+    _28 = vec4(0.0);
+    _30 = vec4(0.0);
+    _32 = vec4(0.0);
+    _34 = vec4(0.0);
+    _36 = vec4(0.0);
+    _38 = vec4(0.0);
+    _40 = vec4(0.0);
+    _42 = vec4(0.0);
+    _44 = vec4(0.0);
+    _46 = vec4(0.0);
+    _48 = vec4(0.0);
+    _50 = vec4(0.0);
+    _52 = vec4(0.0);
+
     bool _84 = 0.0 < vp_c3_1._m0[49].z;
     float _87 = _55.x;
     float _89 = _57.y;
@@ -189,7 +145,7 @@ void main()
     float _181 = _69.x;
     float _750 = _161 * _123;
     float _183 = _750;
-    float _185 = inversesqrt(_179);
+    float _185 = safe_inversesqrt(_179); // 原 inversesqrt(_179)
     float _187 = -_171;
     float _189 = fma(_161, _119, _187);
     float _191 = _65.z;
@@ -203,7 +159,7 @@ void main()
     float _205 = fma(_87, _115, _169);
     float _207 = fma(_159, _159, _193);
     float _209 = fma(_189, _189, _195);
-    float _211 = inversesqrt(_207);
+    float _211 = safe_inversesqrt(_207); // 原 inversesqrt(_207)
     float _796 = _87 + (-0.5);
     float _213 = _796;
     float _215 = -_107;
@@ -219,7 +175,7 @@ void main()
     float _229 = _69.z;
     float _231 = -vp_c3_1._m0[47].x;
     float _233 = fma(_213, _231, _127);
-    float _235 = inversesqrt(_227);
+    float _235 = safe_inversesqrt(_227); // 原 inversesqrt(_227)
     float _237 = -_131;
     float _239 = fma(_87, _237, _131);
     float _836 = _217 * _147;
@@ -313,7 +269,7 @@ void main()
     float _357 = _1040;
     float _1045 = _351 + vp_c3_1._m0[4].x;
     float _359 = _1045;
-    float _361 = sqrt(_357);
+    float _361 = safe_sqrt(_357); // 原 sqrt(_357)
     float _363 = fma(_297, vp_c3_1._m0[3].y, _353);
     _22.x = _359;
     float _365 = fma(_295, vp_c3_1._m0[1].z, _341);
@@ -335,6 +291,7 @@ void main()
     gl_Position.z = _375;
     _22.w = _379;
     gl_Position.w = _379;
+
     int _392;
     int _394;
     if (_84)
