@@ -1,36 +1,36 @@
-name: Android CI Fixe d       
-                                                                                                                                                                                                                                                                                                                                            
-on:                                                                                          
+name: Android CI Fixed      
+                                                                                                                                                               
+on:                                                        
   push:   
     branches: [ "3" ]  
   pull_request:
     branches: [ "3" ]
- 
-jobs: 
+
+jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-     
+    
     env:
       JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=4g"
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
       PROJECT_DIR: src/RyujinxAndroid
       ANDROID_NDK_VERSION: "29.0.14206865"
-      DOTNET_VERSION: "10.0.101"
+      DOTNET_VERSION: "10.0.201"
       ANDROID_API_LEVEL: "36"
-      GRADLE_VERSION: "9.5.0"
+      GRADLE_VERSION: "9.2.0"
       ANDROID_BUILD_TOOLS: "36.0.0"
 
     steps:
     # ========== 1. 从 GitLab 检出代码（私有仓库） ==========
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
-      with: 
+      with:
         # 指定 GitLab 服务器地址
         github-server-url: https://gitlab.com
         # 仓库格式为 owner/repo
         repository: mipad1-group/Test-ryu
-        ref:  稳10-续-管道2  
+        ref: 稳10-续-管道
         path: Test-ryu
         # 使用 GitHub Secrets 中存储的 GitLab Personal Access Token
         token: ${{ secrets.GITLAB_TOKEN }}
