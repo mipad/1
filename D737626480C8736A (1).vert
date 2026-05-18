@@ -118,47 +118,51 @@ void main()
 
     bool _84 = 0.0 < vp_c3_1._m0[49].z;
 
-    // ========== 子组1A：原始输入值，改为普通 float ==========
-    float _87 = _55.x;
-    float _89 = _57.y;
-    float _91 = _57.x;
-    float _93 = _57.z;
-    float _95 = _59.y;
-    float _97 = _59.x;
-    float _99 = _59.z;
-    float _103 = _61.y;
-    float _107 = _63.x;
-    float _111 = _61.x;
-    float _115 = _61.z;
-    float _119 = _63.z;
-    float _123 = _63.y;
+    // ========== 组 A1a：位置坐标相关，保持 precise mediump ==========
+    precise mediump float _87 = _55.x;
+    precise mediump float _89 = _57.y;
+    precise mediump float _91 = _57.x;
+    precise mediump float _93 = _57.z;
+    precise mediump float _95 = _59.y;
+    precise mediump float _97 = _59.x;
+    precise mediump float _99 = _59.z;
+    precise mediump float _103 = _61.y;
+    precise mediump float _107 = _63.x;
+    precise mediump float _111 = _61.x;
+    precise mediump float _115 = _61.z;
+    precise mediump float _119 = _63.z;
+    precise mediump float _123 = _63.y;
+
+    // ========== 组 A1b：矩阵/变换相关，改为普通 float ==========
     float _127 = _65.x;
+
+    // ========== 组 A2：其他属性，保持普通 float ==========
     float _131 = _67.y;
     float _135 = _67.z;
 
-    // ========== 子组1B：派生值，保持 precise mediump ==========
-    precise mediump float _634 = _87 * _87;
-    precise mediump float _101 = _634;
-    precise mediump float _639 = _89 * 2.0;
-    precise mediump float _105 = _639;
-    precise mediump float _643 = _91 * 2.0;
-    precise mediump float _109 = _643;
-    precise mediump float _647 = _93 * 2.0;
-    precise mediump float _113 = _647;
-    precise mediump float _652 = _105 * _87;
-    precise mediump float _117 = _652;
-    precise mediump float _657 = _101 * _95;
-    precise mediump float _121 = _657;
-    precise mediump float _662 = _109 * _87;
-    precise mediump float _125 = _662;
-    precise mediump float _667 = _113 * _87;
-    precise mediump float _129 = _667;
-    precise mediump float _672 = _101 * _99;
-    precise mediump float _133 = _672;
-    precise mediump float _677 = _101 * _97;
-    precise mediump float _137 = _677;
+    // 派生值使用普通 float（与版本 F 相同）
+    float _634 = _87 * _87;
+    float _101 = _634;
+    float _639 = _89 * 2.0;
+    float _105 = _639;
+    float _643 = _91 * 2.0;
+    float _109 = _643;
+    float _647 = _93 * 2.0;
+    float _113 = _647;
+    float _652 = _105 * _87;
+    float _117 = _652;
+    float _657 = _101 * _95;
+    float _121 = _657;
+    float _662 = _109 * _87;
+    float _125 = _662;
+    float _667 = _113 * _87;
+    float _129 = _667;
+    float _672 = _101 * _99;
+    float _133 = _672;
+    float _677 = _101 * _97;
+    float _137 = _677;
 
-    // 以下保持原始代码（无修改）
+    // 以下保持原始代码（与版本 F 相同）
     float _139 = fma(_121, 3.0, _117);
     precise float _685 = _101 * _91;
     float _141 = _685;

@@ -118,7 +118,7 @@ void main()
 
     bool _84 = 0.0 < vp_c3_1._m0[49].z;
 
-    // ========== 子组1A：原始输入值，保持 precise mediump ==========
+    // ========== 组 A1：位置相关变量，保持 precise mediump ==========
     precise mediump float _87 = _55.x;
     precise mediump float _89 = _57.y;
     precise mediump float _91 = _57.x;
@@ -133,10 +133,12 @@ void main()
     precise mediump float _119 = _63.z;
     precise mediump float _123 = _63.y;
     precise mediump float _127 = _65.x;
-    precise mediump float _131 = _67.y;
-    precise mediump float _135 = _67.z;
 
-    // ========== 子组1B：派生值，改为普通 float ==========
+    // ========== 组 A2：其他属性，改为普通 float ==========
+    float _131 = _67.y;
+    float _135 = _67.z;
+
+    // 派生值使用普通 float（与版本 F 相同）
     float _634 = _87 * _87;
     float _101 = _634;
     float _639 = _89 * 2.0;
@@ -158,7 +160,7 @@ void main()
     float _677 = _101 * _97;
     float _137 = _677;
 
-    // 以下保持原始代码（无修改）
+    // 以下保持原始代码（与版本 F 相同）
     float _139 = fma(_121, 3.0, _117);
     precise float _685 = _101 * _91;
     float _141 = _685;
