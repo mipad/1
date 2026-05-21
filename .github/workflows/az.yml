@@ -16,15 +16,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: mipad/1      # 请替换为您的实际仓库，例如 "YourName/YourRepo"
+          repository: mipad/1      # 请替换为您的实际仓库
           ref: glsl
-          path: shaders
+          # 不再指定 path，默认检出到根目录
 
-      # 将 .spv.1 重命名为 .spv
+      # 将 spv 文件夹内的 .spv.1 重命名为 .spv
       - name: Rename .spv.1 files to .spv
         run: |
-          echo "🔍 Searching for .spv.1 files..."
-          find shaders -type f -name "*.spv.1" -print0 | while IFS= read -r -d '' file; do
+          echo "🔍 Searching for .spv.1 files in ./spv ..."
+          find ./spv -type f -name "*.spv.1" -print0 | while IFS= read -r -d '' file; do
             newname="${file%.spv.1}.spv"
             echo "📝 Renaming $file -> $newname"
             mv "$file" "$newname"
@@ -41,8 +41,8 @@ jobs:
 
       - name: Disassemble SPIR-V files
         run: |
-          echo "🔍 Searching for .spv files..."
-          find shaders -name "*.spv" -print0 | while IFS= read -r -d '' spv_file; do
+          echo "🔍 Searching for .spv files in ./spv ..."
+          find ./spv -name "*.spv" -print0 | while IFS= read -r -d '' spv_file; do
             base=$(basename "$spv_file" .spv)
             glsl_file="glsl_output/${base}.glsl"
             echo "⚙️  Disassembling $spv_file -> $glsl_file"
