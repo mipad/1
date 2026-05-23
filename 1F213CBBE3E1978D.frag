@@ -88,6 +88,9 @@ layout(location = 1) out vec4 _111;
 
 void main()
 {
+    // 用于累加所有纹理采样结果，防止被优化掉
+    precise float _texture_dummy = 0.0;
+
     float _118 = _80.w;
     float _120 = gl_FragCoord.w;
     precise float _1825 = _118 * _120;
@@ -204,33 +207,39 @@ void main()
     float _276 = _2067;
     precise float _2070 = _276 * _169;
     float _278 = _2070;
-
-    // 替换所有纹理采样为固定值
-    vec2 _282 = vec2(1.0, 1.0); // texture(fp_t_tcb_26, vec2(_181, _183)).xy;
+    vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
-    vec3 _290 = vec3(1.0, 1.0, 1.0); // texture(fp_t_tcb_36, vec2(_181, _183)).xyw;
+    _texture_dummy += _284 + _286;
+    vec3 _290 = texture(fp_t_tcb_36, vec2(_181, _183)).xyw;
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
+    _texture_dummy += _292 + _294 + _296;
     int _298 = _228 & 2147483647;
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = 1.0; // texture(fp_t_tcb_34, vec2(_306, _308)).x;
-    float _312 = 1.0; // textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
-    vec3 _314 = vec3(1.0, 1.0, 1.0); // texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    _texture_dummy += _310;
+    float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
+    _texture_dummy += _312;
+    vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
     float _318 = _314.y;
     float _320 = _314.z;
-    float _322 = 1.0; // texture(fp_t_tcb_1A, vec3(vec2(_254, _262), _246));
-    float _324 = 1.0; // texture(fp_t_tcb_12, vec2(_270, _278)).x;
-    vec3 _326 = vec3(1.0, 1.0, 1.0); // texture(fp_t_tcb_20, vec2(_187, _236)).xyz;
+    _texture_dummy += _316 + _318 + _320;
+    float _322 = texture(fp_t_tcb_1A, vec3(vec2(_254, _262), _246));
+    _texture_dummy += _322;
+    float _324 = texture(fp_t_tcb_12, vec2(_270, _278)).x;
+    _texture_dummy += _324;
+    vec3 _326 = texture(fp_t_tcb_20, vec2(_187, _236)).xyz;
     float _328 = _326.x;
     float _330 = _326.y;
     float _332 = _326.z;
+    _texture_dummy += _328 + _330 + _332;
     float _334 = _88.x;
     float _336 = _90.x;
     float _338 = _88.y;
@@ -385,7 +394,6 @@ void main()
     uint _550 = uint(int(uint(_548) >> uint(2)));
     uint _552 = uint(int(uint(int(_550)) >> uint(2)));
     int _554 = int(_550) & 3;
-    // 边界保护：索引 & 0xFFF
     int _idx_552 = int(_552) & 0xFFF;
     float _556 = fp_c8_1._m0[_idx_552][_554];
     float _558 = -fp_c6_1._m0[23].y;
@@ -1018,11 +1026,11 @@ void main()
     float _1430 = _3782;
     precise float _3785 = _514 * _1412;
     float _1432 = _3785;
-    // 替换 textureLod
-    vec3 _1434 = vec3(1.0, 1.0, 1.0); // textureLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730).xyz;
+    vec3 _1434 = textureLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730).xyz;
     float _1436 = _1434.x;
     float _1438 = _1434.y;
     float _1440 = _1434.z;
+    _texture_dummy += _1436 + _1438 + _1440;
     precise float _3802 = _648 * _1418;
     float _1442 = _3802;
     float _1444 = _102.x;
@@ -1033,15 +1041,18 @@ void main()
     float _1450 = _3812;
     float _1452 = _102.z;
     float _3819 = float(1);
-    vec3 _1454 = vec3(1.0, 1.0, 1.0); // textureLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400).xyz;
+    vec3 _1454 = textureLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400).xyz;
     float _1456 = _1454.x;
     float _1458 = _1454.y;
     float _1460 = _1454.z;
-    vec3 _1462 = vec3(1.0, 1.0, 1.0); // textureLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446).xyz;
+    _texture_dummy += _1456 + _1458 + _1460;
+    vec3 _1462 = textureLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446).xyz;
     float _1464 = _1462.x;
     float _1466 = _1462.y;
     float _1468 = _1462.z;
-    float _1470 = 1.0; // texture(fp_t_cb7_20, vec3(_1444, _1448, _1452)).x;
+    _texture_dummy += _1464 + _1466 + _1468;
+    float _1470 = texture(fp_t_cb7_20, vec3(_1444, _1448, _1452)).x;
+    _texture_dummy += _1470;
     float _1472 = _94.x;
     float _1474 = _94.y;
     float _1476 = _94.z;
@@ -1270,12 +1281,9 @@ void main()
     float _1812 = fma(_1792, _1804, _1778);
     float _1814 = -fp_c3_1._m0[15].x;
     float _1816 = fma(_1808, _1814, -0.0);
-    _109.x = _1810;
-    _109.y = _1806;
-    _109.z = _1812;
-    _109.w = 1.0;
-    _111.x = _1816;
-    _111.y = 0.875;
-    _111.z = 0.0;
-    _111.w = 1.0;
+
+    // 所有原始计算保留，但最终输出固定红色，并且确保纹理采样的结果被使用过
+    // 通过将 _texture_dummy 乘以 0 来避免影响最终颜色，但确保它被“使用”以避免优化
+    _109 = vec4(1.0, 0.0, 0.0, 1.0) + vec4(0.0, _texture_dummy * 0.0, 0.0, 0.0);
+    _111 = vec4(0.0, 0.875, 0.0, 1.0);
 }
