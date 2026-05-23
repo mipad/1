@@ -86,20 +86,6 @@ layout(location = 6) in vec4 _106;
 layout(location = 0) out vec4 _109;
 layout(location = 1) out vec4 _111;
 
-// 安全辅助函数
-float safe_sqrt(float x) { return sqrt(max(x, 0.0)); }
-float safe_inversesqrt(float x) { return inversesqrt(max(x, 1e-10)); }
-float safe_log2(float x) { return log2(max(abs(x), 1e-10)); }
-float safe_exp2(float x) { return exp2(clamp(x, -80.0, 80.0)); }
-float safe_div(float a, float b) { return a / max(abs(b), 1e-10); }
-vec2 safe_texture2D(sampler2D s, vec2 uv) { return clamp(texture(s, uv).xy, -1e5, 1e5); }
-vec3 safe_texture2D_xyw(sampler2D s, vec2 uv) { return clamp(texture(s, uv).xyw, -1e5, 1e5); }
-float safe_texture2D_x(sampler2D s, vec2 uv) { return clamp(texture(s, uv).x, -1e5, 1e5); }
-vec3 safe_texture2D_xyz(sampler2D s, vec2 uv) { return clamp(texture(s, uv).xyz, -1e5, 1e5); }
-vec3 safe_textureCubeLod(samplerCube s, vec3 coord, float lod) { return clamp(textureLod(s, coord, lod).xyz, -1e5, 1e5); }
-vec3 safe_textureCubeArrayLod(samplerCubeArray s, vec4 coord, float lod) { return clamp(textureLod(s, coord, lod).xyz, -1e5, 1e5); }
-float safe_texture3D(sampler3D s, vec3 coord) { return clamp(texture(s, coord).x, -1e5, 1e5); }
-
 void main()
 {
     float _118 = _80.w;
@@ -112,12 +98,12 @@ void main()
     float _128 = _1833;
     float _130 = gl_FragCoord.x;
     float _132 = support_buffer_1._m5[0];
-    precise float _1843 = safe_div(_130, _132);
+    precise float _1843 = _130 / _132;
     float _134 = _1843;
     int _137 = floatBitsToInt(fp_c4_1._m0[12].y) & (-1073741824);
     float _139 = gl_FragCoord.y;
     float _141 = support_buffer_1._m5[0];
-    precise float _1857 = safe_div(_139, _141);
+    precise float _1857 = _139 / _141;
     float _143 = _1857;
     bool _147 = _137 == floatBitsToInt(fp_c1_1._m0[0].x);
     int _149 = floatBitsToInt(fp_c4_1._m0[12].y);
@@ -137,9 +123,9 @@ void main()
         _151 = _163;
     }
     int _165 = _151;
-    precise float _1899 = safe_div(1.0, _122);
+    precise float _1899 = 1.0 / _122;
     float _167 = _1899;
-    precise float _1901 = safe_div(1.0, _128);
+    precise float _1901 = 1.0 / _128;
     float _169 = _1901;
     int _171 = _165;
     int _173 = floatBitsToInt(fp_c5_1._m0[10].x);
@@ -218,10 +204,10 @@ void main()
     float _276 = _2067;
     precise float _2070 = _276 * _169;
     float _278 = _2070;
-    vec2 _282 = safe_texture2D(fp_t_tcb_26, vec2(_181, _183));
+    vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
-    vec3 _290 = safe_texture2D_xyw(fp_t_tcb_36, vec2(_181, _183));
+    vec3 _290 = texture(fp_t_tcb_36, vec2(_181, _183)).xyw;
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
@@ -231,15 +217,15 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = safe_texture2D_x(fp_t_tcb_34, vec2(_306, _308));
-    float _312 = safe_texture2D_x(fp_t_tcb_1E, vec2(_187, _236));
-    vec3 _314 = safe_texture2D_xyz(fp_t_tcb_24, vec2(_181, _183));
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
+    vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
     float _318 = _314.y;
     float _320 = _314.z;
     float _322 = texture(fp_t_tcb_1A, vec3(vec2(_254, _262), _246));
-    float _324 = safe_texture2D_x(fp_t_tcb_12, vec2(_270, _278));
-    vec3 _326 = safe_texture2D_xyz(fp_t_tcb_20, vec2(_187, _236));
+    float _324 = texture(fp_t_tcb_12, vec2(_270, _278)).x;
+    vec3 _326 = texture(fp_t_tcb_20, vec2(_187, _236)).xyz;
     float _328 = _326.x;
     float _330 = _326.y;
     float _332 = _326.z;
@@ -277,11 +263,11 @@ void main()
     float _382 = fma(_352, _352, _370);
     float _384 = fma(_342, _342, _372);
     float _386 = fma(_348, _348, _374);
-    float _388 = safe_inversesqrt(_384);
+    float _388 = inversesqrt(_384);
     float _390 = fma(_350, _350, _376);
-    float _392 = safe_inversesqrt(_386);
+    float _392 = inversesqrt(_386);
     float _394 = fma(_354, _354, _382);
-    float _396 = safe_inversesqrt(_394);
+    float _396 = inversesqrt(_394);
     precise float _2254 = _338 * _388;
     float _398 = _2254;
     precise float _2257 = _342 * _388;
@@ -295,7 +281,7 @@ void main()
     float _408 = fma(_356, _356, _390);
     precise float _2273 = _336 * _392;
     float _410 = _2273;
-    float _412 = safe_inversesqrt(_408);
+    float _412 = inversesqrt(_408);
     precise float _2278 = _340 * _392;
     float _414 = _2278;
     float _416 = fma(_284, _284, _404);
@@ -314,7 +300,7 @@ void main()
     float _430 = _2301;
     float _432 = clamp(_430, 0.0, 1.0);
     float _434 = fma(_410, _284, _418);
-    float _436 = safe_sqrt(_432);
+    float _436 = sqrt(_432);
     precise float _2313 = _187 * 16.0;
     float _438 = _2313;
     float _440 = _96.x;
@@ -355,9 +341,9 @@ void main()
     float _490 = fma(_472, _472, _476);
     float _492 = fma(_470, _470, _480);
     float _494 = fma(_488, _488, _490);
-    float _496 = safe_inversesqrt(_494);
+    float _496 = inversesqrt(_494);
     float _498 = fma(_486, _486, _492);
-    float _502 = safe_inversesqrt(_498);
+    float _502 = inversesqrt(_498);
     float _500 = fma(_482, 16.0, _446);
     precise float _2412 = _296 * _440;
     float _504 = _2412;
@@ -419,7 +405,7 @@ void main()
     float _586 = -_530;
     precise float _2544 = _564 + _586;
     float _588 = _2544;
-    precise float _2546 = safe_div(1.0, _564);
+    precise float _2546 = 1.0 / _564;
     float _590 = _2546;
     float _592 = -fp_c6_1._m0[23].y;
     float _594 = fma(_514, _592, _572);
@@ -435,7 +421,7 @@ void main()
     float _614 = clamp(_612, 0.0, 1.0);
     float _616 = fma(_576, _598, fp_c1_1._m0[0].w);
     float _618 = fma(_602, fp_c1_1._m0[0].y, -6.9831600189208984375);
-    precise float _2596 = safe_div(1.0, _616);
+    precise float _2596 = 1.0 / _616;
     float _620 = _2596;
     float _622 = -_380;
     float _624 = fma(_606, _622, _606);
@@ -455,7 +441,7 @@ void main()
     float _640 = _2624;
     precise float _2627 = _522 * _606;
     float _642 = _2627;
-    precise float _2629 = safe_div(1.0, _640);
+    precise float _2629 = 1.0 / _640;
     float _644 = _2629;
     float _646 = -_444;
     float _648 = fma(_632, 2.0, _646);
@@ -479,7 +465,7 @@ void main()
     float _672 = _2668;
     float _674 = -_380;
     float _676 = fma(_614, _674, _614);
-    float _678 = safe_exp2(_636);
+    float _678 = exp2(_636);
     precise float _2679 = _318 * _638;
     float _680 = _2679;
     float _682 = -_630;
@@ -496,12 +482,12 @@ void main()
     float _698 = -_312;
     float _700 = fma(_666, _698, fp_c1_1._m0[0].w);
     float _702 = clamp(_700, 0.0, 1.0);
-    precise float _2719 = safe_div(1.0, _696);
+    precise float _2719 = 1.0 / _696;
     float _704 = _2719;
     float _706 = fma(_294, _688, fp_c5_1._m0[30].w);
     precise float _2727 = _694 * 0.3183098733425140380859375;
     float _708 = _2727;
-    float _710 = safe_exp2(_668);
+    float _710 = exp2(_668);
     precise float _2731 = _684 + 1.0;
     float _712 = _2731;
     float _714 = -_678;
@@ -642,7 +628,7 @@ void main()
     {
         int _898 = 0;
         bool _900;
-        uint max_iter = min(floatBitsToUint(_556), 128u);
+        uint max_iter = 0u; // 修改：强制跳过循环
         do
         {
             int _902 = _898;
@@ -715,8 +701,8 @@ void main()
             float _1012 = fma(_976, _1010, _1006);
             float _1014 = fma(_1002, _1002, _1008);
             float _1016 = fma(_1012, _1012, _1014);
-            float _1018 = safe_inversesqrt(_1016);
-            float _1020 = safe_sqrt(_1016);
+            float _1018 = inversesqrt(_1016);
+            float _1020 = sqrt(_1016);
             precise float _3160 = _998 * _1018;
             float _1022 = _3160;
             precise float _3163 = _1002 * _1018;
@@ -804,7 +790,7 @@ void main()
             bool _1146 = _1144 == 0.0;
             if (_1146)
             {
-                precise float _3347 = safe_div(1.0, _1076);
+                precise float _3347 = 1.0 / _1076;
                 float _1148 = _3347;
                 int _1150 = _940 + 44;
                 uint _1152 = uint(int(uint(_1150) >> uint(2)));
@@ -819,11 +805,11 @@ void main()
                 float _1166 = -_1162;
                 float _1168 = max(_1166, _1164);
                 float _1170 = fma(_1168, _1168, _1014);
-                float _1172 = safe_inversesqrt(_1170);
-                float _1174 = safe_sqrt(_1170);
+                float _1172 = inversesqrt(_1170);
+                float _1174 = sqrt(_1170);
                 precise float _3389 = _998 * _1172;
                 float _1176 = _3389;
-                precise float _3391 = safe_div(1.0, _1158);
+                precise float _3391 = 1.0 / _1158;
                 float _1178 = _3391;
                 precise float _3394 = _1002 * _1172;
                 float _1180 = _3394;
@@ -838,11 +824,11 @@ void main()
                 precise float _3409 = _1184 * _1184;
                 float _1190 = _3409;
                 float _1192 = fma(_1178, _1174, fp_c1_1._m0[1].x);
-                precise float _3416 = safe_div(1.0, _1192);
+                precise float _3416 = 1.0 / _1192;
                 float _1194 = _3416;
                 float _1196 = fma(_1186, _1186, _1190);
                 float _1198 = fma(_1188, _1188, _1196);
-                float _1200 = safe_inversesqrt(_1198);
+                float _1200 = inversesqrt(_1198);
                 precise float _3429 = _1194 * 1.39999997615814208984375;
                 float _1202 = _3429;
                 precise float _3432 = _1184 * _1200;
@@ -894,9 +880,9 @@ void main()
                 float _1272 = _3546;
                 float _1274 = clamp(_1272, 0.0, 1.0);
                 float _1276 = fma(_1256, _1268, fp_c1_1._m0[0].w);
-                precise float _3555 = safe_div(1.0, _1276);
+                precise float _3555 = 1.0 / _1276;
                 float _1278 = _3555;
-                float _1280 = safe_exp2(_1270);
+                float _1280 = exp2(_1270);
                 precise float _3560 = _1260 * _1278;
                 float _1282 = _3560;
                 float _1284 = -_1280;
@@ -923,7 +909,7 @@ void main()
                 float _1310 = _3602;
                 precise float _3605 = _1304 * _1290;
                 float _1312 = _3605;
-                precise float _3607 = safe_div(1.0, _1310);
+                precise float _3607 = 1.0 / _1310;
                 float _1314 = _3607;
                 precise float _3610 = _1238 + _1308;
                 float _1316 = _3610;
@@ -1011,11 +997,11 @@ void main()
     float _1406 = max(_1402, _1404);
     float _1408 = abs(_522);
     float _1410 = max(_1408, _1398);
-    precise float _3759 = safe_div(1.0, _1410);
+    precise float _3759 = 1.0 / _1410;
     float _1412 = _3759;
     float _1414 = abs(_658);
     float _1416 = max(_1414, _1406);
-    precise float _3766 = safe_div(1.0, _1416);
+    precise float _3766 = 1.0 / _1416;
     float _1418 = _3766;
     float _1420 = -_1412;
     precise float _3771 = _522 * _1420;
@@ -1029,7 +1015,7 @@ void main()
     float _1430 = _3782;
     precise float _3785 = _514 * _1412;
     float _1432 = _3785;
-    vec3 _1434 = safe_textureCubeLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730);
+    vec3 _1434 = textureLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730).xyz;
     float _1436 = _1434.x;
     float _1438 = _1434.y;
     float _1440 = _1434.z;
@@ -1043,15 +1029,15 @@ void main()
     float _1450 = _3812;
     float _1452 = _102.z;
     float _3819 = float(1);
-    vec3 _1454 = safe_textureCubeArrayLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400);
+    vec3 _1454 = textureLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400).xyz;
     float _1456 = _1454.x;
     float _1458 = _1454.y;
     float _1460 = _1454.z;
-    vec3 _1462 = safe_textureCubeLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446);
+    vec3 _1462 = textureLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446).xyz;
     float _1464 = _1462.x;
     float _1466 = _1462.y;
     float _1468 = _1462.z;
-    float _1470 = safe_texture3D(fp_t_cb7_20, vec3(_1444, _1448, _1452));
+    float _1470 = texture(fp_t_cb7_20, vec3(_1444, _1448, _1452)).x;
     float _1472 = _94.x;
     float _1474 = _94.y;
     float _1476 = _94.z;
@@ -1081,7 +1067,7 @@ void main()
     float _1514 = fma(_1508, fp_c1_1._m0[2].x, -3.6029999256134033203125);
     float _1516 = fma(_1506, _1506, _1450);
     float _1518 = fma(_1510, _1510, _1516);
-    float _1520 = safe_inversesqrt(_1518);
+    float _1520 = inversesqrt(_1518);
     float _1522 = -_1520;
     precise float _3937 = _1474 * _1522;
     float _1524 = _3937;
@@ -1102,7 +1088,7 @@ void main()
     float _1546 = _3971;
     float _1548 = fma(_1508, fp_c1_1._m0[1].w, _1542);
     float _1550 = abs(_1546);
-    float _1552 = safe_log2(_1550);
+    float _1552 = log2(_1550);
     float _1554 = fma(_1536, _1544, fp_c1_1._m0[3].x);
     float _1556 = fma(_1492, -2.0, 3.0);
     precise float _3990 = _1492 * _1492;
@@ -1122,7 +1108,7 @@ void main()
     float _1578 = _4030;
     precise float _4033 = _1508 * _1512;
     float _1580 = _4033;
-    float _1582 = safe_exp2(_1578);
+    float _1582 = exp2(_1578);
     float _1584 = clamp(_1582, 0.0, 1.0);
     float _1586 = fma(_1508, _1514, fp_c1_1._m0[2].y);
     precise float _4048 = fp_c6_1._m0[38].z + fp_c5_1._m0[32].y;
@@ -1236,7 +1222,7 @@ void main()
     float _1744 = -fp_c6_1._m0[47].x;
     float _1746 = fma(_1470, _1744, _1626);
     float _1748 = clamp(_1746, 0.0, 1.0);
-    float _1750 = safe_log2(_1748);
+    float _1750 = log2(_1748);
     float _1752 = fma(_1738, fp_c6_1._m0[47].w, _1724);
     precise float _4344 = _1750 * fp_c6_1._m0[12].y;
     float _1754 = _4344;
@@ -1250,7 +1236,7 @@ void main()
     float _1766 = -_1730;
     precise float _4367 = _1766 + fp_c6_1._m0[13].x;
     float _1768 = _4367;
-    float _1770 = safe_exp2(_1754);
+    float _1770 = exp2(_1754);
     float _1772 = -_1756;
     precise float _4374 = _1734 + _1772;
     float _1774 = _4374;
