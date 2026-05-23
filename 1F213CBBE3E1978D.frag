@@ -86,6 +86,11 @@ layout(location = 6) in vec4 _106;
 layout(location = 0) out vec4 _109;
 layout(location = 1) out vec4 _111;
 
+// NaN 安全处理函数
+float safe_finite(float x) { return isnan(x) ? 0.0 : clamp(x, -10.0, 10.0); }
+vec2 safe_finite(vec2 x) { return vec2(isnan(x.x) ? 0.0 : clamp(x.x, -10.0, 10.0), isnan(x.y) ? 0.0 : clamp(x.y, -10.0, 10.0)); }
+vec3 safe_finite(vec3 x) { return vec3(isnan(x.x) ? 0.0 : clamp(x.x, -10.0, 10.0), isnan(x.y) ? 0.0 : clamp(x.y, -10.0, 10.0), isnan(x.z) ? 0.0 : clamp(x.z, -10.0, 10.0)); }
+
 void main()
 {
     float _118 = _80.w;
@@ -205,11 +210,11 @@ void main()
     precise float _2070 = _276 * _169;
     float _278 = _2070;
 
-    // 所有纹理采样添加 clamp，范围 [-1.0, 1.0]
-    vec2 _282 = clamp(texture(fp_t_tcb_26, vec2(_181, _183)).xy, -1.0, 1.0);
+    // 所有纹理采样添加 safe_finite 处理
+    vec2 _282 = safe_finite(texture(fp_t_tcb_26, vec2(_181, _183)).xy);
     float _284 = _282.x;
     float _286 = _282.y;
-    vec3 _290 = clamp(texture(fp_t_tcb_36, vec2(_181, _183)).xyw, -1.0, 1.0);
+    vec3 _290 = safe_finite(texture(fp_t_tcb_36, vec2(_181, _183)).xyw);
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
@@ -219,16 +224,15 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = clamp(texture(fp_t_tcb_34, vec2(_306, _308)).x, -1.0, 1.0);
-    float _312 = clamp(textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x, -1.0, 1.0);
-    vec3 _314 = clamp(texture(fp_t_tcb_24, vec2(_181, _183)).xyz, -1.0, 1.0);
+    float _310 = safe_finite(texture(fp_t_tcb_34, vec2(_306, _308)).x);
+    float _312 = safe_finite(textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x);
+    vec3 _314 = safe_finite(texture(fp_t_tcb_24, vec2(_181, _183)).xyz);
     float _316 = _314.x;
     float _318 = _314.y;
     float _320 = _314.z;
-    // sampler2DShadow 结果已在 [0,1]，无需钳位
     float _322 = texture(fp_t_tcb_1A, vec3(vec2(_254, _262), _246));
-    float _324 = clamp(texture(fp_t_tcb_12, vec2(_270, _278)).x, -1.0, 1.0);
-    vec3 _326 = clamp(texture(fp_t_tcb_20, vec2(_187, _236)).xyz, -1.0, 1.0);
+    float _324 = safe_finite(texture(fp_t_tcb_12, vec2(_270, _278)).x);
+    vec3 _326 = safe_finite(texture(fp_t_tcb_20, vec2(_187, _236)).xyz);
     float _328 = _326.x;
     float _330 = _326.y;
     float _332 = _326.z;
@@ -626,7 +630,7 @@ void main()
     float _892 = 0.0;
     float _894 = 0.0;
     float _896 = 0.0;
-    if (!_664)
+        if (!_664)
     {
         int _898 = 0;
         bool _900;
@@ -1000,7 +1004,7 @@ void main()
     float _1430 = _3782;
     precise float _3785 = _514 * _1412;
     float _1432 = _3785;
-    vec3 _1434 = clamp(textureLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730).xyz, -1.0, 1.0);
+    vec3 _1434 = safe_finite(textureLod(fp_t_tcb_16, vec3(_1430, _1432, _1422), _730).xyz);
     float _1436 = _1434.x;
     float _1438 = _1434.y;
     float _1440 = _1434.z;
@@ -1014,15 +1018,15 @@ void main()
     float _1450 = _3812;
     float _1452 = _102.z;
     float _3819 = float(1);
-    vec3 _1454 = clamp(textureLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400).xyz, -1.0, 1.0);
+    vec3 _1454 = safe_finite(textureLod(fp_t_tcb_14, vec4(_1442, _1424, _1428, _3819), _1400).xyz);
     float _1456 = _1454.x;
     float _1458 = _1454.y;
     float _1460 = _1454.z;
-    vec3 _1462 = clamp(textureLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446).xyz, -1.0, 1.0);
+    vec3 _1462 = safe_finite(textureLod(fp_t_tcb_18, vec3(_1430, _1432, _1422), _1446).xyz);
     float _1464 = _1462.x;
     float _1466 = _1462.y;
     float _1468 = _1462.z;
-    float _1470 = clamp(texture(fp_t_cb7_20, vec3(_1444, _1448, _1452)).x, -1.0, 1.0);
+    float _1470 = safe_finite(texture(fp_t_cb7_20, vec3(_1444, _1448, _1452)).x);
     float _1472 = _94.x;
     float _1474 = _94.y;
     float _1476 = _94.z;
@@ -1259,4 +1263,8 @@ void main()
     _111.y = 0.875;
     _111.z = 0.0;
     _111.w = 1.0;
+
+    // 最终输出钳位，防止残留 NaN/Inf
+    _109 = clamp(_109, -1e4, 1e4);
+    _111 = clamp(_111, -1e4, 1e4);
 }
