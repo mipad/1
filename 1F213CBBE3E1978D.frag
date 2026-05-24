@@ -205,7 +205,7 @@ void main()
     precise float _2070 = _276 * _169;
     float _278 = _2070;
 
-    // 恢复 fp_t_tcb_26 和 fp_t_tcb_36
+    // 恢复 fp_t_tcb_26, fp_t_tcb_36, fp_t_tcb_34
     vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
@@ -213,14 +213,14 @@ void main()
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
-    // 其余纹理采样保持常量
     int _298 = _228 & 2147483647;
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = 1.0;
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    // 其余纹理采样保持常量
     float _312 = 1.0;
     vec3 _314 = vec3(1.0, 1.0, 1.0);
     float _316 = _314.x;
