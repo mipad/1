@@ -219,7 +219,7 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    float _310 = clamp(texture(fp_t_tcb_34, vec2(_306, _308)).x, -1.0, 1.0);
     // 其余纹理采样保持常量
     float _312 = 1.0;
     vec3 _314 = vec3(1.0, 1.0, 1.0);
