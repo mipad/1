@@ -204,8 +204,6 @@ void main()
     float _276 = _2067;
     precise float _2070 = _276 * _169;
     float _278 = _2070;
-
-    // 所有纹理采样恢复原始，仅 fp_t_tcb_34 固定为 0.0
     vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
@@ -219,7 +217,8 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = -1.0; // fp_t_tcb_34 固定为 0
+    // 关键修改：使用 textureLod 强制 LOD 0 而不是自动 LOD
+    float _310 = textureLod(fp_t_tcb_34, vec2(_306, _308), 0.0).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
