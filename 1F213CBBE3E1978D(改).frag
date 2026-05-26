@@ -219,7 +219,7 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    float _310 = 1.0; // fp_t_tcb_34 固定为 0
+    float _310 = -1.0; // fp_t_tcb_34 固定为 0
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
