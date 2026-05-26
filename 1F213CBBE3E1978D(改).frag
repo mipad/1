@@ -219,13 +219,9 @@ void main()
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
 
-    // 使用 texelFetch 替代 texture
-    ivec2 texSize = textureSize(fp_t_tcb_34, 0);
-    ivec2 coord = ivec2(floor(_306 * texSize.x), floor(_308 * texSize.y));
-    // 钳位坐标到有效范围
-    coord = clamp(coord, ivec2(0), texSize - ivec2(1));
-    vec4 texel = texelFetch(fp_t_tcb_34, coord, 0);
-    float _310 = texel.x;
+    // 对 fp_t_tcb_34 采样结果进行乘大数再除，尝试刷新 denormal
+    float _310_raw = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    float _310 = (_310_raw * 1e10) * 1e-10;
 
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
