@@ -205,7 +205,7 @@ void main()
     precise float _2070 = _276 * _169;
     float _278 = _2070;
 
-    // 纹理采样：fp_t_tcb_26 和 fp_t_tcb_36 保持原始
+    // 正常采样所有纹理
     vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
@@ -219,11 +219,10 @@ void main()
     int _304 = _234 & 2147483647;
     float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-
-    // fp_t_tcb_34 采样：检测纹理是否有效，无效则返回 0
-    ivec2 texSize = textureSize(fp_t_tcb_34, 0);
-    float _310 = (texSize.x == 0 || texSize.y == 0) ? 0.0 : texture(fp_t_tcb_34, vec2(_306, _308)).x;
-
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    // 关键修复：将 _310 钳位到安全范围，避免 denormal 或极小值导致除法异常
+    _310 = max(_310, 1e-5);   // 防止过小值
+    // 或者使用 clamp(_310, 0.0, 1.0) 如果范围已知，但此处用 max 保留较大值
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
