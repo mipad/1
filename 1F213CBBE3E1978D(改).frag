@@ -215,8 +215,16 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    float _306 = (_185 * 0.5);
-    float _308 = (_238 * 0.5);
+
+    // 安全转换：将整数的指数位强制设为 126（0x3F000000），保留符号位和尾数，确保转换后为有限正规浮点数
+    int _298_safe = (_298 & 0x807FFFFF) | 0x3F000000;  // 指数 126，范围 [0.5,1)
+    int _300_safe = (_300 & 0x807FFFFF) | 0x3F000000;
+    int _302_safe = (_302 & 0x807FFFFF) | 0x3F000000;
+    int _304_safe = (_304 & 0x807FFFFF) | 0x3F000000;
+
+    float _306 = fma(intBitsToFloat(_298_safe), _185, intBitsToFloat(_300_safe));
+    float _308 = fma(intBitsToFloat(_302_safe), _238, intBitsToFloat(_304_safe));
+
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
