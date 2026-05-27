@@ -204,7 +204,6 @@ void main()
     float _276 = _2067;
     precise float _2070 = _276 * _169;
     float _278 = _2070;
-
     vec2 _282 = texture(fp_t_tcb_26, vec2(_181, _183)).xy;
     float _284 = _282.x;
     float _286 = _282.y;
@@ -216,13 +215,9 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
+    float _306 = 0
     float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-
-    // 对 fp_t_tcb_34 采样结果进行乘大数再除，尝试刷新 denormal
-    float _310_raw = texture(fp_t_tcb_34, vec2(_306, _308)).x;
-    float _310 = (_310_raw * 1e10) * 1e-10;
-
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
@@ -348,8 +343,8 @@ void main()
     float _494 = fma(_488, _488, _490);
     float _496 = inversesqrt(_494);
     float _498 = fma(_486, _486, _492);
-    float _502 = inversesqrt(_498);
     float _500 = fma(_482, 16.0, _446);
+    float _502 = inversesqrt(_498);
     precise float _2412 = _296 * _440;
     float _504 = _2412;
     float _506 = trunc(_500);
@@ -1262,3 +1257,4 @@ void main()
     _111.z = 0.0;
     _111.w = 1.0;
 }
+
