@@ -215,10 +215,8 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;    
-    float s0 = 1.0;
-    float b0 = 0.0;
-    float _306 = (s0 * _185) + b0;
-    float _308 = 0.5;
+    float _306 = _185 + intBitsToFloat(_300);
+    float _308 = _238 + intBitsToFloat(_304);
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
