@@ -215,13 +215,16 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    float _306_raw = (intBitsToFloat(_298) * _185) + intBitsToFloat(_300);
-float _308_raw = (intBitsToFloat(_302) * _238) + intBitsToFloat(_304);
 
-float _306 = _306_raw;
-float _308 = _308_raw;
+    float s0 = intBitsToFloat(_298);
+    float b0 = intBitsToFloat(_300);
+    float s1 = intBitsToFloat(_302);
+    float b1 = intBitsToFloat(_304);
 
-float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    float _306 = (s0 * _185) + b0;
+    float _308 = (s1 * _238) + b1;
+
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
