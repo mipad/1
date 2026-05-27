@@ -214,7 +214,9 @@ void main()
     int _298 = _228 & 2147483647;
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
-    int _304 = _234 & 2147483647;
+    int _304 = _234 & 2147483647;    
+    float s1 = intBitsToFloat(_302);
+    float b1 = intBitsToFloat(_304);
     float _306 = 0.5;
     float _308 = (s1 * _238) + b1;
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
