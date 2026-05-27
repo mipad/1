@@ -215,15 +215,25 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    vec4 t = vec4(
-    intBitsToFloat(_298),
-    intBitsToFloat(_300),
-    intBitsToFloat(_302),
-    intBitsToFloat(_304)
-);
-    float _306 = (t.x * _185) + t.y;
-    float _308 = (t.z * _238) + t.w;
-    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    float tx = intBitsToFloat(_298);
+    float bx = intBitsToFloat(_300);
+    float ty = intBitsToFloat(_302);
+    float by = intBitsToFloat(_304);
+
+    // 强制实体化
+    tx = tx * 1.0;
+    bx = bx * 1.0;
+    ty = ty * 1.0;
+    by = by * 1.0;
+    
+    float _306 = (tx * _185) + bx;
+    float _308 = (ty * _238) + by;
+
+    vec2 uv = vec2(_306, _308);
+
+    uv = uv * vec2(1.0);
+
+    float _310 = texture(fp_t_tcb_34, uv).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
