@@ -215,8 +215,8 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    float _306 = fma(uintBitsToFloat(_298), _185, uintBitsToFloat(_300));
-    float _308 = fma(uintBitsToFloat(_302), _238, uintBitsToFloat(_304));
+    float _306 = fma(uintBitsToFloat(uint(_298)), _185, uintBitsToFloat(uint(_300)));
+    float _308 = fma(uintBitsToFloat(uint(_302)), _238, uintBitsToFloat(uint(_304)));
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
