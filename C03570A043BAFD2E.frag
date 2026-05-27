@@ -198,10 +198,10 @@ void main()
     int _273 = _231 & 2147483647;
     int _275 = _233 & 2147483647;
     int _277 = _235 & 2147483647;
-    float _279 = 0.0;
+    float _279 = _184;
     precise float _2015 = _125 * fp_c3_1._m0[18].z;
     float _281 = _2015;
-    float _283 = 0.0;
+    float _283 = _186;
     float _285 = _87.z;
     float _287 = gl_FragCoord.w;
     precise float _2028 = _285 * _287;
