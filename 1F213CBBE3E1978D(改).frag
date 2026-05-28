@@ -211,13 +211,17 @@ void main()
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
-    int _298 = _228 & 2147483647;
-    int _300 = _230 & 2147483647;
-    int _302 = _232 & 2147483647;
-    int _304 = _234 & 2147483647;
-    float _306 = (_185 * 0.25) + 0.625;
-    float _308 = _238;
-    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    // 先安全按位与，再将其作为普通的整数数值，强制转换为对应的浮点数
+float _298_f = float(_228 & 2147483647);
+float _300_f = float(_230 & 2147483647);
+float _302_f = float(_232 & 2147483647);
+float _304_f = float(_234 & 2147483647);
+
+// 直接参与运算，去掉 intBitsToFloat
+float _306 = fma(_298_f, _185, _300_f);
+float _308 = fma(_302_f, _238, _304_f);
+float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
