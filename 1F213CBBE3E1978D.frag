@@ -111,6 +111,12 @@ void main()
     int _153 = floatBitsToInt(fp_c5_1._m0[10].z);
     int _155 = floatBitsToInt(fp_c5_1._m0[10].y);
     int _157 = floatBitsToInt(fp_c5_1._m0[10].w);
+
+    // ---- 保存原始 float 值，用于后续纹理坐标计算，避免 intBitsToFloat ----
+    float _f153 = fp_c5_1._m0[10].z;
+    float _f155 = fp_c5_1._m0[10].y;
+    float _f157 = fp_c5_1._m0[10].w;
+
     if (_147)
     {
         int _159 = floatBitsToInt(fp_c4_1._m0[12].y) & 1048575;
@@ -129,6 +135,9 @@ void main()
     float _169 = _1901;
     int _171 = _165;
     int _173 = floatBitsToInt(fp_c5_1._m0[10].x);
+    // 对应 _173 的 float
+    float _f173 = fp_c5_1._m0[10].x;
+
     if (_147)
     {
         int _175 = _165 << 4;
@@ -162,10 +171,18 @@ void main()
         int _222 = _218 - _220;
         uint _224 = uint(int(uint(_222) >> uint(2)));
         float _226 = uintBitsToFloat(fp_s0_1._m0[int(_224)]);
+
+        // 原有 int 赋值保留，不影响后续非关键路径
         _173 = floatBitsToInt(_196);
         _153 = floatBitsToInt(_216);
         _155 = floatBitsToInt(_206);
         _157 = floatBitsToInt(_226);
+
+        // 更新对应的原始 float 值
+        _f173 = _196;
+        _f153 = _216;
+        _f155 = _206;
+        _f157 = _226;
     }
     int _228 = _173;
     int _230 = _153;
@@ -211,30 +228,19 @@ void main()
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
-    int _298 = _228 & 2147483647;
-    int _300 = _230 & 2147483647;
-    int _302 = _232 & 2147483647;
-    int _304 = _234 & 2147483647;
 
-    // ===== 修复 Mali G610 驱动 bug：避免 intBitsToFloat 直接参与乘加后用作纹理坐标 =====
-    // 原始崩溃代码：
+    // ===== 修复：用 abs() 替代 intBitsToFloat，彻底规避 Mali G610 驱动缺陷 =====
+    // 原始代码：
+    // int _298 = _228 & 2147483647;
+    // int _300 = _230 & 2147483647;
+    // int _302 = _232 & 2147483647;
+    // int _304 = _234 & 2147483647;
     // float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
     // float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
-    // float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     //
-    // 改为：先取出浮点值，通过临时变量中转，再加入无效条件检查打断优化
-    float f298 = intBitsToFloat(_298);
-    float f300 = intBitsToFloat(_300);
-    float f302 = intBitsToFloat(_302);
-    float f304 = intBitsToFloat(_304);
-    float tx = f298 * _185 + f300;
-    float ty = f302 * _238 + f304;
-    // 永不成立的检查（无 NaN 时），但可阻止编译器省略临时变量
-    if (tx != tx) { tx = 0.0; }
-    if (ty != ty) { ty = 0.0; }
-    float _306 = tx;
-    float _308 = ty;
-    // ===== 修复结束 =====
+    // 替代方案：直接使用已保存的原始 float，取绝对值后执行乘加
+    float _306 = fma(abs(_f173), _185, abs(_f153));
+    float _308 = fma(abs(_f155), _238, abs(_f157));
 
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
