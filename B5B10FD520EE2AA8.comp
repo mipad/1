@@ -15,10 +15,10 @@ layout(set = 0, binding = 0, std140) uniform support_buffer
 
 layout(set = 0, binding = 1, std140) uniform vb_info
 {
-    uvec4 _m0;
-    uvec4 _m1;
-    uvec4 _m2[32];
-    uvec4 _m3[32];
+    uvec4 _m0;            // x: vertCountX, y: vertCountY, z: vertexBase, w: instanceBase
+    uvec4 _m1;            // w: indexBufferOffset (signed, stored as bit-pattern)
+    uvec4 _m2[32];        // [3].x: vertexStride
+    uvec4 _m3[32];        // [3].x: propOffset, [3].y: useInstance
 } vb_info_1;
 
 layout(set = 0, binding = 2, std140) uniform vp_c0
@@ -40,56 +40,55 @@ layout(set = 2, binding = 0) uniform samplerBuffer ib_data;
 layout(set = 2, binding = 5) uniform samplerBuffer vb_data3;
 
 float _41[5];
-uint _44;
-uint _46;
 
 void main()
 {
     _41[4] = 1.0;
 
-    // ---- 修复：直接用无符号整数比较进行边界检查 ----
+    // ---- 边界检查（直接使用无符号整数） ----
     if (gl_GlobalInvocationID.x >= vb_info_1._m0.x) return;
     if (gl_GlobalInvocationID.y >= vb_info_1._m0.y) return;
 
-    // gl_GlobalInvocationID 分量值较小且非负，直接转为 int 是安全的
-    int gid_x = int(gl_GlobalInvocationID.x);
-    int gid_y = int(gl_GlobalInvocationID.y);
+    uint gid_x = gl_GlobalInvocationID.x;
+    uint gid_y = gl_GlobalInvocationID.y;
 
-    // 需要将 uint 按位重新解释为 int 的变量，保留原转换方式
+    // 索引缓冲区偏移（唯一需要按位解释为 int 的字段，因为可能是负值）
     int ib_offset = floatBitsToInt(uintBitsToFloat(vb_info_1._m1.w));
-    int ib_index = ib_offset + gid_x;
-    float ib_val = texelFetch(ib_data, ib_index).x;
+    int ib_index  = ib_offset + int(gid_x);   // gid_x 非负，安全
+    uint ib_val   = floatBitsToUint(texelFetch(ib_data, ib_index).x);
 
-    int vertex_base = floatBitsToInt(uintBitsToFloat(vb_info_1._m0.z));
-    int vertex_id = vertex_base + floatBitsToInt(ib_val);
-    _44 = uint(vertex_id);
+    // 顶点基址和实例基址 —— 直接作为无符号整数使用
+    uint vertex_base   = vb_info_1._m0.z;
+    uint instance_base = vb_info_1._m0.w;
 
-    int instance_base = floatBitsToInt(uintBitsToFloat(vb_info_1._m0.w));
-    int instance_id = instance_base + gid_y;
-    _46 = uint(instance_id);
+    uint vertex_id   = vertex_base + ib_val;
+    uint instance_id = instance_base + gid_y;
 
     _41[0] = 0.0;
     _41[1] = 0.0;
     _41[2] = 0.0;
     _41[3] = 1.0;
 
-    // 顶点属性信息
-    int prop_x = floatBitsToInt(uintBitsToFloat(vb_info_1._m3[3].x));
-    int prop_y = floatBitsToInt(uintBitsToFloat(vb_info_1._m3[3].y));
-    int stride = floatBitsToInt(uintBitsToFloat(vb_info_1._m2[3].x));
+    // 顶点属性信息 —— 全部为无符号整数
+    uint prop_x  = vb_info_1._m3[3].x;
+    uint prop_y  = vb_info_1._m3[3].y;
+    uint stride  = vb_info_1._m2[3].x;
 
-    int index_sel = (prop_y != 0) ? instance_id : vertex_id;
-    int vb_offset = index_sel * stride;
-    int vb_addr = prop_x + vb_offset;
-    float vb_val = texelFetch(vb_data3, vb_addr).x;
+    uint index_sel = (prop_y != 0u) ? instance_id : vertex_id;
+    uint vb_offset = index_sel * stride;
+    uint vb_addr   = prop_x + vb_offset;
 
-    // 顶点有效位检查
+    // 读取顶点属性值（vb_addr 较大时转为 int 可能回绕，但合理设计的缓冲区不会超过 2GB）
+    float vb_val = texelFetch(vb_data3, int(vb_addr)).x;
+
+    // 无效顶点剔除（高位为 1 表示无效）
     if (floatBitsToInt(vb_val) < 0)
     {
-        int vert_count = int(vb_info_1._m0.x); // 非负值，直接转换安全
-        int out_base = gid_y * vert_count + gid_x;
-        int out_idx = out_base * 5;
-        vertex_output_1._m0[out_idx] = _41[0];
+        uint vert_count = vb_info_1._m0.x;
+        uint out_base   = gid_y * vert_count + gid_x;
+        uint out_idx    = out_base * 5u;
+
+        vertex_output_1._m0[out_idx]     = _41[0];
         vertex_output_1._m0[out_idx + 1] = _41[1];
         vertex_output_1._m0[out_idx + 2] = _41[2];
         vertex_output_1._m0[out_idx + 3] = _41[3];
@@ -97,49 +96,38 @@ void main()
         return;
     }
 
-    int val_int = floatBitsToInt(vb_val);
-    int base_offset = val_int * 48;
-    int vp_addr = floatBitsToInt(vp_c0_1._m0[30].x);
-    int base_addr = base_offset + vp_addr;
-    int aligned_addr = vp_addr & (-64);
+    // 有效顶点：执行清零和输出
+    int val_int   = floatBitsToInt(vb_val);   // val_int >= 0 成立
+    int base_off  = val_int * 48;             // 非负
+    int vp_addr   = floatBitsToInt(vp_c0_1._m0[30].x);
+    int base_addr = base_off + vp_addr;
+    int aligned   = vp_addr & (~63);          // 64 字节对齐基址
 
-    // 清零操作（保留原逻辑）
+    // vp_s0 清零（索引始终非负，因为 base_addr >= aligned）
     int off;
+    off = base_addr - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 4) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 8) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 12) - aligned;  vp_s0_1._m0[off >> 2] = 0u;
 
-    off = base_addr - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr + 4) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr + 8) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr + 12) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
+    int base_addr2 = base_off + 16 + vp_addr;
+    off = base_addr2 - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 4) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 8) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 12) - aligned;  vp_s0_1._m0[off >> 2] = 0u;
 
-    int base_addr2 = base_offset + 16 + vp_addr;
-    off = base_addr2 - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr2 + 4) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr2 + 8) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr2 + 12) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-
-    int base_addr3 = base_offset + 32 + vp_addr;
-    off = base_addr3 - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr3 + 4) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr3 + 8) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
-    off = (base_addr3 + 12) - aligned_addr;
-    vp_s0_1._m0[off >> 2] = 0u;
+    int base_addr3 = base_off + 32 + vp_addr;
+    off = base_addr3 - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 4) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 8) - aligned;   vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 12) - aligned;  vp_s0_1._m0[off >> 2] = 0u;
 
     // 输出顶点数据
-    int vert_count = int(vb_info_1._m0.x);
-    int out_base = gid_y * vert_count + gid_x;
-    int out_idx = out_base * 5;
-    vertex_output_1._m0[out_idx] = _41[0];
+    uint vert_count = vb_info_1._m0.x;
+    uint out_base   = gid_y * vert_count + gid_x;
+    uint out_idx    = out_base * 5u;
+
+    vertex_output_1._m0[out_idx]     = _41[0];
     vertex_output_1._m0[out_idx + 1] = _41[1];
     vertex_output_1._m0[out_idx + 2] = _41[2];
     vertex_output_1._m0[out_idx + 3] = _41[3];
