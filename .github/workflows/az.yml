@@ -29,8 +29,8 @@ jobs:
 
       - name: Compile shaders to SPIR-V
         run: |
-          # 递归查找所有 .vert, .frag, .geom 文件
-          find 1 -type f \( -name "*.vert" -o -name "*.frag" -o -name "*.geom" \) | while read file; do
+          # 递归查找所有 .vert, .frag, .geom, .comp 文件
+          find 1 -type f \( -name "*.vert" -o -name "*.frag" -o -name "*.geom" -o -name "*.comp" \) | while read file; do
             rel_path="${file#1/}"
             base="${rel_path%.*}"              # 去掉扩展名
             out_dir="spirv_output/$(dirname "$rel_path")"
