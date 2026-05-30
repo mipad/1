@@ -1,0 +1,147 @@
+#version 450
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+    uint _m1[8];
+    vec4 _m2;
+    vec4 _m3;
+    int _m4;
+    float _m5[73];
+    ivec4 _m6;
+    int _m7;
+} support_buffer_1;
+
+layout(set = 0, binding = 1, std140) uniform vb_info
+{
+    uvec4 _m0;
+    uvec4 _m1;
+    uvec4 _m2[32];
+    uvec4 _m3[32];
+} vb_info_1;
+
+layout(set = 0, binding = 2, std140) uniform vp_c0
+{
+    vec4 _m0[4096];
+} vp_c0_1;
+
+layout(set = 1, binding = 0, std430) buffer vertex_output
+{
+    float _m0[];
+} vertex_output_1;
+
+layout(set = 1, binding = 3, std430) buffer vp_s0
+{
+    uint _m0[];
+} vp_s0_1;
+
+layout(set = 2, binding = 0) uniform samplerBuffer ib_data;
+layout(set = 2, binding = 5) uniform samplerBuffer vb_data3;
+
+float _41[5];
+uint _44;
+uint _46;
+
+void main()
+{
+    _41[4] = 1.0;
+
+    // ---- 修复：直接用无符号整数比较进行边界检查 ----
+    if (gl_GlobalInvocationID.x >= vb_info_1._m0.x) return;
+    if (gl_GlobalInvocationID.y >= vb_info_1._m0.y) return;
+
+    // gl_GlobalInvocationID 分量值较小且非负，直接转为 int 是安全的
+    int gid_x = int(gl_GlobalInvocationID.x);
+    int gid_y = int(gl_GlobalInvocationID.y);
+
+    // 需要将 uint 按位重新解释为 int 的变量，保留原转换方式
+    int ib_offset = floatBitsToInt(uintBitsToFloat(vb_info_1._m1.w));
+    int ib_index = ib_offset + gid_x;
+    float ib_val = texelFetch(ib_data, ib_index).x;
+
+    int vertex_base = floatBitsToInt(uintBitsToFloat(vb_info_1._m0.z));
+    int vertex_id = vertex_base + floatBitsToInt(ib_val);
+    _44 = uint(vertex_id);
+
+    int instance_base = floatBitsToInt(uintBitsToFloat(vb_info_1._m0.w));
+    int instance_id = instance_base + gid_y;
+    _46 = uint(instance_id);
+
+    _41[0] = 0.0;
+    _41[1] = 0.0;
+    _41[2] = 0.0;
+    _41[3] = 1.0;
+
+    // 顶点属性信息
+    int prop_x = floatBitsToInt(uintBitsToFloat(vb_info_1._m3[3].x));
+    int prop_y = floatBitsToInt(uintBitsToFloat(vb_info_1._m3[3].y));
+    int stride = floatBitsToInt(uintBitsToFloat(vb_info_1._m2[3].x));
+
+    int index_sel = (prop_y != 0) ? instance_id : vertex_id;
+    int vb_offset = index_sel * stride;
+    int vb_addr = prop_x + vb_offset;
+    float vb_val = texelFetch(vb_data3, vb_addr).x;
+
+    // 顶点有效位检查
+    if (floatBitsToInt(vb_val) < 0)
+    {
+        int vert_count = int(vb_info_1._m0.x); // 非负值，直接转换安全
+        int out_base = gid_y * vert_count + gid_x;
+        int out_idx = out_base * 5;
+        vertex_output_1._m0[out_idx] = _41[0];
+        vertex_output_1._m0[out_idx + 1] = _41[1];
+        vertex_output_1._m0[out_idx + 2] = _41[2];
+        vertex_output_1._m0[out_idx + 3] = _41[3];
+        vertex_output_1._m0[out_idx + 4] = _41[4];
+        return;
+    }
+
+    int val_int = floatBitsToInt(vb_val);
+    int base_offset = val_int * 48;
+    int vp_addr = floatBitsToInt(vp_c0_1._m0[30].x);
+    int base_addr = base_offset + vp_addr;
+    int aligned_addr = vp_addr & (-64);
+
+    // 清零操作（保留原逻辑）
+    int off;
+
+    off = base_addr - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 4) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 8) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr + 12) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+
+    int base_addr2 = base_offset + 16 + vp_addr;
+    off = base_addr2 - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 4) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 8) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr2 + 12) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+
+    int base_addr3 = base_offset + 32 + vp_addr;
+    off = base_addr3 - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 4) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 8) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+    off = (base_addr3 + 12) - aligned_addr;
+    vp_s0_1._m0[off >> 2] = 0u;
+
+    // 输出顶点数据
+    int vert_count = int(vb_info_1._m0.x);
+    int out_base = gid_y * vert_count + gid_x;
+    int out_idx = out_base * 5;
+    vertex_output_1._m0[out_idx] = _41[0];
+    vertex_output_1._m0[out_idx + 1] = _41[1];
+    vertex_output_1._m0[out_idx + 2] = _41[2];
+    vertex_output_1._m0[out_idx + 3] = _41[3];
+    vertex_output_1._m0[out_idx + 4] = _41[4];
+}
