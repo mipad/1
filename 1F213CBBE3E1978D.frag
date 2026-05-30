@@ -215,8 +215,27 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
-    float _306 = intBitsToFloat(_298) * _185 + intBitsToFloat(_300);
-    float _308 = intBitsToFloat(_302) * _238 + intBitsToFloat(_304);
+
+    // ===== 修复 Mali G610 驱动 bug：避免 intBitsToFloat 直接参与乘加后用作纹理坐标 =====
+    // 原始崩溃代码：
+    // float _306 = fma(intBitsToFloat(_298), _185, intBitsToFloat(_300));
+    // float _308 = fma(intBitsToFloat(_302), _238, intBitsToFloat(_304));
+    // float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    //
+    // 改为：先取出浮点值，通过临时变量中转，再加入无效条件检查打断优化
+    float f298 = intBitsToFloat(_298);
+    float f300 = intBitsToFloat(_300);
+    float f302 = intBitsToFloat(_302);
+    float f304 = intBitsToFloat(_304);
+    float tx = f298 * _185 + f300;
+    float ty = f302 * _238 + f304;
+    // 永不成立的检查（无 NaN 时），但可阻止编译器省略临时变量
+    if (tx != tx) { tx = 0.0; }
+    if (ty != ty) { ty = 0.0; }
+    float _306 = tx;
+    float _308 = ty;
+    // ===== 修复结束 =====
+
     float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
@@ -1257,4 +1276,3 @@ void main()
     _111.z = 0.0;
     _111.w = 1.0;
 }
-
