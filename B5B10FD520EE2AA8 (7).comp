@@ -1,0 +1,81 @@
+#version 450
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+    uint _m1[8];
+    vec4 _m2;
+    vec4 _m3;
+    int _m4;
+    float _m5[73];
+    ivec4 _m6;
+    int _m7;
+} support_buffer_1;
+
+layout(set = 0, binding = 1, std140) uniform vb_info
+{
+    uvec4 _m0;
+    uvec4 _m1;
+    uvec4 _m2[32];
+    uvec4 _m3[32];
+} vb_info_1;
+
+layout(set = 0, binding = 2, std140) uniform vp_c0
+{
+    vec4 _m0[4096];
+} vp_c0_1;
+
+layout(set = 1, binding = 0, std430) buffer vertex_output
+{
+    float _m0[];
+} vertex_output_1;
+
+layout(set = 1, binding = 3, std430) buffer vp_s0
+{
+    uint _m0[];
+} vp_s0_1;
+
+layout(set = 2, binding = 0) uniform samplerBuffer ib_data;
+layout(set = 2, binding = 5) uniform samplerBuffer vb_data3;
+
+void main()
+{
+    if (gl_GlobalInvocationID.x >= vb_info_1._m0.x) return;
+    if (gl_GlobalInvocationID.y >= vb_info_1._m0.y) return;
+
+    uint gid_x = gl_GlobalInvocationID.x;
+    uint gid_y = gl_GlobalInvocationID.y;
+
+    int ib_offset = floatBitsToInt(uintBitsToFloat(vb_info_1._m1.w));
+    int ib_index  = ib_offset + int(gid_x);
+    uint ib_val   = floatBitsToUint(texelFetch(ib_data, ib_index).x);
+
+    uint vertex_base   = vb_info_1._m0.z;
+    uint instance_base = vb_info_1._m0.w;
+    uint vertex_id   = vertex_base + ib_val;
+    uint instance_id = instance_base + gid_y;
+
+    uint prop_x = vb_info_1._m3[3].x;
+    uint prop_y = vb_info_1._m3[3].y;
+    uint stride = vb_info_1._m2[3].x;
+
+    uint index_sel = (prop_y != 0u) ? instance_id : vertex_id;
+    uint vb_offset = index_sel * stride;
+    uint vb_addr   = prop_x + vb_offset;
+
+    float vb_val = texelFetch(vb_data3, int(vb_addr)).x;
+
+    if (floatBitsToInt(vb_val) < 0) return;
+
+    uint vert_count = vb_info_1._m0.x;
+    uint out_base   = gid_y * vert_count + gid_x;
+    uint out_idx    = out_base * 5u;
+
+    vertex_output_1._m0[out_idx]     = 0.0;
+    vertex_output_1._m0[out_idx + 1] = 0.0;
+    vertex_output_1._m0[out_idx + 2] = 0.0;
+    vertex_output_1._m0[out_idx + 3] = 0.0;
+    vertex_output_1._m0[out_idx + 4] = 0.0;
+    return;
+}
