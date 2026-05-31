@@ -57,6 +57,13 @@ layout(set = 1, binding = 16, std430) buffer fp_s0
     uint _m0[];
 } fp_s0_1;
 
+// ----- 新增 SSBO，用于打断指令流水线 -----
+layout(set = 1, binding = 17, std430) buffer temp_buffer
+{
+    float data[4];
+} temp_buf;
+// ----------------------------------------
+
 layout(set = 2, binding = 128) uniform sampler2D fp_t_tcb_26;
 layout(set = 2, binding = 129) uniform sampler2D fp_t_tcb_36;
 layout(set = 2, binding = 130) uniform sampler2D fp_t_tcb_34;
@@ -111,13 +118,6 @@ void main()
     int _153 = floatBitsToInt(fp_c5_1._m0[10].z);
     int _155 = floatBitsToInt(fp_c5_1._m0[10].y);
     int _157 = floatBitsToInt(fp_c5_1._m0[10].w);
-
-    // ===== 保存原始 float 值，后续完全避免位重解释 =====
-    float _f173 = fp_c5_1._m0[10].x;
-    float _f153 = fp_c5_1._m0[10].z;
-    float _f155 = fp_c5_1._m0[10].y;
-    float _f157 = fp_c5_1._m0[10].w;
-
     if (_147)
     {
         int _159 = floatBitsToInt(fp_c4_1._m0[12].y) & 1048575;
@@ -169,17 +169,10 @@ void main()
         int _222 = _218 - _220;
         uint _224 = uint(int(uint(_222) >> uint(2)));
         float _226 = uintBitsToFloat(fp_s0_1._m0[int(_224)]);
-
-        // 原先转换为 int 再用于 _173 等，现在只需更新对应的 float 变量
-        _173 = floatBitsToInt(_196);   // 保留用于非纹理部分（如果有）
+        _173 = floatBitsToInt(_196);
         _153 = floatBitsToInt(_216);
         _155 = floatBitsToInt(_206);
         _157 = floatBitsToInt(_226);
-
-        _f173 = _196;
-        _f153 = _216;
-        _f155 = _206;
-        _f157 = _226;
     }
     int _228 = _173;
     int _230 = _153;
@@ -226,14 +219,28 @@ void main()
     float _294 = _290.y;
     float _296 = _290.z;
 
-    // ===== 彻底避免位重解释，直接用 float 变量的绝对值参与 fma =====
-    float _306 = fma(abs(_f173), _185, abs(_f153));
-    float _308 = fma(abs(_f155), _238, abs(_f157));
+    // ===== 修复：通过 SSBO 写入/读取彻底打断指令流水线 =====
+    int _298 = _228 & 2147483647;
+    int _300 = _230 & 2147483647;
+    int _302 = _232 & 2147483647;
+    int _304 = _234 & 2147483647;
 
-    // 数组屏障：强制坐标经过内存读写，打破指令流水线
-    vec2 coordArr[1];
-    coordArr[0] = vec2(_306, _308);
-    float _310 = texture(fp_t_tcb_34, coordArr[0]).x;
+    // 将清除符号位后的整数值转换为浮点，并写入临时 SSBO
+    temp_buf.data[0] = uintBitsToFloat(uint(_298));
+    temp_buf.data[1] = uintBitsToFloat(uint(_300));
+    temp_buf.data[2] = uintBitsToFloat(uint(_302));
+    temp_buf.data[3] = uintBitsToFloat(uint(_304));
+
+    // 从 SSBO 读回，编译器无法跨越内存操作进行合并
+    float f298 = temp_buf.data[0];
+    float f300 = temp_buf.data[1];
+    float f302 = temp_buf.data[2];
+    float f304 = temp_buf.data[3];
+
+    float _306 = fma(f298, _185, f300);
+    float _308 = fma(f302, _238, f304);
+
+    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
     // ===== 修复结束 =====
 
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
