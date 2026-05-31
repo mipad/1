@@ -100,26 +100,17 @@ void main()
     float _132 = support_buffer_1._m5[0];
     precise float _1843 = _130 / _132;
     float _134 = _1843;
+    int _137 = floatBitsToInt(fp_c4_1._m0[12].y) & (-1073741824);
     float _139 = gl_FragCoord.y;
     float _141 = support_buffer_1._m5[0];
     precise float _1857 = _139 / _141;
     float _143 = _1857;
-
-    // 原 _147 判断涉及到复杂的位比较，这里用 uintBitsToFloat 保留原始逻辑（驱动对 uintBitsToFloat 单独使用稳定）
-    float f_c4_12y = fp_c4_1._m0[12].y;
-    float f_c1_0x  = fp_c1_1._m0[0].x;
-    // 提取位模式高2位：原 int _137 = floatBitsToInt(f) & 0xC0000000
-    int _137 = floatBitsToInt(f_c4_12y) & (-1073741824); // 此处无法避免，但 _137 只用于布尔比较，不参与后续浮点运算，风险极低
-    bool _147 = _137 == floatBitsToInt(f_c1_0x);
-
-    // 保留原始 float 源
-    float _f173 = fp_c5_1._m0[10].x;
-    float _f153 = fp_c5_1._m0[10].z;
-    float _f155 = fp_c5_1._m0[10].y;
-    float _f157 = fp_c5_1._m0[10].w;
-
-    int _149 = floatBitsToInt(f_c4_12y); // 仅用于 _147 分支内的偏移计算，不直接参与纹理采样
+    bool _147 = _137 == floatBitsToInt(fp_c1_1._m0[0].x);
+    int _149 = floatBitsToInt(fp_c4_1._m0[12].y);
     int _151 = 0;
+    int _153 = floatBitsToInt(fp_c5_1._m0[10].z);
+    int _155 = floatBitsToInt(fp_c5_1._m0[10].y);
+    int _157 = floatBitsToInt(fp_c5_1._m0[10].w);
     if (_147)
     {
         int _159 = floatBitsToInt(fp_c4_1._m0[12].y) & 1048575;
@@ -137,6 +128,7 @@ void main()
     precise float _1901 = 1.0 / _128;
     float _169 = _1901;
     int _171 = _165;
+    int _173 = floatBitsToInt(fp_c5_1._m0[10].x);
     if (_147)
     {
         int _175 = _165 << 4;
@@ -170,12 +162,15 @@ void main()
         int _222 = _218 - _220;
         uint _224 = uint(int(uint(_222) >> uint(2)));
         float _226 = uintBitsToFloat(fp_s0_1._m0[int(_224)]);
-
-        _f173 = _196;
-        _f153 = _216;
-        _f155 = _206;
-        _f157 = _226;
+        _173 = floatBitsToInt(_196);
+        _153 = floatBitsToInt(_216);
+        _155 = floatBitsToInt(_206);
+        _157 = floatBitsToInt(_226);
     }
+    int _228 = _173;
+    int _230 = _153;
+    int _232 = _155;
+    int _234 = _157;
     precise float _2018 = _143 * fp_c3_1._m0[18].w;
     float _236 = _2018;
     float _238 = _86.w;
@@ -216,12 +211,18 @@ void main()
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
-
-    // ===== 彻底移除 intBitsToFloat：直接用 abs() 替代清除符号位 =====
+    int _298 = _228 & 2147483647;
+    int _300 = _230 & 2147483647;
+    int _302 = _232 & 2147483647;
+    int _304 = _234 & 2147483647;
     float _306 = fma(abs(_f173), _185, abs(_f153));
     float _308 = fma(abs(_f155), _238, abs(_f157));
 
-    float _310 = texture(fp_t_tcb_34, vec2(_306, _308)).x;
+    vec2 deriv = fwidth(vec2(_306, _308));
+    float sample_x = _306 + deriv.x - deriv.x;
+    float sample_y = _308 + deriv.y - deriv.y;
+
+    float _310 = texture(fp_t_tcb_34, vec2(sample_x, sample_y)).x;
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
@@ -458,7 +459,6 @@ void main()
     float _660 = _2651;
     precise float _2653 = _644 * 0.5;
     float _662 = _2653;
-    // 保留 floatBitsToUint 用于判断，该操作不参与浮点纹理坐标计算，驱动稳定
     bool _664 = floatBitsToUint(_556) <= 0u;
     precise float _2660 = _504 * _310;
     float _666 = _2660;
@@ -654,8 +654,6 @@ void main()
             float _934 = _100.x;
             float _936 = _100.z;
             float _938 = _100.y;
-            // 原 int _940 = floatBitsToInt(_932) << 6; 这里 _932 是 float，需转为 int 进行地址计算
-            // 由于该 int 只用于索引，不参与纹理坐标计算，保留 floatBitsToInt 风险较低。
             int _940 = floatBitsToInt(_932) << 6;
             int _942 = _940 + 16;
             uint _944 = uint(int(uint(_942) >> uint(2)));
@@ -759,9 +757,7 @@ void main()
             float _1112 = clamp(_1110, 0.0, 1.0);
             precise float _3305 = _1108 * _1102;
             float _1114 = _3305;
-            // 原 uint _1116 = uint(int(uint(floatBitsToInt(_1102)) >> uint(16)));
-            // 改为 floatBitsToUint 避免有符号解释
-            uint _1116 = uint(floatBitsToUint(_1102) >> 16);
+            uint _1116 = uint(int(uint(floatBitsToInt(_1102)) >> uint(16)));
             int _1118 = int(_1116) << 16;
             precise float _3315 = _1112 * _1114;
             float _1120 = _3315;
@@ -1266,3 +1262,4 @@ void main()
     _111.z = 0.0;
     _111.w = 1.0;
 }
+
