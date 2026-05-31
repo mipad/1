@@ -215,6 +215,13 @@ void main()
     int _300 = _230 & 2147483647;
     int _302 = _232 & 2147483647;
     int _304 = _234 & 2147483647;
+
+    // ===== 修复：用 uintBitsToFloat + abs + fwidth 打断驱动缺陷 =====
+    float _f173 = uintBitsToFloat(uint(_298));
+    float _f153 = uintBitsToFloat(uint(_300));
+    float _f155 = uintBitsToFloat(uint(_302));
+    float _f157 = uintBitsToFloat(uint(_304));
+
     float _306 = fma(abs(_f173), _185, abs(_f153));
     float _308 = fma(abs(_f155), _238, abs(_f157));
 
@@ -223,6 +230,8 @@ void main()
     float sample_y = _308 + deriv.y - deriv.y;
 
     float _310 = texture(fp_t_tcb_34, vec2(sample_x, sample_y)).x;
+    // ===== 修复结束 =====
+
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
     vec3 _314 = texture(fp_t_tcb_24, vec2(_181, _183)).xyz;
     float _316 = _314.x;
@@ -1262,4 +1271,3 @@ void main()
     _111.z = 0.0;
     _111.w = 1.0;
 }
-
