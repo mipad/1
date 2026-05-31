@@ -111,6 +111,13 @@ void main()
     int _153 = floatBitsToInt(fp_c5_1._m0[10].z);
     int _155 = floatBitsToInt(fp_c5_1._m0[10].y);
     int _157 = floatBitsToInt(fp_c5_1._m0[10].w);
+
+    // ===== 保存原始 float 值，后续完全避免位重解释 =====
+    float _f173 = fp_c5_1._m0[10].x;
+    float _f153 = fp_c5_1._m0[10].z;
+    float _f155 = fp_c5_1._m0[10].y;
+    float _f157 = fp_c5_1._m0[10].w;
+
     if (_147)
     {
         int _159 = floatBitsToInt(fp_c4_1._m0[12].y) & 1048575;
@@ -162,10 +169,17 @@ void main()
         int _222 = _218 - _220;
         uint _224 = uint(int(uint(_222) >> uint(2)));
         float _226 = uintBitsToFloat(fp_s0_1._m0[int(_224)]);
-        _173 = floatBitsToInt(_196);
+
+        // 原先转换为 int 再用于 _173 等，现在只需更新对应的 float 变量
+        _173 = floatBitsToInt(_196);   // 保留用于非纹理部分（如果有）
         _153 = floatBitsToInt(_216);
         _155 = floatBitsToInt(_206);
         _157 = floatBitsToInt(_226);
+
+        _f173 = _196;
+        _f153 = _216;
+        _f155 = _206;
+        _f157 = _226;
     }
     int _228 = _173;
     int _230 = _153;
@@ -211,25 +225,15 @@ void main()
     float _292 = _290.x;
     float _294 = _290.y;
     float _296 = _290.z;
-    int _298 = _228 & 2147483647;
-    int _300 = _230 & 2147483647;
-    int _302 = _232 & 2147483647;
-    int _304 = _234 & 2147483647;
 
-    // ===== 修复：用 uintBitsToFloat + abs + fwidth 打断驱动缺陷 =====
-    float _f173 = uintBitsToFloat(uint(_298));
-    float _f153 = uintBitsToFloat(uint(_300));
-    float _f155 = uintBitsToFloat(uint(_302));
-    float _f157 = uintBitsToFloat(uint(_304));
-
+    // ===== 彻底避免位重解释，直接用 float 变量的绝对值参与 fma =====
     float _306 = fma(abs(_f173), _185, abs(_f153));
     float _308 = fma(abs(_f155), _238, abs(_f157));
 
-    vec2 deriv = fwidth(vec2(_306, _308));
-    float sample_x = _306 + deriv.x - deriv.x;
-    float sample_y = _308 + deriv.y - deriv.y;
-
-    float _310 = texture(fp_t_tcb_34, vec2(sample_x, sample_y)).x;
+    // 数组屏障：强制坐标经过内存读写，打破指令流水线
+    vec2 coordArr[1];
+    coordArr[0] = vec2(_306, _308);
+    float _310 = texture(fp_t_tcb_34, coordArr[0]).x;
     // ===== 修复结束 =====
 
     float _312 = textureLod(fp_t_tcb_1E, vec2(_187, _236), 1.0).x;
