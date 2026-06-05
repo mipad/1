@@ -38,23 +38,55 @@ layout(set = 1, binding = 3, std430) buffer cp_s3
     uint _m0[];
 } cp_s3_1;
 
-shared uint _35[2816];
+// 可选共享内存，暂不使用
+// shared uint _35[2816];
+
+// 安全转换函数（避免 NaN/Inf）
+float safe_uintBitsToFloat(uint x) {
+    if ((x & 0x7f800000u) == 0x7f800000u) return 0.0;
+    return uintBitsToFloat(x);
+}
+uint safe_floatBitsToUint(float x) {
+    if (isnan(x) || isinf(x)) return 0u;
+    return floatBitsToUint(x);
+}
 
 void main()
 {
-    uint idx = gl_LocalInvocationIndex;          // 0..127
-    uint gidx = gl_GlobalInvocationID.x;         // 用于输出
-
-    // 写入共享内存：每个线程写自己的 idx 到对应位置
-    _35[idx] = idx + 1u;                         // 写入非零值
-    barrier();                                   // 所有线程到达
-
-    // 读取另一个位置（例如 idx+1，注意边界）
-    uint readIdx = (idx + 1u) % 2816u;
-    uint value = _35[readIdx];
-
-    // 写入输出缓冲区（安全）
+    // 复制原始代码的前半部分，计算 _61, _55, _73, _77 等
+    float _48 = uintBitsToFloat(gl_LocalInvocationID.x);
+    float _50 = uintBitsToFloat(gl_WorkGroupID.x);
+    int _53 = floatBitsToInt(_48) >> 31;
+    int _55 = floatBitsToInt(_48) & 31;
+    int _57 = _53 & 31;
+    int _59 = floatBitsToInt(_48) + _57;
+    int _61 = _59 >> 5;
+    int _63 = floatBitsToInt(_50) << 1;
+    int _65 = _63 + _61;
+    bool _69 = _65 < 33;
+    bool _71 = _65 >= 1;
+    bool _73 = _71 && _69;
+    bool _75 = _55 >= 1;
+    bool _77 = _75 && _73;
+    
+    // 为了安全，我们暂时不使用 _77 分支，而是直接使用 _61, _55 等
+    // 但为了避免未初始化变量，我们只使用 _61 和 _55，它们总是有值
+    
+    // 计算一些索引，从 cp_s0_1 读取值（使用 clamp 保护）
+    uint idx1 = uint(_61) * 16u;                 // 随便一个索引，确保在范围内
+    uint idx2 = uint(_55) * 4u;
+    
+    uint safe_idx1 = min(idx1, 65535u);
+    uint safe_idx2 = min(idx2, 65535u);
+    
+    uint val1 = cp_s0_1._m0[safe_idx1];
+    uint val2 = cp_s1_1._m0[safe_idx2];
+    
+    // 简单计算，写入输出
+    uint output = val1 + val2;
+    
+    uint gidx = gl_GlobalInvocationID.x;
     if (gidx < 65535u) {
-        cp_s3_1._m0[gidx] = value;
+        cp_s3_1._m0[gidx] = output;
     }
 }
