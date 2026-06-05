@@ -38,10 +38,8 @@ layout(set = 1, binding = 3, std430) buffer cp_s3
     uint _m0[];
 } cp_s3_1;
 
-// 可选共享内存，暂不使用
-// shared uint _35[2816];
+shared uint _35[2816];
 
-// 安全转换函数（避免 NaN/Inf）
 float safe_uintBitsToFloat(uint x) {
     if ((x & 0x7f800000u) == 0x7f800000u) return 0.0;
     return uintBitsToFloat(x);
@@ -53,7 +51,6 @@ uint safe_floatBitsToUint(float x) {
 
 void main()
 {
-    // 复制原始代码的前半部分，计算 _61, _55, _73, _77 等
     float _48 = uintBitsToFloat(gl_LocalInvocationID.x);
     float _50 = uintBitsToFloat(gl_WorkGroupID.x);
     int _53 = floatBitsToInt(_48) >> 31;
@@ -69,21 +66,27 @@ void main()
     bool _75 = _55 >= 1;
     bool _77 = _75 && _73;
     
-    // 为了安全，我们暂时不使用 _77 分支，而是直接使用 _61, _55 等
-    // 但为了避免未初始化变量，我们只使用 _61 和 _55，它们总是有值
+    // 计算一些原始代码中出现的索引（但避免使用条件分支）
+    int _660 = floatBitsToInt(_48) << 2;
+    int _674 = floatBitsToInt(_48) << 2;
+    int _676 = int(bitfieldInsert(0u, floatBitsToUint(_48), int(2u), int(5u)));
     
-    // 计算一些索引，从 cp_s0_1 读取值（使用 clamp 保护）
-    uint idx1 = uint(_61) * 16u;                 // 随便一个索引，确保在范围内
-    uint idx2 = uint(_55) * 4u;
+    // 所有线程都执行共享内存写入和 barrier
+    uint lidx = gl_LocalInvocationIndex;
+    _35[lidx] = uint(_61) + uint(_55);   // 写入一些数据
+    barrier();                            // 所有线程同步
     
-    uint safe_idx1 = min(idx1, 65535u);
-    uint safe_idx2 = min(idx2, 65535u);
+    // 读取相邻线程写入的值（安全索引）
+    uint ridx = (lidx + 1u) % 128u;
+    uint sh_val = _35[ridx];
     
-    uint val1 = cp_s0_1._m0[safe_idx1];
-    uint val2 = cp_s1_1._m0[safe_idx2];
+    // 从缓冲区读取简单值（带边界保护）
+    uint idx1 = min(uint(_61) * 16u, 65535u);
+    uint idx2 = min(uint(_55) * 4u, 65535u);
+    uint val1 = cp_s0_1._m0[idx1];
+    uint val2 = cp_s1_1._m0[idx2];
     
-    // 简单计算，写入输出（避免使用保留字 output）
-    uint out_val = val1 + val2;
+    uint out_val = sh_val + val1 + val2;
     
     uint gidx = gl_GlobalInvocationID.x;
     if (gidx < 65535u) {
