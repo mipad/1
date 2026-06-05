@@ -38,24 +38,23 @@ layout(set = 1, binding = 3, std430) buffer cp_s3
     uint _m0[];
 } cp_s3_1;
 
-// 不再使用共享内存
-// shared uint _35[2816];
+shared uint _35[2816];
 
 void main()
 {
-    // 不进行任何复杂计算，直接将所有输出缓冲区写入 0
-    // 假设缓冲区至少有足够长度（根据原始代码中使用的最大索引估算）
-    // 这里只写前几个元素作为示例，实际可根据需要调整
-    
-    // 获取调用索引（安全范围）
-    uint idx = gl_GlobalInvocationID.x;
-    
-    // 对 cp_s3 写入 0（原始代码最后的输出位置）
-    // 使用安全索引（最多写入 65535，避免越界）
-    if (idx < 65535u) {
-        cp_s3_1._m0[idx] = 0u;
+    uint idx = gl_LocalInvocationIndex;          // 0..127
+    uint gidx = gl_GlobalInvocationID.x;         // 用于输出
+
+    // 写入共享内存：每个线程写自己的 idx 到对应位置
+    _35[idx] = idx + 1u;                         // 写入非零值
+    barrier();                                   // 所有线程到达
+
+    // 读取另一个位置（例如 idx+1，注意边界）
+    uint readIdx = (idx + 1u) % 2816u;
+    uint value = _35[readIdx];
+
+    // 写入输出缓冲区（安全）
+    if (gidx < 65535u) {
+        cp_s3_1._m0[gidx] = value;
     }
-    
-    // 如果需要保留输出语义，也可以写入其他缓冲区
-    // 但为了避免崩溃，只写入一个已知安全的缓冲区
 }
