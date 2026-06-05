@@ -66,30 +66,932 @@ void main()
     bool _75 = _55 >= 1;
     bool _77 = _75 && _73;
     
-    // 计算一些原始代码中出现的索引（但避免使用条件分支）
+    // 定义原始代码中的一些变量，并初始化默认值
+    int _79 = _65;
+    int _87 = _79;
+    int _89 = 0;
+    int _91 = _87;
+    int _97 = _89;
+    int _99 = 0;
+    int _101 = _97;
+    int _107 = _99;
+    int _111 = _91;
+    int _113 = 0;
+    int _115 = _111;
+    int _121 = _113;
+    int _123 = 0;
+    int _125 = _121;
+    int _131 = _123;
+    int _133 = 0;
+    int _135 = _131;
+    int _141 = _133;
+    int _143 = 0;
+    int _145 = 0;
+    int _147 = _141;
+    int _149 = 0;
+    int _155 = 0;
+    int _157 = 0;
+    int _159 = 0;
+    int _161 = 0;
+    int _167 = 0;
+    int _169 = 0;
+    int _175 = 0;
+    int _177 = 0;
+    int _183 = 0;
+    int _185 = 0;
+    int _187 = 0;
+    int _193 = 0;
+    int _195 = 0;
+    int _197 = 0;
+    int _199 = 0;
+    int _206 = 0;
+    int _212 = 0;
+    int _214 = 0;
+    int _216 = 0;
+    int _222 = 0;
+    int _224 = 0;
+    int _226 = 0;
+    int _232 = 0;
+    int _234 = 0;
+    int _236 = 0;
+    int _242 = 0;
+    int _244 = 0;
+    int _246 = 0;
+    int _248 = 0;
+    int _254 = 0;
+    int _256 = 0;
+    int _258 = 0;
+    int _260 = 0;
+    int _266 = 0;
+    int _272 = 0;
+    int _274 = 0;
+    int _280 = 0;
+    int _286 = 0;
+    int _288 = 0;
+    int _294 = 0;
+    int _296 = 0;
+    int _298 = 0;
+    int _300 = 0;
+    int _306 = 0;
+    int _312 = 0;
+    int _314 = 0;
+    int _316 = 0;
+    int _318 = 0;
+    int _324 = 0;
+    int _326 = 0;
+    int _328 = 0;
+    int _334 = 0;
+    int _340 = 0;
+    int _342 = 0;
+    int _344 = 0;
+    int _350 = 0;
+    int _352 = 0;
+    int _354 = 0;
+    int _356 = 0;
+    int _360 = 0;
+    int _362 = 0;
+    int _368 = 0;
+    int _374 = 0;
+    int _376 = 0;
+    int _378 = 0;
+    int _382 = 0;
+    int _384 = 0;
+    int _390 = 0;
+    int _396 = 0;
+    int _398 = 0;
+    int _400 = 0;
+    int _406 = 0;
+    int _412 = 0;
+    int _414 = 0;
+    int _416 = 0;
+    int _418 = 0;
+    int _424 = 0;
+    int _430 = 0;
+    int _432 = 0;
+    int _434 = 0;
+    int _440 = 0;
+    int _442 = 0;
+    int _448 = 0;
+    int _454 = 0;
+    int _456 = 0;
+    int _458 = 0;
+    int _464 = 0;
+    int _466 = 0;
+    int _468 = 0;
+    int _470 = 0;
+    int _474 = 0;
+    int _476 = 0;
+    int _478 = 0;
+    int _484 = 0;
+    int _490 = 0;
+    int _492 = 0;
+    int _498 = 0;
+    int _500 = 0;
+    int _502 = 0;
+    int _506 = 0;
+    int _508 = 0;
+    int _514 = 0;
+    int _520 = 0;
+    int _522 = 0;
+    int _528 = 0;
+    int _530 = 0;
+    int _532 = 0;
+    int _534 = 0;
+    int _538 = 0;
+    int _540 = 0;
+    int _546 = 0;
+    int _552 = 0;
+    int _554 = 0;
+    int _556 = 0;
+    int _558 = 0;
+    int _562 = 0;
+    int _564 = 0;
+    int _570 = 0;
+    int _576 = 0;
+    int _582 = 0;
+    int _584 = 0;
+    int _586 = 0;
+    int _588 = 0;
+    int _592 = 0;
+    int _594 = 0;
+    int _600 = 0;
+    int _606 = 0;
+    int _608 = 0;
+    int _612 = 0;
+    int _614 = 0;
+    int _620 = 0;
+    int _622 = floatBitsToInt(_48) * 24;
+    int _628 = 0;
+    int _630 = _622 + 3084;
+    int _632 = _622 + 6156;
+    int _638 = _622 + 12;
+    int _644 = _632 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _646 = uint(_644) < uint(_632);
+    int _648 = _622 + 3072;
+    int _654 = _622 + 6144;
     int _660 = floatBitsToInt(_48) << 2;
+    int _666 = floatBitsToInt(_48) << 1;
+    int _668 = _666 + 512;
     int _674 = floatBitsToInt(_48) << 2;
     int _676 = int(bitfieldInsert(0u, floatBitsToUint(_48), int(2u), int(5u)));
+    int _678 = _668 << 2;
+    int _680 = _646 ? (-1) : 0;
+    int _690 = _61 * 192;
+    int _692 = _690 + 48;
+    int _698 = _692 << 2;
+    int _812 = _678 + 6144;
+    int _816 = _678 + 6148;
+    int _820 = _678 + 7168;
+    int _824 = _678 + 7172;
+    int _828 = _678 + 8192;
+    int _832 = _678 + 8196;
     
-    // 所有线程都执行共享内存写入和 barrier
+    // 开始复制原始代码中 if (_77) 块内的赋值，但不包含任何 barrier
+    if (_77)
+    {
+        int _83 = floatBitsToInt(_50) << 6;
+        int _85 = _83 + floatBitsToInt(_48);
+        _79 = _85;
+    }
+    int _87 = _79;
+    int _89 = 0;
+    int _91 = _87;
+    if (_77)
+    {
+        int _93 = floatBitsToInt(_50) << 6;
+        int _95 = _93 + 1024;
+        _89 = _95;
+    }
+    int _97 = _89;
+    int _99 = 0;
+    int _101 = _97;
+    if (_77)
+    {
+        int _103 = floatBitsToInt(_50) << 6;
+        int _105 = _103 + 3072;
+        _99 = _105;
+    }
+    int _107 = _99;
+    if (_77)
+    {
+        int _109 = _87 + (-33);
+        _91 = _109;
+    }
+    int _111 = _91;
+    int _113 = 0;
+    int _115 = _111;
+    if (_77)
+    {
+        int _117 = floatBitsToInt(_50) << 6;
+        int _119 = _117 + 5120;
+        _113 = _119;
+    }
+    int _121 = _113;
+    int _123 = 0;
+    int _125 = _121;
+    if (_77)
+    {
+        int _127 = _97 + (-33);
+        int _129 = _127 + floatBitsToInt(_48);
+        _123 = _129;
+    }
+    int _131 = _123;
+    int _133 = 0;
+    int _135 = _131;
+    if (_77)
+    {
+        int _137 = _107 + (-33);
+        int _139 = _137 + floatBitsToInt(_48);
+        _133 = _139;
+    }
+    int _141 = _133;
+    int _143 = 0;
+    int _145 = 0;
+    int _147 = _141;
+    if (_77)
+    {
+        _149 = _111 << 2;
+        int _151 = _149 + floatBitsToInt(cp_c0_1._m0[50].x);
+        bool _153 = uint(_151) < uint(_149);
+        _143 = _153 ? (-1) : 0;
+        _145 = _151;
+    }
+    int _155 = _143;
+    int _157 = _145;
+    int _159 = _155;
+    int _161 = _157;
+    if (_77)
+    {
+        int _163 = floatBitsToInt(_50) << 6;
+        int _165 = _163 + 2048;
+        _115 = _165;
+    }
+    int _167 = _115;
+    int _169 = _167;
+    if (_77)
+    {
+        int _171 = _121 + (-33);
+        int _173 = _171 + floatBitsToInt(_48);
+        _125 = _173;
+    }
+    int _175 = _125;
+    int _177 = _175;
+    if (_77)
+    {
+        int _179 = _155 & 1;
+        int _181 = floatBitsToInt(cp_c0_1._m0[50].y) + _179;
+        _101 = _181;
+    }
+    int _183 = _101;
+    int _185 = _183;
+    if (_77)
+    {
+        _187 = _131 << 2;
+        int _189 = _187 + floatBitsToInt(cp_c0_1._m0[50].x);
+        bool _191 = uint(_189) < uint(_187);
+        _159 = _191 ? (-1) : 0;
+        _135 = _189;
+    }
+    int _193 = _159;
+    int _195 = _135;
+    int _197 = _193;
+    int _199 = _195;
+    if (_77)
+    {
+        uint _202 = uint(int(uint(_149) >> uint(2)));
+        float _204 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_202), 0, 65535)]);
+        _161 = floatBitsToInt(_204);
+    }
+    int _206 = _161;
+    if (_77)
+    {
+        int _208 = _167 + (-33);
+        int _210 = _208 + floatBitsToInt(_48);
+        _169 = _210;
+    }
+    int _212 = _169;
+    int _214 = 0;
+    int _216 = _212;
+    if (_77)
+    {
+        int _218 = floatBitsToInt(_50) << 6;
+        int _220 = _218 + 7168;
+        _214 = _220;
+    }
+    int _222 = _214;
+    int _224 = 0;
+    int _226 = _222;
+    if (_77)
+    {
+        int _228 = floatBitsToInt(_50) << 6;
+        int _230 = _228 + 9216;
+        _224 = _230;
+    }
+    int _232 = _224;
+    int _234 = 0;
+    int _236 = _232;
+    if (_77)
+    {
+        int _238 = _193 & 1;
+        int _240 = floatBitsToInt(cp_c0_1._m0[50].y) + _238;
+        _234 = _240;
+    }
+    int _242 = _234;
+    int _244 = 0;
+    int _246 = _242;
+    if (_77)
+    {
+        _248 = _212 << 2;
+        int _250 = _248 + floatBitsToInt(cp_c0_1._m0[50].x);
+        bool _252 = uint(_250) < uint(_248);
+        _197 = _252 ? (-1) : 0;
+        _244 = _250;
+    }
+    int _254 = _197;
+    int _256 = _244;
+    int _258 = _254;
+    int _260 = _256;
+    if (_77)
+    {
+        uint _262 = uint(int(uint(_187) >> uint(2)));
+        float _264 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_262), 0, 65535)]);
+        _199 = floatBitsToInt(_264);
+    }
+    int _266 = _199;
+    if (_77)
+    {
+        int _268 = floatBitsToInt(_50) << 6;
+        int _270 = _268 + 4096;
+        _216 = _270;
+    }
+    int _272 = _216;
+    int _274 = _272;
+    if (_77)
+    {
+        int _276 = _222 + (-33);
+        int _278 = _276 + floatBitsToInt(_48);
+        _226 = _278;
+    }
+    int _280 = _226;
+    if (_77)
+    {
+        int _282 = _232 + (-33);
+        int _284 = _282 + floatBitsToInt(_48);
+        _236 = _284;
+    }
+    int _286 = _236;
+    if (_77)
+    {
+        _288 = _141 << 2;
+        int _290 = _288 + floatBitsToInt(cp_c0_1._m0[50].x);
+        bool _292 = uint(_290) < uint(_288);
+        _258 = _292 ? (-1) : 0;
+        _147 = _290;
+    }
+    int _294 = _258;
+    int _296 = _147;
+    int _298 = _294;
+    int _300 = _296;
+    if (_77)
+    {
+        uint _302 = uint(int(uint(_248) >> uint(2)));
+        float _304 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_302), 0, 65535)]);
+        _260 = floatBitsToInt(_304);
+    }
+    int _306 = _260;
+    if (_77)
+    {
+        int _308 = _272 + (-33);
+        int _310 = _308 + floatBitsToInt(_48);
+        _274 = _310;
+    }
+    int _312 = _274;
+    int _314 = _312;
+    int _316 = 0;
+    if (_77)
+    {
+        _318 = _312 << 2;
+        int _320 = _318 + floatBitsToInt(cp_c0_1._m0[50].x);
+        bool _322 = uint(_320) < uint(_318);
+        _298 = _322 ? (-1) : 0;
+        _316 = _320;
+    }
+    int _324 = _298;
+    int _326 = _316;
+    int _328 = _326;
+    if (_77)
+    {
+        uint _330 = uint(int(uint(_288) >> uint(2)));
+        float _332 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_330), 0, 65535)]);
+        _300 = floatBitsToInt(_332);
+    }
+    int _334 = _300;
+    if (_77)
+    {
+        int _336 = floatBitsToInt(_50) << 6;
+        int _338 = _336 + 6144;
+        _314 = _338;
+    }
+    int _340 = _314;
+    int _342 = 0;
+    int _344 = _340;
+    if (_77)
+    {
+        int _346 = _324 & 1;
+        int _348 = floatBitsToInt(cp_c0_1._m0[50].y) + _346;
+        _342 = _348;
+    }
+    int _350 = _342;
+    int _352 = 0;
+    int _354 = _350;
+    if (_77)
+    {
+        _356 = _175 << 2;
+        int _358 = _356 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _352 = _358;
+    }
+    int _360 = _352;
+    int _362 = _360;
+    if (_77)
+    {
+        uint _364 = uint(int(uint(_318) >> uint(2)));
+        float _366 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_364), 0, 65535)]);
+        _328 = floatBitsToInt(_366);
+    }
+    int _368 = _328;
+    if (_77)
+    {
+        int _370 = _340 + (-33);
+        int _372 = _370 + floatBitsToInt(_48);
+        _344 = _372;
+    }
+    int _374 = _344;
+    int _376 = _374;
+    if (_77)
+    {
+        _378 = _374 << 2;
+        int _380 = _378 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _177 = _380;
+    }
+    int _382 = _177;
+    int _384 = _382;
+    if (_77)
+    {
+        uint _386 = uint(int(uint(_356) >> uint(2)));
+        float _388 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_386), 0, 65535)]);
+        _362 = floatBitsToInt(_388);
+    }
+    int _390 = _362;
+    if (_77)
+    {
+        int _392 = floatBitsToInt(_50) << 6;
+        int _394 = _392 + 8192;
+        _376 = _394;
+    }
+    int _396 = _376;
+    int _398 = _396;
+    if (_77)
+    {
+        _400 = _280 << 2;
+    }
+    if (_77)
+    {
+        uint _402 = uint(int(uint(_378) >> uint(2)));
+        float _404 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_402), 0, 65535)]);
+        _246 = floatBitsToInt(_404);
+    }
+    int _406 = _246;
+    if (_77)
+    {
+        int _408 = _396 + (-33);
+        int _410 = _408 + floatBitsToInt(_48);
+        _398 = _410;
+    }
+    int _412 = _398;
+    int _414 = _412;
+    if (_77)
+    {
+        _416 = _412 << 2;
+    }
+    int _418 = 0;
+    if (_77)
+    {
+        uint _420 = uint(int(uint(_400) >> uint(2)));
+        float _422 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_420), 0, 65535)]);
+        _418 = floatBitsToInt(_422);
+    }
+    int _424 = _418;
+    if (_77)
+    {
+        int _426 = floatBitsToInt(_50) << 6;
+        int _428 = _426 + 10240;
+        _414 = _428;
+    }
+    int _430 = _414;
+    int _432 = 0;
+    int _434 = _430;
+    if (_77)
+    {
+        int _436 = floatBitsToInt(_50) << 6;
+        int _438 = _436 + 11264;
+        _432 = _438;
+    }
+    int _440 = _432;
+    if (_77)
+    {
+        _442 = _286 << 2;
+    }
+    if (_77)
+    {
+        uint _444 = uint(int(uint(_416) >> uint(2)));
+        float _446 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_444), 0, 65535)]);
+        _354 = floatBitsToInt(_446);
+    }
+    int _448 = _354;
+    if (_77)
+    {
+        int _450 = _430 + (-33);
+        int _452 = _450 + floatBitsToInt(_48);
+        _434 = _452;
+    }
+    int _454 = _434;
+    int _456 = 0;
+    int _458 = _454;
+    if (_77)
+    {
+        int _460 = _440 + (-33);
+        int _462 = _460 + floatBitsToInt(_48);
+        _456 = _462;
+    }
+    int _464 = _456;
+    int _466 = _464;
+    int _468 = 0;
+    if (_77)
+    {
+        _470 = _454 << 2;
+        int _472 = _470 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _468 = _472;
+    }
+    int _474 = _468;
+    int _476 = 0;
+    int _478 = _474;
+    if (_77)
+    {
+        uint _480 = uint(int(uint(_442) >> uint(2)));
+        float _482 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_480), 0, 65535)]);
+        _476 = floatBitsToInt(_482);
+    }
+    int _484 = _476;
+    if (_77)
+    {
+        int _486 = floatBitsToInt(_50) << 6;
+        int _488 = _486 + 12288;
+        _458 = _488;
+    }
+    int _490 = _458;
+    int _492 = _490;
+    if (_77)
+    {
+        int _494 = floatBitsToInt(_50) << 6;
+        int _496 = _494 + 13312;
+        _185 = _496;
+    }
+    int _498 = _185;
+    int _500 = _498;
+    if (_77)
+    {
+        _502 = _464 << 2;
+        int _504 = _502 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _466 = _504;
+    }
+    int _506 = _466;
+    int _508 = _506;
+    if (_77)
+    {
+        uint _510 = uint(int(uint(_470) >> uint(2)));
+        float _512 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_510), 0, 65535)]);
+        _478 = floatBitsToInt(_512);
+    }
+    int _514 = _478;
+    if (_77)
+    {
+        int _516 = _490 + (-33);
+        int _518 = _516 + floatBitsToInt(_48);
+        _492 = _518;
+    }
+    int _520 = _492;
+    int _522 = _520;
+    if (_77)
+    {
+        int _524 = _498 + (-33);
+        int _526 = _524 + floatBitsToInt(_48);
+        _500 = _526;
+    }
+    int _528 = _500;
+    int _530 = _528;
+    int _532 = 0;
+    if (_77)
+    {
+        _534 = _520 << 2;
+        int _536 = _534 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _532 = _536;
+    }
+    int _538 = _532;
+    int _540 = _538;
+    if (_77)
+    {
+        uint _542 = uint(int(uint(_502) >> uint(2)));
+        float _544 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_542), 0, 65535)]);
+        _508 = floatBitsToInt(_544);
+    }
+    int _546 = _508;
+    if (_77)
+    {
+        int _548 = floatBitsToInt(_50) << 6;
+        int _550 = _548 + 14336;
+        _522 = _550;
+    }
+    int _552 = _522;
+    int _554 = _552;
+    int _556 = 0;
+    if (_77)
+    {
+        _558 = _528 << 2;
+        int _560 = _558 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _556 = _560;
+    }
+    int _562 = _556;
+    int _564 = _562;
+    if (_77)
+    {
+        uint _566 = uint(int(uint(_534) >> uint(2)));
+        float _568 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_566), 0, 65535)]);
+        _540 = floatBitsToInt(_568);
+    }
+    int _570 = _540;
+    if (_77)
+    {
+        int _572 = _552 + (-33);
+        int _574 = _572 + floatBitsToInt(_48);
+        _554 = _574;
+    }
+    int _576 = _554;
+    if (_77)
+    {
+        int _578 = floatBitsToInt(_50) << 6;
+        int _580 = _578 + 15360;
+        _530 = _580;
+    }
+    int _582 = _530;
+    int _584 = _582;
+    int _586 = 0;
+    if (_77)
+    {
+        _588 = _576 << 2;
+        int _590 = _588 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _586 = _590;
+    }
+    int _592 = _586;
+    int _594 = _592;
+    if (_77)
+    {
+        uint _596 = uint(int(uint(_558) >> uint(2)));
+        float _598 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_596), 0, 65535)]);
+        _564 = floatBitsToInt(_598);
+    }
+    int _600 = _564;
+    if (_77)
+    {
+        int _602 = _582 + (-33);
+        int _604 = _602 + floatBitsToInt(_48);
+        _584 = _604;
+    }
+    int _606 = _584;
+    if (_77)
+    {
+        _608 = _606 << 2;
+        int _610 = _608 + floatBitsToInt(cp_c0_1._m0[50].x);
+        _384 = _610;
+    }
+    int _612 = _384;
+    int _614 = _612;
+    if (_77)
+    {
+        uint _616 = uint(int(uint(_588) >> uint(2)));
+        float _618 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_616), 0, 65535)]);
+        _594 = floatBitsToInt(_618);
+    }
+    int _620 = _594;
+    if (_77)
+    {
+        uint _624 = uint(int(uint(_608) >> uint(2)));
+        float _626 = safe_uintBitsToFloat(cp_s0_1._m0[clamp(int(_624), 0, 65535)]);
+        _614 = floatBitsToInt(_626);
+    }
+    int _628 = _614;
+    
+    // 接下来恢复共享内存写入（原始代码中的 _35 赋值）
     uint lidx = gl_LocalInvocationIndex;
-    _35[lidx] = uint(_61) + uint(_55);   // 写入一些数据
-    barrier();                            // 所有线程同步
+    if (_77)
+    {
+        uint _682 = uint(int(uint(_660) >> uint(2)));
+        _35[clamp(int(_682), 0, 2815)] = uint(_206);
+    }
+    if (!_77)
+    {
+        uint _684 = uint(int(uint(_660) >> uint(2)));
+        _35[clamp(int(_684), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _686 = _674 + 512;
+        uint _688 = uint(int(uint(_686) >> uint(2)));
+        _35[clamp(int(_688), 0, 2815)] = uint(_266);
+    }
+    if (_77)
+    {
+        int _694 = _674 + 1024;
+        uint _696 = uint(int(uint(_694) >> uint(2)));
+        _35[clamp(int(_696), 0, 2815)] = uint(_306);
+    }
+    if (_77)
+    {
+        int _700 = _674 + 1536;
+        uint _702 = uint(int(uint(_700) >> uint(2)));
+        _35[clamp(int(_702), 0, 2815)] = uint(_334);
+    }
+    if (_77)
+    {
+        int _704 = _674 + 2048;
+        uint _706 = uint(int(uint(_704) >> uint(2)));
+        _35[clamp(int(_706), 0, 2815)] = uint(_368);
+    }
+    if (!_77)
+    {
+        int _708 = _674 + 512;
+        uint _710 = uint(int(uint(_708) >> uint(2)));
+        _35[clamp(int(_710), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _712 = _674 + 2560;
+        uint _714 = uint(int(uint(_712) >> uint(2)));
+        _35[clamp(int(_714), 0, 2815)] = uint(_390);
+    }
+    if (!_77)
+    {
+        int _716 = _674 + 1024;
+        uint _718 = uint(int(uint(_716) >> uint(2)));
+        _35[clamp(int(_718), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _720 = _674 + 3072;
+        uint _722 = uint(int(uint(_720) >> uint(2)));
+        _35[clamp(int(_722), 0, 2815)] = uint(_406);
+    }
+    if (!_77)
+    {
+        int _724 = _674 + 1536;
+        uint _726 = uint(int(uint(_724) >> uint(2)));
+        _35[clamp(int(_726), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _728 = _674 + 3584;
+        uint _730 = uint(int(uint(_728) >> uint(2)));
+        _35[clamp(int(_730), 0, 2815)] = uint(_424);
+    }
+    if (!_77)
+    {
+        int _732 = _674 + 2048;
+        uint _734 = uint(int(uint(_732) >> uint(2)));
+        _35[clamp(int(_734), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _736 = _674 + 4096;
+        uint _738 = uint(int(uint(_736) >> uint(2)));
+        _35[clamp(int(_738), 0, 2815)] = uint(_448);
+    }
+    if (!_77)
+    {
+        int _740 = _674 + 2560;
+        uint _742 = uint(int(uint(_740) >> uint(2)));
+        _35[clamp(int(_742), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _744 = _674 + 4608;
+        uint _746 = uint(int(uint(_744) >> uint(2)));
+        _35[clamp(int(_746), 0, 2815)] = uint(_484);
+    }
+    if (!_77)
+    {
+        int _748 = _674 + 3072;
+        uint _750 = uint(int(uint(_748) >> uint(2)));
+        _35[clamp(int(_750), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _752 = _674 + 5120;
+        uint _754 = uint(int(uint(_752) >> uint(2)));
+        _35[clamp(int(_754), 0, 2815)] = uint(_514);
+    }
+    if (!_77)
+    {
+        int _756 = _674 + 3584;
+        uint _758 = uint(int(uint(_756) >> uint(2)));
+        _35[clamp(int(_758), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _760 = _674 + 5632;
+        uint _762 = uint(int(uint(_760) >> uint(2)));
+        _35[clamp(int(_762), 0, 2815)] = uint(_546);
+    }
+    if (!_77)
+    {
+        int _764 = _674 + 4096;
+        uint _766 = uint(int(uint(_764) >> uint(2)));
+        _35[clamp(int(_766), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _768 = _674 + 6144;
+        uint _770 = uint(int(uint(_768) >> uint(2)));
+        _35[clamp(int(_770), 0, 2815)] = uint(_570);
+    }
+    if (!_77)
+    {
+        int _772 = _674 + 4608;
+        uint _774 = uint(int(uint(_772) >> uint(2)));
+        _35[clamp(int(_774), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _776 = _674 + 6656;
+        uint _778 = uint(int(uint(_776) >> uint(2)));
+        _35[clamp(int(_778), 0, 2815)] = uint(_600);
+    }
+    if (!_77)
+    {
+        int _780 = _674 + 5120;
+        uint _782 = uint(int(uint(_780) >> uint(2)));
+        _35[clamp(int(_782), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _784 = _674 + 7168;
+        uint _786 = uint(int(uint(_784) >> uint(2)));
+        _35[clamp(int(_786), 0, 2815)] = uint(_620);
+    }
+    if (!_77)
+    {
+        int _788 = _674 + 5632;
+        uint _790 = uint(int(uint(_788) >> uint(2)));
+        _35[clamp(int(_790), 0, 2815)] = 0u;
+    }
+    if (_77)
+    {
+        int _792 = _674 + 7680;
+        uint _794 = uint(int(uint(_792) >> uint(2)));
+        _35[clamp(int(_794), 0, 2815)] = uint(_628);
+    }
+    if (!_77)
+    {
+        int _796 = _674 + 6144;
+        uint _798 = uint(int(uint(_796) >> uint(2)));
+        _35[clamp(int(_798), 0, 2815)] = 0u;
+    }
+    if (!_77)
+    {
+        int _800 = _674 + 6656;
+        uint _802 = uint(int(uint(_800) >> uint(2)));
+        _35[clamp(int(_802), 0, 2815)] = 0u;
+    }
+    if (!_77)
+    {
+        int _804 = _674 + 7168;
+        uint _806 = uint(int(uint(_804) >> uint(2)));
+        _35[clamp(int(_806), 0, 2815)] = 0u;
+    }
+    if (!_77)
+    {
+        int _808 = _674 + 7680;
+        uint _810 = uint(int(uint(_808) >> uint(2)));
+        _35[clamp(int(_810), 0, 2815)] = 0u;
+    }
     
-    // 读取相邻线程写入的值（安全索引）
-    uint ridx = (lidx + 1u) % 128u;
-    uint sh_val = _35[ridx];
+    // 所有线程执行 barrier（确保共享内存写入完成）
+    barrier();
     
-    // 从缓冲区读取简单值（带边界保护）
-    uint idx1 = min(uint(_61) * 16u, 65535u);
-    uint idx2 = min(uint(_55) * 4u, 65535u);
-    uint val1 = cp_s0_1._m0[idx1];
-    uint val2 = cp_s1_1._m0[idx2];
-    
-    uint out_val = sh_val + val1 + val2;
+    // 这里原本有大量从共享内存读取和 FMA 计算，我们暂时跳过，只做简单输出
+    // 读取共享内存中的某个值，作为输出
+    uint sh_read = _35[clamp(int(lidx), 0, 2815)];
     
     uint gidx = gl_GlobalInvocationID.x;
     if (gidx < 65535u) {
-        cp_s3_1._m0[gidx] = out_val;
+        cp_s3_1._m0[gidx] = sh_read;
     }
 }
