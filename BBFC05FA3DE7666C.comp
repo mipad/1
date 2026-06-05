@@ -1236,13 +1236,14 @@ void main()
     }
     
     // ========== if (_3678) 块 ==========
-    int _3658 = _3596 + 2;
+    int _3596_val = floatBitsToInt(_48) & 31;
+    int _3658 = _3596_val + 2;
     bool _3668 = _3658 >= 1;
     bool _3670 = _3668 && _73;
     bool _3676 = _3658 < 33;
     bool _3678 = _3676 && _3670;
     
-    // 声明 if (_3678) 块内需要的变量（仅声明最关键的一些，避免数量过大）
+    // 声明 if (_3678) 块内需要的变量
     int _5728 = 0;
     int _5730 = 0;
     int _5732 = 0;
@@ -1250,6 +1251,7 @@ void main()
     int _5736 = 0;
     int _5738 = 0;
     int _5744 = 0;
+    int _5782 = 0;
     int _5788 = 0;
     int _5898 = 0;
     int _5900 = 0;
@@ -1259,10 +1261,29 @@ void main()
     int _5912 = 0;
     int _5918 = 0;
     int _6012 = 0;
+    int _6026 = 0;
+    int _6034 = 0;
+    int _6076 = 0;
+    int _6078 = 0;
+    int _6100 = 0;
+    int _6124 = 0;
+    int _6138 = 0;
+    int _6148 = 0;
+    int _6150 = 0;
+    int _6156 = 0;
+    int _6158 = 0;
+    int _6190 = 0;
+    int _6192 = 0;
+    int _6222 = 0;
+    int _6224 = 0;
+    int _6266 = 0;
+    int _6268 = 0;
+    int _9036 = 0;
+    int _9040 = 0;
     
     if (_3678)
     {
-        // 原始代码中的关键计算（简化版，只保留必要的部分）
+        // 原始代码中的关键计算
         int _5740 = floatBitsToInt(_50) << 6;
         int _5742 = _5740 + floatBitsToInt(_48);
         _5728 = _5742;
@@ -1296,51 +1317,49 @@ void main()
         uint _6022 = uint(int(uint(_5900) >> uint(2)));
         float _6024 = uintBitsToFloat(cp_s0_1._m0[int(_6022)]);
         _5738 = floatBitsToInt(_6024);
-        int _6026 = _5738;
+        _6026 = _5738;
         
-        // 共享内存写入（原始代码中的一部分）
+        // 共享内存写入
         uint _6142 = uint(int(uint(_674) >> uint(2)));
         _35[int(_6142)] = uint(_6026);
         uint _6144 = uint(int(uint(_5900) >> uint(2)));
         float _6146 = uintBitsToFloat(cp_s0_1._m0[int(_6144)]);
         _6034 = floatBitsToInt(_6146);
-        int _6148 = _6034;
+        _6148 = _6034;
         
         int _6152 = _6138 << 2;
         int _6154 = _6152 + floatBitsToInt(cp_c0_1._m0[50].x);
         _6124 = _6154;
-        int _6156 = _6124;
-        int _6158 = _6156;
+        _6156 = _6124;
+        _6158 = _6156;
         
         uint _6162 = uint(int(uint(_674 + 512) >> uint(2)));
         _35[int(_6162)] = uint(_6076);
         
-        // 继续从 cp_s0 读取
         uint _6186 = uint(int(uint(_6152) >> uint(2)));
         float _6188 = uintBitsToFloat(cp_s0_1._m0[int(_6186)]);
         _6078 = floatBitsToInt(_6188);
-        int _6190 = _6078;
-        int _6192 = _6190;
+        _6190 = _6078;
+        _6192 = _6190;
         
-        // 更多共享内存写入
         uint _6218 = uint(int(uint(_6194) >> uint(2)));
         float _6220 = uintBitsToFloat(cp_s0_1._m0[int(_6218)]);
         _6100 = floatBitsToInt(_6220);
-        int _6222 = _6100;
-        int _6224 = _6222;
+        _6222 = _6100;
+        _6224 = _6222;
         
         uint _6262 = uint(int(uint(_6234) >> uint(2)));
         float _6264 = uintBitsToFloat(cp_s0_1._m0[int(_6262)]);
         _6150 = floatBitsToInt(_6264);
-        int _6266 = _6150;
-        int _6268 = _6266;
+        _6266 = _6150;
+        _6268 = _6266;
         
-        // 最终输出写入 cp_s3（原始代码的末尾部分）
+        // 最终输出写入 cp_s3
         uint _9044 = uint(int(uint(_9036) >> uint(2)));
         cp_s3_1._m0[int(_9044)] = uint(_9040);
     }
     
-    // 所有线程 barrier（原始代码中 if (_3678) 块内的 barrier 被移到这里）
+    // 所有线程 barrier
     barrier();
     
     // 输出共享内存的值
