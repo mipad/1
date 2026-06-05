@@ -82,11 +82,11 @@ void main()
     uint val1 = cp_s0_1._m0[safe_idx1];
     uint val2 = cp_s1_1._m0[safe_idx2];
     
-    // 简单计算，写入输出
-    uint output = val1 + val2;
+    // 简单计算，写入输出（避免使用保留字 output）
+    uint out_val = val1 + val2;
     
     uint gidx = gl_GlobalInvocationID.x;
     if (gidx < 65535u) {
-        cp_s3_1._m0[gidx] = output;
+        cp_s3_1._m0[gidx] = out_val;
     }
 }
