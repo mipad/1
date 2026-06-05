@@ -738,82 +738,66 @@ void main()
         _35[int(_810)] = 0u;
     }
 
-    // ========== if (_1166) 块：恢复共享内存写入（不读取缓冲区） ==========
+    // ========== if (_1166) 块：恢复原始代码中的核心部分（包括从 cp_s1 读取） ==========
     int _1010 = _55 + 1;
     bool _1068 = _1010 >= 1;
     bool _1070 = _1068 && _73;
     bool _1164 = _1010 < 33;
     bool _1166 = _1164 && _1070;
     
-    // 计算一些在原始代码中出现的索引（但只用于共享内存写入）
-    int _660_local = floatBitsToInt(_48) << 2;
-    int _674_local = floatBitsToInt(_48) << 2;
-    int _676_local = int(bitfieldInsert(0u, floatBitsToUint(_48), int(2u), int(5u)));
+    // 原始代码中需要的变量
+    int _3540 = floatBitsToInt(_48) * 24;
+    int _3542 = _3540 + 6144;
+    int _3554 = _3542 + (-6140);
+    int _3580 = _3542 + (-6128);
+    int _3590 = _3542 + (-3072);
+    int _3602 = _3542 + (-3056);
+    int _3612 = _3590 + 4;
+    int _3622 = _3542 + 16;
+    int _3624 = _3542 + 4;
+    int _3638 = _3622 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _3640 = uint(_3638) < uint(_3622);
     
     if (_1166)
     {
-        // 原始代码中的共享内存写入（仅保留不依赖缓冲区读取的部分）
-        // 注意：这些变量的值在之前没有定义，我们暂时用 0 代替（因为只是测试共享内存写入本身）
-        uint _3184 = uint(int(uint(_674_local) >> uint(2)));
-        _35[int(_3184)] = 0x11111111u;
+        // 从 cp_s1 读取值（关键操作）
+        uint _3582 = uint(int(uint(_3554) >> uint(2)));
+        float _3584 = uintBitsToFloat(cp_s1_1._m0[int(_3582)]);
+        uint _3592 = uint(int(uint(_3580) >> uint(2)));
+        float _3594 = uintBitsToFloat(cp_s1_1._m0[int(_3592)]);
         
-        uint _3196 = uint(int(uint(_674_local + 512) >> uint(2)));
-        _35[int(_3196)] = 0x22222222u;
+        // 从 cp_s1 读取更多值
+        uint _3614 = uint(int(uint(_3612) >> uint(2)));
+        float _3616 = uintBitsToFloat(cp_s1_1._m0[int(_3614)]);
+        uint _3618 = uint(int(uint(_3602) >> uint(2)));
+        float _3620 = uintBitsToFloat(cp_s1_1._m0[int(_3618)]);
+        uint _3626 = uint(int(uint(_3624) >> uint(2)));
+        float _3628 = uintBitsToFloat(cp_s1_1._m0[int(_3626)]);
+        uint _3642 = uint(int(uint(_3622) >> uint(2)));
+        float _3644 = uintBitsToFloat(cp_s1_1._m0[int(_3642)]);
         
-        uint _3232 = uint(int(uint(_674_local + 1024) >> uint(2)));
-        _35[int(_3232)] = 0x33333333u;
-        
-        uint _3258 = uint(int(uint(_674_local + 1536) >> uint(2)));
-        _35[int(_3258)] = 0x44444444u;
-        
-        uint _3320 = uint(int(uint(_674_local + 2048) >> uint(2)));
-        _35[int(_3320)] = 0x55555555u;
-        
-        uint _3334 = uint(int(uint(_674_local + 2560) >> uint(2)));
-        _35[int(_3334)] = 0x66666666u;
-        
-        uint _3372 = uint(int(uint(_674_local + 3072) >> uint(2)));
-        _35[int(_3372)] = 0x77777777u;
-        
-        uint _3406 = uint(int(uint(_674_local + 3584) >> uint(2)));
-        _35[int(_3406)] = 0x88888888u;
-        
-        uint _3456 = uint(int(uint(_674_local + 4096) >> uint(2)));
-        _35[int(_3456)] = 0x99999999u;
-        
-        uint _3466 = uint(int(uint(_674_local + 4608) >> uint(2)));
-        _35[int(_3466)] = 0xAAAAAAAAu;
-        
-        uint _3504 = uint(int(uint(_674_local + 5120) >> uint(2)));
-        _35[int(_3504)] = 0xBBBBBBBBu;
-        
-        uint _3532 = uint(int(uint(_674_local + 5632) >> uint(2)));
-        _35[int(_3532)] = 0xCCCCCCCCu;
-        
-        uint _3552 = uint(int(uint(_674_local + 6144) >> uint(2)));
-        _35[int(_3552)] = 0xDDDDDDDDu;
-        
-        uint _3562 = uint(int(uint(_674_local + 7168) >> uint(2)));
-        _35[int(_3562)] = 0xEEEEEEEEu;
-        
-        uint _3568 = uint(int(uint(_674_local + 6656) >> uint(2)));
-        _35[int(_3568)] = 0xFFFFFFFFu;
-        
-        uint _3578 = uint(int(uint(_674_local + 7168) >> uint(2)));
-        _35[int(_3578)] = 0u;
-        
-        uint _3588 = uint(int(uint(_674_local + 7680) >> uint(2)));
-        _35[int(_3588)] = 0x12345678u;
-        
-        uint _3600 = uint(int(uint(_674_local + 7680) >> uint(2)));
-        _35[int(_3600)] = 0u;
+        // 共享内存写入（原始代码中的关键部分）
+        int _3604 = _678 + 6144;
+        _35[int(_3604 >> 2)] = floatBitsToUint(_3584);
+        int _3608 = _678 + 6148;
+        _35[int(_3608 >> 2)] = floatBitsToUint(_3594);
+        int _3630 = _678 + 7168;
+        _35[int(_3630 >> 2)] = floatBitsToUint(_3616);
+        int _3634 = _678 + 7172;
+        _35[int(_3634 >> 2)] = floatBitsToUint(_3620);
+        int _3680 = _678 + 8192;
+        _35[int(_3680 >> 2)] = floatBitsToUint(_3628);
+        int _3684 = _678 + 8196;
+        _35[int(_3684 >> 2)] = floatBitsToUint(_3644);
     }
     
     // 所有线程 barrier
     barrier();
     
-    // 输出共享内存的值（简单验证）
+    // 输出共享内存的值
     uint out_val = _35[0];
     uint gidx = gl_GlobalInvocationID.x;
-    cp_s3_1._m0[gidx] = out_val;
+    if (gidx < 65535u) {
+        cp_s3_1._m0[gidx] = out_val;
+    }
 }
