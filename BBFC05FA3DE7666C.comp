@@ -1234,8 +1234,7 @@ void main()
         int _3684 = _678 + 8196;
         _35[int(_3684 >> 2)] = floatBitsToUint(_3644);
     }
-    
-    // ========== if (_3678) 块：完整恢复原始代码中的计算 ==========
+        // ========== if (_3678) 块：完整恢复原始代码中的计算 ==========
     int _3596_local = floatBitsToInt(_48) & 31;
     int _3658 = _3596_local + 2;
     bool _3668 = _3658 >= 1;
@@ -1243,7 +1242,7 @@ void main()
     bool _3676 = _3658 < 33;
     bool _3678 = _3676 && _3670;
     
-    // 声明所有 if (_3678) 块内需要的变量（注：这些变量在之前的块中没有定义过）
+    // 声明所有 if (_3678) 块内需要的变量（从原始代码中提取）
     int _5728 = 0;
     int _5730 = 0;
     int _5732 = 0;
@@ -1289,10 +1288,10 @@ void main()
     uint _7592 = uint(int(uint(_7562) >> uint(2)));
     float _7594 = uintBitsToFloat(cp_s2_1._m0[int(_7592)]);
     float _8964 = -_7594;
-        
+    
     if (_3678)
     {
-        // 原始代码中的关键计算
+        // 原始代码中的关键计算（第一部分）
         int _5740 = floatBitsToInt(_50) << 6;
         int _5742 = _5740 + floatBitsToInt(_48);
         _5728 = _5742;
@@ -1322,13 +1321,11 @@ void main()
         _5782 = _6010;
         _6012 = _5782;
         
-        // 从 cp_s0 读取
         uint _6022 = uint(int(uint(_5900) >> uint(2)));
         float _6024 = uintBitsToFloat(cp_s0_1._m0[int(_6022)]);
         _5738 = floatBitsToInt(_6024);
         _6026 = _5738;
         
-        // 共享内存写入
         uint _6142 = uint(int(uint(_674) >> uint(2)));
         _35[int(_6142)] = uint(_6026);
         uint _6144 = uint(int(uint(_5900) >> uint(2)));
@@ -1336,7 +1333,8 @@ void main()
         _6034 = floatBitsToInt(_6146);
         _6148 = _6034;
         
-        // ========== 原始 if (_3678) 块内的 FMA 计算 ==========
+        // ========== 原始 if (_3678) 块内的 FMA 计算（完整恢复） ==========
+        // 从原始 SPIR-V 反编译中提取的完整 FMA 计算
         float _6086 = fma(float(_5428), float(_5760), float(_6028));
         float _6088 = fma(float(_5466), float(_5760), float(_6030));
         float _6090 = uintBitsToFloat(gl_LocalInvocationID.x);
@@ -1344,7 +1342,7 @@ void main()
         if (_3678)
         {
             uint _6094 = uint(int(uint(_6080) >> uint(2)));
-            float _6096 = uintBitsToFloat(cp_s0_1._m0[int(_6094)]);
+            float _6096 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6094), 0, 65535)]);
             _6070 = floatBitsToInt(_6096);
         }
         int _6098 = _6070;
@@ -1393,12 +1391,12 @@ void main()
         if (_3678)
         {
             uint _6142 = uint(int(uint(_674) >> uint(2)));
-            _35[int(_6142)] = uint(_6026);
+            _35[clamp(int(_6142), 0, 2815)] = uint(_6026);
         }
         if (_3678)
         {
             uint _6144 = uint(int(uint(_6118) >> uint(2)));
-            float _6146 = uintBitsToFloat(cp_s0_1._m0[int(_6144)]);
+            float _6146 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6144), 0, 65535)]);
             _6034 = floatBitsToInt(_6146);
         }
         int _6148 = _6034;
@@ -1416,7 +1414,7 @@ void main()
         {
             int _6160 = _674 + 512;
             uint _6162 = uint(int(uint(_6160) >> uint(2)));
-            _35[int(_6162)] = uint(_6076);
+            _35[clamp(int(_6162), 0, 2815)] = uint(_6076);
         }
         if (_3678)
         {
@@ -1429,13 +1427,13 @@ void main()
         if (!_3678)
         {
             uint _6172 = uint(int(uint(_674) >> uint(2)));
-            _35[int(_6172)] = 0u;
+            _35[clamp(int(_6172), 0, 2815)] = 0u;
         }
         if (_3678)
         {
             int _6174 = _674 + 1024;
             uint _6176 = uint(int(uint(_6174) >> uint(2)));
-            _35[int(_6176)] = uint(_6098);
+            _35[clamp(int(_6176), 0, 2815)] = uint(_6098);
         }
         if (_3678)
         {
@@ -1448,7 +1446,7 @@ void main()
         if (_3678)
         {
             uint _6186 = uint(int(uint(_6152) >> uint(2)));
-            float _6188 = uintBitsToFloat(cp_s0_1._m0[int(_6186)]);
+            float _6188 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6186), 0, 65535)]);
             _6078 = floatBitsToInt(_6188);
         }
         int _6190 = _6078;
@@ -1466,13 +1464,13 @@ void main()
         {
             int _6202 = _674 + 512;
             uint _6204 = uint(int(uint(_6202) >> uint(2)));
-            _35[int(_6204)] = 0u;
+            _35[clamp(int(_6204), 0, 2815)] = 0u;
         }
         if (!_3678)
         {
             int _6206 = _674 + 1024;
             uint _6208 = uint(int(uint(_6206) >> uint(2)));
-            _35[int(_6208)] = 0u;
+            _35[clamp(int(_6208), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1485,7 +1483,7 @@ void main()
         if (_3678)
         {
             uint _6218 = uint(int(uint(_6194) >> uint(2)));
-            float _6220 = uintBitsToFloat(cp_s0_1._m0[int(_6218)]);
+            float _6220 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6218), 0, 65535)]);
             _6100 = floatBitsToInt(_6220);
         }
         int _6222 = _6100;
@@ -1527,12 +1525,12 @@ void main()
         {
             int _6258 = _674 + 1536;
             uint _6260 = uint(int(uint(_6258) >> uint(2)));
-            _35[int(_6260)] = uint(_6148);
+            _35[clamp(int(_6260), 0, 2815)] = uint(_6148);
         }
         if (_3678)
         {
             uint _6262 = uint(int(uint(_6234) >> uint(2)));
-            float _6264 = uintBitsToFloat(cp_s0_1._m0[int(_6262)]);
+            float _6264 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6262), 0, 65535)]);
             _6150 = floatBitsToInt(_6264);
         }
         int _6266 = _6150;
@@ -1550,7 +1548,7 @@ void main()
         {
             int _6278 = _674 + 2048;
             uint _6280 = uint(int(uint(_6278) >> uint(2)));
-            _35[int(_6280)] = uint(_6190);
+            _35[clamp(int(_6280), 0, 2815)] = uint(_6190);
         }
         if (_3678)
         {
@@ -1564,13 +1562,13 @@ void main()
         {
             int _6290 = _674 + 1536;
             uint _6292 = uint(int(uint(_6290) >> uint(2)));
-            _35[int(_6292)] = 0u;
+            _35[clamp(int(_6292), 0, 2815)] = 0u;
         }
         if (!_3678)
         {
             int _6294 = _674 + 2048;
             uint _6296 = uint(int(uint(_6294) >> uint(2)));
-            _35[int(_6296)] = 0u;
+            _35[clamp(int(_6296), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1583,7 +1581,7 @@ void main()
         if (_3678)
         {
             uint _6306 = uint(int(uint(_6270) >> uint(2)));
-            float _6308 = uintBitsToFloat(cp_s0_1._m0[int(_6306)]);
+            float _6308 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6306), 0, 65535)]);
             _6192 = floatBitsToInt(_6308);
         }
         int _6310 = _6192;
@@ -1601,13 +1599,13 @@ void main()
         {
             int _6322 = _674 + 2560;
             uint _6324 = uint(int(uint(_6322) >> uint(2)));
-            _35[int(_6324)] = uint(_6222);
+            _35[clamp(int(_6324), 0, 2815)] = uint(_6222);
         }
         if (!_3678)
         {
             int _6326 = _674 + 2560;
             uint _6328 = uint(int(uint(_6326) >> uint(2)));
-            _35[int(_6328)] = 0u;
+            _35[clamp(int(_6328), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1620,7 +1618,7 @@ void main()
         if (_3678)
         {
             uint _6338 = uint(int(uint(_6314) >> uint(2)));
-            float _6340 = uintBitsToFloat(cp_s0_1._m0[int(_6338)]);
+            float _6340 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6338), 0, 65535)]);
             _6224 = floatBitsToInt(_6340);
         }
         int _6342 = _6224;
@@ -1662,12 +1660,12 @@ void main()
         {
             int _6378 = _674 + 3072;
             uint _6380 = uint(int(uint(_6378) >> uint(2)));
-            _35[int(_6380)] = uint(_6266);
+            _35[clamp(int(_6380), 0, 2815)] = uint(_6266);
         }
         if (_3678)
         {
             uint _6382 = uint(int(uint(_6354) >> uint(2)));
-            float _6384 = uintBitsToFloat(cp_s0_1._m0[int(_6382)]);
+            float _6384 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6382), 0, 65535)]);
             _6268 = floatBitsToInt(_6384);
         }
         int _6386 = _6268;
@@ -1685,7 +1683,7 @@ void main()
         {
             int _6398 = _674 + 3584;
             uint _6400 = uint(int(uint(_6398) >> uint(2)));
-            _35[int(_6400)] = uint(_6310);
+            _35[clamp(int(_6400), 0, 2815)] = uint(_6310);
         }
         if (_3678)
         {
@@ -1699,13 +1697,13 @@ void main()
         {
             int _6410 = _674 + 3072;
             uint _6412 = uint(int(uint(_6410) >> uint(2)));
-            _35[int(_6412)] = 0u;
+            _35[clamp(int(_6412), 0, 2815)] = 0u;
         }
         if (!_3678)
         {
             int _6414 = _674 + 3584;
             uint _6416 = uint(int(uint(_6414) >> uint(2)));
-            _35[int(_6416)] = 0u;
+            _35[clamp(int(_6416), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1718,7 +1716,7 @@ void main()
         if (_3678)
         {
             uint _6426 = uint(int(uint(_6390) >> uint(2)));
-            float _6428 = uintBitsToFloat(cp_s0_1._m0[int(_6426)]);
+            float _6428 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6426), 0, 65535)]);
             _6312 = floatBitsToInt(_6428);
         }
         int _6430 = _6312;
@@ -1736,13 +1734,13 @@ void main()
         {
             int _6442 = _674 + 4096;
             uint _6444 = uint(int(uint(_6442) >> uint(2)));
-            _35[int(_6444)] = uint(_6342);
+            _35[clamp(int(_6444), 0, 2815)] = uint(_6342);
         }
         if (!_3678)
         {
             int _6446 = _674 + 4096;
             uint _6448 = uint(int(uint(_6446) >> uint(2)));
-            _35[int(_6448)] = 0u;
+            _35[clamp(int(_6448), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1755,7 +1753,7 @@ void main()
         if (_3678)
         {
             uint _6458 = uint(int(uint(_6434) >> uint(2)));
-            float _6460 = uintBitsToFloat(cp_s0_1._m0[int(_6458)]);
+            float _6460 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6458), 0, 65535)]);
             _6344 = floatBitsToInt(_6460);
         }
         int _6462 = _6344;
@@ -1797,12 +1795,12 @@ void main()
         {
             int _6498 = _674 + 4608;
             uint _6500 = uint(int(uint(_6498) >> uint(2)));
-            _35[int(_6500)] = uint(_6386);
+            _35[clamp(int(_6500), 0, 2815)] = uint(_6386);
         }
         if (_3678)
         {
             uint _6502 = uint(int(uint(_6474) >> uint(2)));
-            float _6504 = uintBitsToFloat(cp_s0_1._m0[int(_6502)]);
+            float _6504 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6502), 0, 65535)]);
             _6388 = floatBitsToInt(_6504);
         }
         int _6506 = _6388;
@@ -1819,7 +1817,7 @@ void main()
         {
             int _6516 = _674 + 5120;
             uint _6518 = uint(int(uint(_6516) >> uint(2)));
-            _35[int(_6518)] = uint(_6430);
+            _35[clamp(int(_6518), 0, 2815)] = uint(_6430);
         }
         if (_3678)
         {
@@ -1833,13 +1831,13 @@ void main()
         {
             int _6528 = _674 + 4608;
             uint _6530 = uint(int(uint(_6528) >> uint(2)));
-            _35[int(_6530)] = 0u;
+            _35[clamp(int(_6530), 0, 2815)] = 0u;
         }
         if (!_3678)
         {
             int _6532 = _674 + 5120;
             uint _6534 = uint(int(uint(_6532) >> uint(2)));
-            _35[int(_6534)] = 0u;
+            _35[clamp(int(_6534), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1852,7 +1850,7 @@ void main()
         if (_3678)
         {
             uint _6544 = uint(int(uint(_6508) >> uint(2)));
-            float _6546 = uintBitsToFloat(cp_s0_1._m0[int(_6544)]);
+            float _6546 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6544), 0, 65535)]);
             _6432 = floatBitsToInt(_6546);
         }
         int _6548 = _6432;
@@ -1869,7 +1867,7 @@ void main()
         {
             int _6558 = _674 + 5632;
             uint _6560 = uint(int(uint(_6558) >> uint(2)));
-            _35[int(_6560)] = uint(_6462);
+            _35[clamp(int(_6560), 0, 2815)] = uint(_6462);
         }
         if (_3678)
         {
@@ -1882,7 +1880,7 @@ void main()
         {
             int _6568 = _674 + 5632;
             uint _6570 = uint(int(uint(_6568) >> uint(2)));
-            _35[int(_6570)] = 0u;
+            _35[clamp(int(_6570), 0, 2815)] = 0u;
         }
         if (_3678)
         {
@@ -1894,7 +1892,7 @@ void main()
         if (_3678)
         {
             uint _6578 = uint(int(uint(_6550) >> uint(2)));
-            float _6580 = uintBitsToFloat(cp_s0_1._m0[int(_6578)]);
+            float _6580 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6578), 0, 65535)]);
             _6464 = floatBitsToInt(_6580);
         }
         int _6582 = _6464;
@@ -1910,7 +1908,7 @@ void main()
         if (_3678)
         {
             uint _6592 = uint(int(uint(_6584) >> uint(2)));
-            float _6594 = uintBitsToFloat(cp_s0_1._m0[int(_6592)]);
+            float _6594 = uintBitsToFloat(cp_s0_1._m0[clamp(int(_6592), 0, 65535)]);
             _6590 = floatBitsToInt(_6594);
         }
         int _6596 = _6590;
@@ -1922,7 +1920,7 @@ void main()
         {
             int _6606 = _674 + 6144;
             uint _6608 = uint(int(uint(_6606) >> uint(2)));
-            _35[int(_6608)] = uint(_6506);
+            _35[clamp(int(_6608), 0, 2815)] = uint(_6506);
         }
         int _6610 = floatBitsToInt(_6090) * 24;
         int _6612 = _6610 + 6144;
@@ -1930,21 +1928,21 @@ void main()
         {
             int _6614 = _674 + 6144;
             uint _6616 = uint(int(uint(_6614) >> uint(2)));
-            _35[int(_6616)] = 0u;
+            _35[clamp(int(_6616), 0, 2815)] = 0u;
         }
         int _6618 = _6612 + (-6136);
         if (_3678)
         {
             int _6620 = _674 + 6656;
             uint _6622 = uint(int(uint(_6620) >> uint(2)));
-            _35[int(_6622)] = uint(_6548);
+            _35[clamp(int(_6622), 0, 2815)] = uint(_6548);
         }
         int _6624 = _6612 + (-6124);
         if (!_3678)
         {
             int _6626 = _674 + 6656;
             uint _6628 = uint(int(uint(_6626) >> uint(2)));
-            _35[int(_6628)] = 0u;
+            _35[clamp(int(_6628), 0, 2815)] = 0u;
         }
         int _6630 = _6612 + (-3072);
         int _6632 = _6612 + (-3052);
@@ -1952,43 +1950,43 @@ void main()
         {
             int _6634 = _674 + 7168;
             uint _6636 = uint(int(uint(_6634) >> uint(2)));
-            _35[int(_6636)] = uint(_6582);
+            _35[clamp(int(_6636), 0, 2815)] = uint(_6582);
         }
         if (!_3678)
         {
             int _6638 = _674 + 7168;
             uint _6640 = uint(int(uint(_6638) >> uint(2)));
-            _35[int(_6640)] = 0u;
+            _35[clamp(int(_6640), 0, 2815)] = 0u;
         }
         float _6642 = fma(float(_5482), float(_5850), float(_5926));
         uint _6644 = uint(int(uint(_6618) >> uint(2)));
-        float _6646 = uintBitsToFloat(cp_s1_1._m0[int(_6644)]);
+        float _6646 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6644), 0, 65535)]);
         float _6648 = fma(float(_5428), float(_5800), float(_6598));
         if (_3678)
         {
             int _6650 = _674 + 7680;
             uint _6652 = uint(int(uint(_6650) >> uint(2)));
-            _35[int(_6652)] = uint(_6596);
+            _35[clamp(int(_6652), 0, 2815)] = uint(_6596);
         }
         if (!_3678)
         {
             int _6654 = _674 + 7680;
             uint _6656 = uint(int(uint(_6654) >> uint(2)));
-            _35[int(_6656)] = 0u;
+            _35[clamp(int(_6656), 0, 2815)] = 0u;
         }
         uint _6658 = uint(int(uint(_6624) >> uint(2)));
-        float _6660 = uintBitsToFloat(cp_s1_1._m0[int(_6658)]);
+        float _6660 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6658), 0, 65535)]);
         int _6662 = _6630 + 8;
         uint _6664 = uint(int(uint(_6662) >> uint(2)));
-        float _6666 = uintBitsToFloat(cp_s1_1._m0[int(_6664)]);
+        float _6666 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6664), 0, 65535)]);
         uint _6668 = uint(int(uint(_6632) >> uint(2)));
-        float _6670 = uintBitsToFloat(cp_s1_1._m0[int(_6668)]);
+        float _6670 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6668), 0, 65535)]);
         int _6672 = _6612 + 20;
         int _6674 = _6612 + 8;
         uint _6676 = uint(int(uint(_6674) >> uint(2)));
-        float _6678 = uintBitsToFloat(cp_s1_1._m0[int(_6676)]);
+        float _6678 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6676), 0, 65535)]);
         uint _6680 = uint(int(uint(_6672) >> uint(2)));
-        float _6682 = uintBitsToFloat(cp_s1_1._m0[int(_6680)]);
+        float _6682 = uintBitsToFloat(cp_s1_1._m0[clamp(int(_6680), 0, 65535)]);
         float _6684 = fma(float(_5466), float(_5800), float(_6600));
         float _6686 = fma(float(_5428), float(_5850), float(_5956));
         float _6688 = fma(float(_5528), float(_5806), float(_6648));
@@ -2037,147 +2035,147 @@ void main()
         float _6774 = fma(float(_5720), float(_6006), float(_6770));
         int _6776 = _678 + 6144;
         uint _6778 = uint(int(uint(_6776) >> uint(2)));
-        _35[int(_6778)] = floatBitsToUint(_6646);
+        _35[clamp(int(_6778), 0, 2815)] = floatBitsToUint(_6646);
         int _6780 = _678 + 6148;
         uint _6782 = uint(int(uint(_6780) >> uint(2)));
-        _35[int(_6782)] = floatBitsToUint(_6660);
+        _35[clamp(int(_6782), 0, 2815)] = floatBitsToUint(_6660);
         int _6784 = _678 + 7168;
         uint _6786 = uint(int(uint(_6784) >> uint(2)));
-        _35[int(_6786)] = floatBitsToUint(_6666);
+        _35[clamp(int(_6786), 0, 2815)] = floatBitsToUint(_6666);
         int _6788 = _678 + 7172;
         uint _6790 = uint(int(uint(_6788) >> uint(2)));
-        _35[int(_6790)] = floatBitsToUint(_6670);
+        _35[clamp(int(_6790), 0, 2815)] = floatBitsToUint(_6670);
         float _6792 = fma(float(_5692), float(_5968), float(_6746));
         float _6794 = fma(float(_5652), float(_5952), float(_6752));
         int _6796 = _678 + 8192;
         uint _6798 = uint(int(uint(_6796) >> uint(2)));
-        _35[int(_6798)] = floatBitsToUint(_6678);
+        _35[clamp(int(_6798), 0, 2815)] = floatBitsToUint(_6678);
         int _6800 = _678 + 8196;
         uint _6802 = uint(int(uint(_6800) >> uint(2)));
-        _35[int(_6802)] = floatBitsToUint(_6682);
+        _35[clamp(int(_6802), 0, 2815)] = floatBitsToUint(_6682);
         barrier();
         uint _6804 = uint(int(uint(_676) >> uint(2)));
-        float _6806 = uintBitsToFloat(_35[int(_6804)]);
+        float _6806 = uintBitsToFloat(_35[clamp(int(_6804), 0, 2815)]);
         int _6808 = _676 + 128;
         uint _6810 = uint(int(uint(_6808) >> uint(2)));
-        float _6812 = uintBitsToFloat(_35[int(_6810)]);
+        float _6812 = uintBitsToFloat(_35[clamp(int(_6810), 0, 2815)]);
         int _6814 = _6716 + 8192;
         uint _6816 = uint(int(uint(_6814) >> uint(2)));
-        float _6818 = uintBitsToFloat(_35[int(_6816)]);
+        float _6818 = uintBitsToFloat(_35[clamp(int(_6816), 0, 2815)]);
         int _6820 = _6716 + 8196;
         uint _6822 = uint(int(uint(_6820) >> uint(2)));
-        float _6824 = uintBitsToFloat(_35[int(_6822)]);
+        float _6824 = uintBitsToFloat(_35[clamp(int(_6822), 0, 2815)]);
         int _6826 = _6716 + 8200;
         uint _6828 = uint(int(uint(_6826) >> uint(2)));
-        float _6830 = uintBitsToFloat(_35[int(_6828)]);
+        float _6830 = uintBitsToFloat(_35[clamp(int(_6828), 0, 2815)]);
         int _6832 = _6716 + 8204;
         uint _6834 = uint(int(uint(_6832) >> uint(2)));
-        float _6836 = uintBitsToFloat(_35[int(_6834)]);
+        float _6836 = uintBitsToFloat(_35[clamp(int(_6834), 0, 2815)]);
         int _6838 = _676 + 256;
         uint _6840 = uint(int(uint(_6838) >> uint(2)));
-        float _6842 = uintBitsToFloat(_35[int(_6840)]);
+        float _6842 = uintBitsToFloat(_35[clamp(int(_6840), 0, 2815)]);
         int _6844 = _676 + 384;
         uint _6846 = uint(int(uint(_6844) >> uint(2)));
-        float _6848 = uintBitsToFloat(_35[int(_6846)]);
+        float _6848 = uintBitsToFloat(_35[clamp(int(_6846), 0, 2815)]);
         int _6850 = _6716 + 8000;
         uint _6852 = uint(int(uint(_6850) >> uint(2)));
-        float _6854 = uintBitsToFloat(_35[int(_6852)]);
+        float _6854 = uintBitsToFloat(_35[clamp(int(_6852), 0, 2815)]);
         int _6856 = _6716 + 8004;
         uint _6858 = uint(int(uint(_6856) >> uint(2)));
-        float _6860 = uintBitsToFloat(_35[int(_6858)]);
+        float _6860 = uintBitsToFloat(_35[clamp(int(_6858), 0, 2815)]);
         int _6862 = _6716 + 8008;
         uint _6864 = uint(int(uint(_6862) >> uint(2)));
-        float _6866 = uintBitsToFloat(_35[int(_6864)]);
+        float _6866 = uintBitsToFloat(_35[clamp(int(_6864), 0, 2815)]);
         int _6868 = _6716 + 8012;
         uint _6870 = uint(int(uint(_6868) >> uint(2)));
-        float _6872 = uintBitsToFloat(_35[int(_6870)]);
+        float _6872 = uintBitsToFloat(_35[clamp(int(_6870), 0, 2815)]);
         float _6874 = fma(float(_5720), float(_5952), float(_6754));
         int _6876 = _6716 + 8384;
         uint _6878 = uint(int(uint(_6876) >> uint(2)));
-        float _6880 = uintBitsToFloat(_35[int(_6878)]);
+        float _6880 = uintBitsToFloat(_35[clamp(int(_6878), 0, 2815)]);
         int _6882 = _6716 + 8388;
         uint _6884 = uint(int(uint(_6882) >> uint(2)));
-        float _6886 = uintBitsToFloat(_35[int(_6884)]);
+        float _6886 = uintBitsToFloat(_35[clamp(int(_6884), 0, 2815)]);
         int _6888 = _6716 + 8392;
         uint _6890 = uint(int(uint(_6888) >> uint(2)));
-        float _6892 = uintBitsToFloat(_35[int(_6890)]);
+        float _6892 = uintBitsToFloat(_35[clamp(int(_6890), 0, 2815)]);
         int _6894 = _6716 + 8396;
         uint _6896 = uint(int(uint(_6894) >> uint(2)));
-        float _6898 = uintBitsToFloat(_35[int(_6896)]);
+        float _6898 = uintBitsToFloat(_35[clamp(int(_6896), 0, 2815)]);
         float _6900 = fma(float(_5702), float(_5968), float(_6750));
         int _6902 = _6716 + 8576;
         uint _6904 = uint(int(uint(_6902) >> uint(2)));
-        float _6906 = uintBitsToFloat(_35[int(_6904)]);
+        float _6906 = uintBitsToFloat(_35[clamp(int(_6904), 0, 2815)]);
         int _6908 = _6716 + 8580;
         uint _6910 = uint(int(uint(_6908) >> uint(2)));
-        float _6912 = uintBitsToFloat(_35[int(_6910)]);
+        float _6912 = uintBitsToFloat(_35[clamp(int(_6910), 0, 2815)]);
         int _6914 = _6716 + 8584;
         uint _6916 = uint(int(uint(_6914) >> uint(2)));
-        float _6918 = uintBitsToFloat(_35[int(_6916)]);
+        float _6918 = uintBitsToFloat(_35[clamp(int(_6916), 0, 2815)]);
         int _6920 = _6716 + 8588;
         uint _6922 = uint(int(uint(_6920) >> uint(2)));
-        float _6924 = uintBitsToFloat(_35[int(_6922)]);
+        float _6924 = uintBitsToFloat(_35[clamp(int(_6922), 0, 2815)]);
         float _6926 = fma(float(_5702), float(_5890), float(_6760));
         int _6928 = _676 + 512;
         uint _6930 = uint(int(uint(_6928) >> uint(2)));
-        float _6932 = uintBitsToFloat(_35[int(_6930)]);
+        float _6932 = uintBitsToFloat(_35[clamp(int(_6930), 0, 2815)]);
         float _6934 = fma(float(_5702), float(_5974), float(_6792));
         int _6936 = _676 + 640;
         uint _6938 = uint(int(uint(_6936) >> uint(2)));
-        float _6940 = uintBitsToFloat(_35[int(_6938)]);
+        float _6940 = uintBitsToFloat(_35[clamp(int(_6938), 0, 2815)]);
         float _6942 = fma(float(_6806), float(_6818), float(_6794));
         int _6944 = _676 + 768;
         uint _6946 = uint(int(uint(_6944) >> uint(2)));
-        float _6948 = uintBitsToFloat(_35[int(_6946)]);
+        float _6948 = uintBitsToFloat(_35[clamp(int(_6946), 0, 2815)]);
         float _6950 = fma(float(_6818), float(_6812), float(_6874));
         int _6952 = _676 + 896;
         uint _6954 = uint(int(uint(_6952) >> uint(2)));
-        float _6956 = uintBitsToFloat(_35[int(_6954)]);
+        float _6956 = uintBitsToFloat(_35[clamp(int(_6954), 0, 2815)]);
         float _6958 = fma(float(_5652), float(_5974), float(_6900));
         int _6960 = _676 + 4992;
         uint _6962 = uint(int(uint(_6960) >> uint(2)));
-        float _6964 = uintBitsToFloat(_35[int(_6962)]);
+        float _6964 = uintBitsToFloat(_35[clamp(int(_6962), 0, 2815)]);
         float _6966 = fma(float(_5652), float(_5896), float(_6926));
         int _6968 = _676 + 5504;
         uint _6970 = uint(int(uint(_6968) >> uint(2)));
-        float _6972 = uintBitsToFloat(_35[int(_6970)]);
+        float _6972 = uintBitsToFloat(_35[clamp(int(_6970), 0, 2815)]);
         float _6974 = fma(float(_6812), float(_6824), float(_6942));
         int _6976 = _676 + 1024;
         uint _6978 = uint(int(uint(_6976) >> uint(2)));
-        float _6980 = uintBitsToFloat(_35[int(_6978)]);
+        float _6980 = uintBitsToFloat(_35[clamp(int(_6978), 0, 2815)]);
         float _6982 = fma(float(_6842), float(_6824), float(_6950));
         int _6984 = _676 + 1152;
         uint _6986 = uint(int(uint(_6984) >> uint(2)));
-        float _6988 = uintBitsToFloat(_35[int(_6986)]);
+        float _6988 = uintBitsToFloat(_35[clamp(int(_6986), 0, 2815)]);
         float _6990 = fma(float(_5652), float(_6006), float(_6766));
         int _6992 = _676 + 6016;
         uint _6994 = uint(int(uint(_6992) >> uint(2)));
-        float _6996 = uintBitsToFloat(_35[int(_6994)]);
+        float _6996 = uintBitsToFloat(_35[clamp(int(_6994), 0, 2815)]);
         float _6998 = fma(float(_5720), float(_5980), float(_6958));
         int _7000 = _676 + 6144;
         uint _7002 = uint(int(uint(_7000) >> uint(2)));
-        float _7004 = uintBitsToFloat(_35[int(_7002)]);
+        float _7004 = uintBitsToFloat(_35[clamp(int(_7002), 0, 2815)]);
         float _7006 = fma(float(_5652), float(_5980), float(_6934));
         int _7008 = _6716 + 8016;
         uint _7010 = uint(int(uint(_7008) >> uint(2)));
-        float _7012 = uintBitsToFloat(_35[int(_7010)]);
+        float _7012 = uintBitsToFloat(_35[clamp(int(_7010), 0, 2815)]);
         int _7014 = _6716 + 8020;
         uint _7016 = uint(int(uint(_7014) >> uint(2)));
-        float _7018 = uintBitsToFloat(_35[int(_7016)]);
+        float _7018 = uintBitsToFloat(_35[clamp(int(_7016), 0, 2815)]);
         int _7020 = _6716 + 8024;
         uint _7022 = uint(int(uint(_7020) >> uint(2)));
-        float _7024 = uintBitsToFloat(_35[int(_7022)]);
+        float _7024 = uintBitsToFloat(_35[clamp(int(_7022), 0, 2815)]);
         int _7026 = _6716 + 8028;
         uint _7028 = uint(int(uint(_7026) >> uint(2)));
-        float _7030 = uintBitsToFloat(_35[int(_7028)]);
+        float _7030 = uintBitsToFloat(_35[clamp(int(_7028), 0, 2815)]);
         float _7032 = fma(float(_6842), float(_6830), float(_6974));
         int _7034 = _676 + 6528;
         uint _7036 = uint(int(uint(_7034) >> uint(2)));
-        float _7038 = uintBitsToFloat(_35[int(_7036)]);
+        float _7038 = uintBitsToFloat(_35[clamp(int(_7036), 0, 2815)]);
         float _7040 = fma(float(_6848), float(_6830), float(_6982));
         int _7042 = _676 + 6656;
         uint _7044 = uint(int(uint(_7042) >> uint(2)));
-        float _7046 = uintBitsToFloat(_35[int(_7044)]);
+        float _7046 = uintBitsToFloat(_35[clamp(int(_7044), 0, 2815)]);
         float _7048 = fma(float(_6806), float(_6854), float(_6966));
         float _7050 = fma(float(_6854), float(_6812), float(_6772));
         float _7052 = fma(float(_6806), float(_6880), float(_6990));
@@ -2185,46 +2183,46 @@ void main()
         float _7056 = fma(float(_6806), float(_6906), float(_7006));
         int _7058 = _6716 + 8208;
         uint _7060 = uint(int(uint(_7058) >> uint(2)));
-        float _7062 = uintBitsToFloat(_35[int(_7060)]);
+        float _7062 = uintBitsToFloat(_35[clamp(int(_7060), 0, 2815)]);
         int _7064 = _6716 + 8212;
         uint _7066 = uint(int(uint(_7064) >> uint(2)));
-        float _7068 = uintBitsToFloat(_35[int(_7066)]);
+        float _7068 = uintBitsToFloat(_35[clamp(int(_7066), 0, 2815)]);
         int _7070 = _6716 + 8216;
         uint _7072 = uint(int(uint(_7070) >> uint(2)));
-        float _7074 = uintBitsToFloat(_35[int(_7072)]);
+        float _7074 = uintBitsToFloat(_35[clamp(int(_7072), 0, 2815)]);
         int _7076 = _6716 + 8220;
         uint _7078 = uint(int(uint(_7076) >> uint(2)));
-        float _7080 = uintBitsToFloat(_35[int(_7078)]);
+        float _7080 = uintBitsToFloat(_35[clamp(int(_7078), 0, 2815)]);
         float _7082 = fma(float(_6812), float(_6860), float(_7048));
         int _7084 = _6716 + 8400;
         uint _7086 = uint(int(uint(_7084) >> uint(2)));
-        float _7088 = uintBitsToFloat(_35[int(_7086)]);
+        float _7088 = uintBitsToFloat(_35[clamp(int(_7086), 0, 2815)]);
         int _7090 = _6716 + 8404;
         uint _7092 = uint(int(uint(_7090) >> uint(2)));
-        float _7094 = uintBitsToFloat(_35[int(_7092)]);
+        float _7094 = uintBitsToFloat(_35[clamp(int(_7092), 0, 2815)]);
         int _7096 = _6716 + 8408;
         uint _7098 = uint(int(uint(_7096) >> uint(2)));
-        float _7100 = uintBitsToFloat(_35[int(_7098)]);
+        float _7100 = uintBitsToFloat(_35[clamp(int(_7098), 0, 2815)]);
         int _7102 = _6716 + 8412;
         uint _7104 = uint(int(uint(_7102) >> uint(2)));
-        float _7106 = uintBitsToFloat(_35[int(_7104)]);
+        float _7106 = uintBitsToFloat(_35[clamp(int(_7104), 0, 2815)]);
         float _7108 = fma(float(_6842), float(_6860), float(_7050));
         int _7110 = _6716 + 8592;
         uint _7112 = uint(int(uint(_7110) >> uint(2)));
-        float _7114 = uintBitsToFloat(_35[int(_7112)]);
+        float _7114 = uintBitsToFloat(_35[clamp(int(_7112), 0, 2815)]);
         int _7116 = _6716 + 8596;
         uint _7118 = uint(int(uint(_7116) >> uint(2)));
-        float _7120 = uintBitsToFloat(_35[int(_7118)]);
+        float _7120 = uintBitsToFloat(_35[clamp(int(_7118), 0, 2815)]);
         int _7122 = _6716 + 8600;
         uint _7124 = uint(int(uint(_7122) >> uint(2)));
-        float _7126 = uintBitsToFloat(_35[int(_7124)]);
+        float _7126 = uintBitsToFloat(_35[clamp(int(_7124), 0, 2815)]);
         int _7128 = _6716 + 8604;
         uint _7130 = uint(int(uint(_7128) >> uint(2)));
-        float _7132 = uintBitsToFloat(_35[int(_7130)]);
+        float _7132 = uintBitsToFloat(_35[clamp(int(_7130), 0, 2815)]);
         float _7134 = fma(float(_6812), float(_6906), float(_6998));
         int _7136 = _676 + 1408;
         uint _7138 = uint(int(uint(_7136) >> uint(2)));
-        float _7140 = uintBitsToFloat(_35[int(_7138)]);
+        float _7140 = uintBitsToFloat(_35[clamp(int(_7138), 0, 2815)]);
         float _7142 = fma(float(_6812), float(_6886), float(_7052));
         float _7144 = fma(float(_6842), float(_6886), float(_7054));
         float _7146 = fma(float(_6812), float(_6912), float(_7056));
@@ -2233,21 +2231,21 @@ void main()
         float _7152 = fma(float(_6842), float(_6912), float(_7134));
         int _7154 = _676 + 1280;
         uint _7156 = uint(int(uint(_7154) >> uint(2)));
-        float _7158 = uintBitsToFloat(_35[int(_7156)]);
+        float _7158 = uintBitsToFloat(_35[clamp(int(_7156), 0, 2815)]);
         float _7160 = fma(float(_6842), float(_6892), float(_7142));
         float _7162 = fma(float(_6842), float(_6918), float(_7146));
         int _7164 = _676 + 1664;
         uint _7166 = uint(int(uint(_7164) >> uint(2)));
-        float _7168 = uintBitsToFloat(_35[int(_7166)]);
+        float _7168 = uintBitsToFloat(_35[clamp(int(_7166), 0, 2815)]);
         float _7170 = fma(float(_6932), float(_6872), float(_7148));
         int _7172 = _676 + 2048;
         uint _7174 = uint(int(uint(_7172) >> uint(2)));
-        float _7176 = uintBitsToFloat(_35[int(_7174)]);
+        float _7176 = uintBitsToFloat(_35[clamp(int(_7174), 0, 2815)]);
         float _7178 = fma(float(_6940), float(_6872), float(_7150));
         float _7180 = fma(float(_6848), float(_6892), float(_7144));
         int _7182 = _676 + 1536;
         uint _7184 = uint(int(uint(_7182) >> uint(2)));
-        float _7186 = uintBitsToFloat(_35[int(_7184)]);
+        float _7186 = uintBitsToFloat(_35[clamp(int(_7184), 0, 2815)]);
         float _7188 = fma(float(_6848), float(_6918), float(_7152));
         float _7190 = fma(float(_6932), float(_6836), float(_7032));
         float _7192 = fma(float(_6932), float(_6898), float(_7160));
@@ -2259,7 +2257,7 @@ void main()
         float _7204 = fma(float(_6940), float(_7012), float(_7170));
         int _7206 = _676 + 1792;
         uint _7208 = uint(int(uint(_7206) >> uint(2)));
-        float _7210 = uintBitsToFloat(_35[int(_7208)]);
+        float _7210 = uintBitsToFloat(_35[clamp(int(_7208), 0, 2815)]);
         float _7212 = fma(float(_6940), float(_7062), float(_7190));
         float _7214 = fma(float(_6956), float(_7018), float(_7196));
         float _7216 = fma(float(_7062), float(_6948), float(_7198));
@@ -2268,66 +2266,66 @@ void main()
         float _7222 = fma(float(_6940), float(_7114), float(_7194));
         int _7224 = _6716 + 8416;
         uint _7226 = uint(int(uint(_7224) >> uint(2)));
-        float _7228 = uintBitsToFloat(_35[int(_7226)]);
+        float _7228 = uintBitsToFloat(_35[clamp(int(_7226), 0, 2815)]);
         int _7230 = _6716 + 8420;
         uint _7232 = uint(int(uint(_7230) >> uint(2)));
-        float _7234 = uintBitsToFloat(_35[int(_7232)]);
+        float _7234 = uintBitsToFloat(_35[clamp(int(_7232), 0, 2815)]);
         int _7236 = _6716 + 8424;
         uint _7238 = uint(int(uint(_7236) >> uint(2)));
-        float _7240 = uintBitsToFloat(_35[int(_7238)]);
+        float _7240 = uintBitsToFloat(_35[clamp(int(_7238), 0, 2815)]);
         int _7242 = _6716 + 8428;
         uint _7244 = uint(int(uint(_7242) >> uint(2)));
-        float _7246 = uintBitsToFloat(_35[int(_7244)]);
+        float _7246 = uintBitsToFloat(_35[clamp(int(_7244), 0, 2815)]);
         float _7248 = fma(float(_6948), float(_7114), float(_7202));
         int _7250 = _6716 + 8224;
         uint _7252 = uint(int(uint(_7250) >> uint(2)));
-        float _7254 = uintBitsToFloat(_35[int(_7252)]);
+        float _7254 = uintBitsToFloat(_35[clamp(int(_7252), 0, 2815)]);
         int _7256 = _6716 + 8228;
         uint _7258 = uint(int(uint(_7256) >> uint(2)));
-        float _7260 = uintBitsToFloat(_35[int(_7258)]);
+        float _7260 = uintBitsToFloat(_35[clamp(int(_7258), 0, 2815)]);
         int _7262 = _6716 + 8232;
         uint _7264 = uint(int(uint(_7262) >> uint(2)));
-        float _7266 = uintBitsToFloat(_35[int(_7264)]);
+        float _7266 = uintBitsToFloat(_35[clamp(int(_7264), 0, 2815)]);
         int _7268 = _6716 + 8236;
         uint _7270 = uint(int(uint(_7268) >> uint(2)));
-        float _7272 = uintBitsToFloat(_35[int(_7270)]);
+        float _7272 = uintBitsToFloat(_35[clamp(int(_7270), 0, 2815)]);
         float _7274 = fma(float(_6948), float(_7018), float(_7204));
         int _7276 = _6716 + 8032;
         uint _7278 = uint(int(uint(_7276) >> uint(2)));
-        float _7280 = uintBitsToFloat(_35[int(_7278)]);
+        float _7280 = uintBitsToFloat(_35[clamp(int(_7278), 0, 2815)]);
         int _7282 = _6716 + 8036;
         uint _7284 = uint(int(uint(_7282) >> uint(2)));
-        float _7286 = uintBitsToFloat(_35[int(_7284)]);
+        float _7286 = uintBitsToFloat(_35[clamp(int(_7284), 0, 2815)]);
         int _7288 = _6716 + 8040;
         uint _7290 = uint(int(uint(_7288) >> uint(2)));
-        float _7292 = uintBitsToFloat(_35[int(_7290)]);
+        float _7292 = uintBitsToFloat(_35[clamp(int(_7290), 0, 2815)]);
         int _7294 = _6716 + 8044;
         uint _7296 = uint(int(uint(_7294) >> uint(2)));
-        float _7298 = uintBitsToFloat(_35[int(_7296)]);
+        float _7298 = uintBitsToFloat(_35[clamp(int(_7296), 0, 2815)]);
         float _7300 = fma(float(_6948), float(_7068), float(_7212));
         int _7302 = _676 + 1920;
         uint _7304 = uint(int(uint(_7302) >> uint(2)));
-        float _7306 = uintBitsToFloat(_35[int(_7304)]);
+        float _7306 = uintBitsToFloat(_35[clamp(int(_7304), 0, 2815)]);
         float _7308 = fma(float(_6956), float(_7068), float(_7216));
         float _7310 = fma(float(_6948), float(_7094), float(_7218));
         float _7312 = fma(float(_6956), float(_7094), float(_7220));
         float _7314 = fma(float(_6948), float(_7120), float(_7222));
         int _7316 = _676 + 2560;
         uint _7318 = uint(int(uint(_7316) >> uint(2)));
-        float _7320 = uintBitsToFloat(_35[int(_7318)]);
+        float _7320 = uintBitsToFloat(_35[clamp(int(_7318), 0, 2815)]);
         float _7322 = fma(float(_6956), float(_7120), float(_7248));
         int _7324 = _6716 + 8608;
         uint _7326 = uint(int(uint(_7324) >> uint(2)));
-        float _7328 = uintBitsToFloat(_35[int(_7326)]);
+        float _7328 = uintBitsToFloat(_35[clamp(int(_7326), 0, 2815)]);
         int _7330 = _6716 + 8612;
         uint _7332 = uint(int(uint(_7330) >> uint(2)));
-        float _7334 = uintBitsToFloat(_35[int(_7332)]);
+        float _7334 = uintBitsToFloat(_35[clamp(int(_7332), 0, 2815)]);
         int _7336 = _6716 + 8616;
         uint _7338 = uint(int(uint(_7336) >> uint(2)));
-        float _7340 = uintBitsToFloat(_35[int(_7338)]);
+        float _7340 = uintBitsToFloat(_35[clamp(int(_7338), 0, 2815)]);
         int _7342 = _6716 + 8620;
         uint _7344 = uint(int(uint(_7342) >> uint(2)));
-        float _7346 = uintBitsToFloat(_35[int(_7344)]);
+        float _7346 = uintBitsToFloat(_35[clamp(int(_7344), 0, 2815)]);
         float _7348 = fma(float(_6980), float(_7024), float(_7274));
         float _7350 = fma(float(_6980), float(_7100), float(_7310));
         float _7352 = fma(float(_6980), float(_7074), float(_7300));
@@ -2342,21 +2340,21 @@ void main()
         float _7370 = fma(float(_6988), float(_7080), float(_7352));
         int _7372 = _676 + 2304;
         uint _7374 = uint(int(uint(_7372) >> uint(2)));
-        float _7376 = uintBitsToFloat(_35[int(_7374)]);
+        float _7376 = uintBitsToFloat(_35[clamp(int(_7374), 0, 2815)]);
         float _7378 = fma(float(_6988), float(_7132), float(_7356));
         int _7380 = _676 + 2432;
         uint _7382 = uint(int(uint(_7380) >> uint(2)));
-        float _7384 = uintBitsToFloat(_35[int(_7382)]);
+        float _7384 = uintBitsToFloat(_35[clamp(int(_7382), 0, 2815)]);
         float _7386 = fma(float(_7158), float(_7280), float(_7360));
         float _7388 = fma(float(_7158), float(_7030), float(_7358));
         int _7390 = _676 + 2176;
         uint _7392 = uint(int(uint(_7390) >> uint(2)));
-        float _7394 = uintBitsToFloat(_35[int(_7392)]);
+        float _7394 = uintBitsToFloat(_35[clamp(int(_7392), 0, 2815)]);
         float _7396 = fma(float(_7158), float(_7080), float(_7362));
         float _7398 = fma(float(_7158), float(_7132), float(_7364));
         int _7400 = _676 + 3200;
         uint _7402 = uint(int(uint(_7400) >> uint(2)));
-        float _7404 = uintBitsToFloat(_35[int(_7402)]);
+        float _7404 = uintBitsToFloat(_35[clamp(int(_7402), 0, 2815)]);
         float _7406 = fma(float(_7158), float(_7228), float(_7366));
         float _7408 = fma(float(_7140), float(_7228), float(_7368));
         float _7410 = fma(float(_7158), float(_7254), float(_7370));
@@ -2366,16 +2364,16 @@ void main()
         float _7418 = fma(float(_7254), float(_7140), float(_7396));
         int _7420 = _6716 + 8048;
         uint _7422 = uint(int(uint(_7420) >> uint(2)));
-        float _7424 = uintBitsToFloat(_35[int(_7422)]);
+        float _7424 = uintBitsToFloat(_35[clamp(int(_7422), 0, 2815)]);
         int _7426 = _6716 + 8052;
         uint _7428 = uint(int(uint(_7426) >> uint(2)));
-        float _7430 = uintBitsToFloat(_35[int(_7428)]);
+        float _7430 = uintBitsToFloat(_35[clamp(int(_7428), 0, 2815)]);
         int _7432 = _6716 + 8056;
         uint _7434 = uint(int(uint(_7432) >> uint(2)));
-        float _7436 = uintBitsToFloat(_35[int(_7434)]);
+        float _7436 = uintBitsToFloat(_35[clamp(int(_7434), 0, 2815)]);
         int _7438 = _6716 + 8060;
         uint _7440 = uint(int(uint(_7438) >> uint(2)));
-        float _7442 = uintBitsToFloat(_35[int(_7440)]);
+        float _7442 = uintBitsToFloat(_35[clamp(int(_7440), 0, 2815)]);
         float _7444 = fma(float(_7140), float(_7328), float(_7398));
         float _7446 = fma(float(_7186), float(_7234), float(_7406));
         float _7448 = fma(float(_7168), float(_7234), float(_7408));
@@ -2383,55 +2381,55 @@ void main()
         float _7452 = fma(float(_7186), float(_7334), float(_7412));
         int _7454 = _676 + 2816;
         uint _7456 = uint(int(uint(_7454) >> uint(2)));
-        float _7458 = uintBitsToFloat(_35[int(_7456)]);
+        float _7458 = uintBitsToFloat(_35[clamp(int(_7456), 0, 2815)]);
         float _7460 = fma(float(_7168), float(_7286), float(_7416));
         int _7462 = _676 + 2688;
         uint _7464 = uint(int(uint(_7462) >> uint(2)));
-        float _7466 = uintBitsToFloat(_35[int(_7464)]);
+        float _7466 = uintBitsToFloat(_35[clamp(int(_7464), 0, 2815)]);
         float _7468 = fma(float(_7168), float(_7260), float(_7418));
         int _7470 = _6716 + 8240;
         uint _7472 = uint(int(uint(_7470) >> uint(2)));
-        float _7474 = uintBitsToFloat(_35[int(_7472)]);
+        float _7474 = uintBitsToFloat(_35[clamp(int(_7472), 0, 2815)]);
         int _7476 = _6716 + 8244;
         uint _7478 = uint(int(uint(_7476) >> uint(2)));
-        float _7480 = uintBitsToFloat(_35[int(_7478)]);
+        float _7480 = uintBitsToFloat(_35[clamp(int(_7478), 0, 2815)]);
         int _7482 = _6716 + 8248;
         uint _7484 = uint(int(uint(_7482) >> uint(2)));
-        float _7486 = uintBitsToFloat(_35[int(_7484)]);
+        float _7486 = uintBitsToFloat(_35[clamp(int(_7484), 0, 2815)]);
         int _7488 = _6716 + 8252;
         uint _7490 = uint(int(uint(_7488) >> uint(2)));
-        float _7492 = uintBitsToFloat(_35[int(_7490)]);
+        float _7492 = uintBitsToFloat(_35[clamp(int(_7490), 0, 2815)]);
         float _7494 = fma(float(_7168), float(_7334), float(_7444));
         float _7496 = fma(float(_7168), float(_7292), float(_7414));
         float _7498 = fma(float(_7168), float(_7266), float(_7450));
         int _7500 = _6716 + 8432;
         uint _7502 = uint(int(uint(_7500) >> uint(2)));
-        float _7504 = uintBitsToFloat(_35[int(_7502)]);
+        float _7504 = uintBitsToFloat(_35[clamp(int(_7502), 0, 2815)]);
         int _7506 = _6716 + 8436;
         uint _7508 = uint(int(uint(_7506) >> uint(2)));
-        float _7510 = uintBitsToFloat(_35[int(_7508)]);
+        float _7510 = uintBitsToFloat(_35[clamp(int(_7508), 0, 2815)]);
         int _7512 = _6716 + 8440;
         uint _7514 = uint(int(uint(_7512) >> uint(2)));
-        float _7516 = uintBitsToFloat(_35[int(_7514)]);
+        float _7516 = uintBitsToFloat(_35[clamp(int(_7514), 0, 2815)]);
         int _7518 = _6716 + 8444;
         uint _7520 = uint(int(uint(_7518) >> uint(2)));
-        float _7522 = uintBitsToFloat(_35[int(_7520)]);
+        float _7522 = uintBitsToFloat(_35[clamp(int(_7520), 0, 2815)]);
         float _7524 = fma(float(_7168), float(_7240), float(_7446));
         float _7526 = fma(float(_7168), float(_7340), float(_7452));
         int _7528 = _676 + 3328;
         uint _7530 = uint(int(uint(_7528) >> uint(2)));
-        float _7532 = uintBitsToFloat(_35[int(_7530)]);
+        float _7532 = uintBitsToFloat(_35[clamp(int(_7530), 0, 2815)]);
         float _7534 = fma(float(_7210), float(_7266), float(_7468));
         float _7536 = fma(float(_7210), float(_7340), float(_7494));
         int _7538 = _676 + 3072;
         uint _7540 = uint(int(uint(_7538) >> uint(2)));
-        float _7542 = uintBitsToFloat(_35[int(_7540)]);
+        float _7542 = uintBitsToFloat(_35[clamp(int(_7540), 0, 2815)]);
         float _7544 = fma(float(_7210), float(_7292), float(_7460));
         float _7546 = fma(float(_7210), float(_7298), float(_7496));
         float _7548 = fma(float(_7210), float(_7240), float(_7448));
         int _7550 = _676 + 2944;
         uint _7552 = uint(int(uint(_7550) >> uint(2)));
-        float _7554 = uintBitsToFloat(_35[int(_7552)]);
+        float _7554 = uintBitsToFloat(_35[clamp(int(_7552), 0, 2815)]);
         float _7556 = fma(float(_7210), float(_7272), float(_7498));
         float _7558 = fma(float(_7210), float(_7246), float(_7524));
         float _7560 = fma(float(_7210), float(_7346), float(_7526));
@@ -2439,19 +2437,19 @@ void main()
         float _7564 = fma(float(_7306), float(_7298), float(_7544));
         int _7566 = _6716 + 8624;
         uint _7568 = uint(int(uint(_7566) >> uint(2)));
-        float _7570 = uintBitsToFloat(_35[int(_7568)]);
+        float _7570 = uintBitsToFloat(_35[clamp(int(_7568), 0, 2815)]);
         int _7572 = _6716 + 8628;
         uint _7574 = uint(int(uint(_7572) >> uint(2)));
-        float _7576 = uintBitsToFloat(_35[int(_7574)]);
+        float _7576 = uintBitsToFloat(_35[clamp(int(_7574), 0, 2815)]);
         int _7578 = _6716 + 8632;
         uint _7580 = uint(int(uint(_7578) >> uint(2)));
-        float _7582 = uintBitsToFloat(_35[int(_7580)]);
+        float _7582 = uintBitsToFloat(_35[clamp(int(_7580), 0, 2815)]);
         int _7584 = _6716 + 8636;
         uint _7586 = uint(int(uint(_7584) >> uint(2)));
-        float _7588 = uintBitsToFloat(_35[int(_7586)]);
+        float _7588 = uintBitsToFloat(_35[clamp(int(_7586), 0, 2815)]);
         float _7590 = fma(float(_7306), float(_7346), float(_7536));
         uint _7592 = uint(int(uint(_7562) >> uint(2)));
-        float _7594 = uintBitsToFloat(cp_s2_1._m0[int(_7592)]);
+        float _7594 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_7592), 0, 65535)]);
         float _7596 = fma(float(_7176), float(_7424), float(_7546));
         float _7598 = fma(float(_7424), float(_7394), float(_7564));
         float _7600 = fma(float(_7306), float(_7272), float(_7534));
@@ -2462,73 +2460,73 @@ void main()
         float _7610 = fma(float(_7384), float(_7436), float(_7604));
         int _7612 = _6716 + 8064;
         uint _7614 = uint(int(uint(_7612) >> uint(2)));
-        float _7616 = uintBitsToFloat(_35[int(_7614)]);
+        float _7616 = uintBitsToFloat(_35[clamp(int(_7614), 0, 2815)]);
         int _7618 = _6716 + 8068;
         uint _7620 = uint(int(uint(_7618) >> uint(2)));
-        float _7622 = uintBitsToFloat(_35[int(_7620)]);
+        float _7622 = uintBitsToFloat(_35[clamp(int(_7620), 0, 2815)]);
         int _7624 = _6716 + 8072;
         uint _7626 = uint(int(uint(_7624) >> uint(2)));
-        float _7628 = uintBitsToFloat(_35[int(_7626)]);
+        float _7628 = uintBitsToFloat(_35[clamp(int(_7626), 0, 2815)]);
         int _7630 = _6716 + 8076;
         uint _7632 = uint(int(uint(_7630) >> uint(2)));
-        float _7634 = uintBitsToFloat(_35[int(_7632)]);
+        float _7634 = uintBitsToFloat(_35[clamp(int(_7632), 0, 2815)]);
         float _7636 = fma(float(_7176), float(_7474), float(_7556));
         float _7638 = fma(float(_7474), float(_7394), float(_7600));
         float _7640 = fma(float(_7176), float(_7504), float(_7558));
         float _7642 = fma(float(_7394), float(_7504), float(_7606));
         int _7644 = _6716 + 8256;
         uint _7646 = uint(int(uint(_7644) >> uint(2)));
-        float _7648 = uintBitsToFloat(_35[int(_7646)]);
+        float _7648 = uintBitsToFloat(_35[clamp(int(_7646), 0, 2815)]);
         int _7650 = _6716 + 8260;
         uint _7652 = uint(int(uint(_7650) >> uint(2)));
-        float _7654 = uintBitsToFloat(_35[int(_7652)]);
+        float _7654 = uintBitsToFloat(_35[clamp(int(_7652), 0, 2815)]);
         int _7656 = _6716 + 8264;
         uint _7658 = uint(int(uint(_7656) >> uint(2)));
-        float _7660 = uintBitsToFloat(_35[int(_7658)]);
+        float _7660 = uintBitsToFloat(_35[clamp(int(_7658), 0, 2815)]);
         int _7662 = _6716 + 8268;
         uint _7664 = uint(int(uint(_7662) >> uint(2)));
-        float _7666 = uintBitsToFloat(_35[int(_7664)]);
+        float _7666 = uintBitsToFloat(_35[clamp(int(_7664), 0, 2815)]);
         float _7668 = fma(float(_7176), float(_7570), float(_7560));
         int _7670 = _676 + 3584;
         uint _7672 = uint(int(uint(_7670) >> uint(2)));
-        float _7674 = uintBitsToFloat(_35[int(_7672)]);
+        float _7674 = uintBitsToFloat(_35[clamp(int(_7672), 0, 2815)]);
         float _7676 = fma(float(_7394), float(_7480), float(_7636));
         float _7678 = fma(float(_7376), float(_7480), float(_7638));
         int _7680 = _6716 + 8448;
         uint _7682 = uint(int(uint(_7680) >> uint(2)));
-        float _7684 = uintBitsToFloat(_35[int(_7682)]);
+        float _7684 = uintBitsToFloat(_35[clamp(int(_7682), 0, 2815)]);
         int _7686 = _6716 + 8452;
         uint _7688 = uint(int(uint(_7686) >> uint(2)));
-        float _7690 = uintBitsToFloat(_35[int(_7688)]);
+        float _7690 = uintBitsToFloat(_35[clamp(int(_7688), 0, 2815)]);
         int _7692 = _6716 + 8456;
         uint _7694 = uint(int(uint(_7692) >> uint(2)));
-        float _7696 = uintBitsToFloat(_35[int(_7694)]);
+        float _7696 = uintBitsToFloat(_35[clamp(int(_7694), 0, 2815)]);
         int _7698 = _6716 + 8460;
         uint _7700 = uint(int(uint(_7698) >> uint(2)));
-        float _7702 = uintBitsToFloat(_35[int(_7700)]);
+        float _7702 = uintBitsToFloat(_35[clamp(int(_7700), 0, 2815)]);
         float _7704 = fma(float(_7394), float(_7510), float(_7640));
         float _7706 = fma(float(_7394), float(_7570), float(_7590));
         int _7708 = _6716 + 8640;
         uint _7710 = uint(int(uint(_7708) >> uint(2)));
-        float _7712 = uintBitsToFloat(_35[int(_7710)]);
+        float _7712 = uintBitsToFloat(_35[clamp(int(_7710), 0, 2815)]);
         int _7714 = _6716 + 8644;
         uint _7716 = uint(int(uint(_7714) >> uint(2)));
-        float _7718 = uintBitsToFloat(_35[int(_7716)]);
+        float _7718 = uintBitsToFloat(_35[clamp(int(_7716), 0, 2815)]);
         int _7720 = _6716 + 8648;
         uint _7722 = uint(int(uint(_7720) >> uint(2)));
-        float _7724 = uintBitsToFloat(_35[int(_7722)]);
+        float _7724 = uintBitsToFloat(_35[clamp(int(_7722), 0, 2815)]);
         int _7726 = _6716 + 8652;
         uint _7728 = uint(int(uint(_7726) >> uint(2)));
-        float _7730 = uintBitsToFloat(_35[int(_7728)]);
+        float _7730 = uintBitsToFloat(_35[clamp(int(_7728), 0, 2815)]);
         float _7732 = fma(float(_7376), float(_7510), float(_7642));
         float _7734 = fma(float(_7394), float(_7576), float(_7668));
         int _7736 = _676 + 3456;
         uint _7738 = uint(int(uint(_7736) >> uint(2)));
-        float _7740 = uintBitsToFloat(_35[int(_7738)]);
+        float _7740 = uintBitsToFloat(_35[clamp(int(_7738), 0, 2815)]);
         float _7742 = fma(float(_7376), float(_7486), float(_7676));
         int _7744 = _676 + 3712;
         uint _7746 = uint(int(uint(_7744) >> uint(2)));
-        float _7748 = uintBitsToFloat(_35[int(_7746)]);
+        float _7748 = uintBitsToFloat(_35[clamp(int(_7746), 0, 2815)]);
         float _7750 = fma(float(_7376), float(_7576), float(_7706));
         float _7752 = fma(float(_7376), float(_7516), float(_7704));
         float _7754 = fma(float(_7376), float(_7582), float(_7734));
@@ -2540,11 +2538,11 @@ void main()
         float _7766 = fma(float(_7466), float(_7616), float(_7756));
         int _7768 = _676 + 3840;
         uint _7770 = uint(int(uint(_7768) >> uint(2)));
-        float _7772 = uintBitsToFloat(_35[int(_7770)]);
+        float _7772 = uintBitsToFloat(_35[clamp(int(_7770), 0, 2815)]);
         float _7774 = fma(float(_7384), float(_7582), float(_7750));
         int _7776 = _676 + 3968;
         uint _7778 = uint(int(uint(_7776) >> uint(2)));
-        float _7780 = uintBitsToFloat(_35[int(_7778)]);
+        float _7780 = uintBitsToFloat(_35[clamp(int(_7778), 0, 2815)]);
         float _7782 = fma(float(_7466), float(_7492), float(_7758));
         float _7784 = fma(float(_7320), float(_7522), float(_7752));
         float _7786 = fma(float(_7466), float(_7522), float(_7760));
@@ -2552,31 +2550,31 @@ void main()
         float _7790 = fma(float(_7616), float(_7458), float(_7762));
         int _7792 = _6716 + 8080;
         uint _7794 = uint(int(uint(_7792) >> uint(2)));
-        float _7796 = uintBitsToFloat(_35[int(_7794)]);
+        float _7796 = uintBitsToFloat(_35[clamp(int(_7794), 0, 2815)]);
         int _7798 = _6716 + 8084;
         uint _7800 = uint(int(uint(_7798) >> uint(2)));
-        float _7802 = uintBitsToFloat(_35[int(_7800)]);
+        float _7802 = uintBitsToFloat(_35[clamp(int(_7800), 0, 2815)]);
         int _7804 = _6716 + 8088;
         uint _7806 = uint(int(uint(_7804) >> uint(2)));
-        float _7808 = uintBitsToFloat(_35[int(_7806)]);
+        float _7808 = uintBitsToFloat(_35[clamp(int(_7806), 0, 2815)]);
         int _7810 = _6716 + 8092;
         uint _7812 = uint(int(uint(_7810) >> uint(2)));
-        float _7814 = uintBitsToFloat(_35[int(_7812)]);
+        float _7814 = uintBitsToFloat(_35[clamp(int(_7812), 0, 2815)]);
         float _7816 = fma(float(_7458), float(_7622), float(_7766));
         float _7818 = fma(float(_7466), float(_7648), float(_7764));
         float _7820 = fma(float(_7466), float(_7588), float(_7774));
         int _7822 = _6716 + 8272;
         uint _7824 = uint(int(uint(_7822) >> uint(2)));
-        float _7826 = uintBitsToFloat(_35[int(_7824)]);
+        float _7826 = uintBitsToFloat(_35[clamp(int(_7824), 0, 2815)]);
         int _7828 = _6716 + 8276;
         uint _7830 = uint(int(uint(_7828) >> uint(2)));
-        float _7832 = uintBitsToFloat(_35[int(_7830)]);
+        float _7832 = uintBitsToFloat(_35[clamp(int(_7830), 0, 2815)]);
         int _7834 = _6716 + 8280;
         uint _7836 = uint(int(uint(_7834) >> uint(2)));
-        float _7838 = uintBitsToFloat(_35[int(_7836)]);
+        float _7838 = uintBitsToFloat(_35[clamp(int(_7836), 0, 2815)]);
         int _7840 = _6716 + 8284;
         uint _7842 = uint(int(uint(_7840) >> uint(2)));
-        float _7844 = uintBitsToFloat(_35[int(_7842)]);
+        float _7844 = uintBitsToFloat(_35[clamp(int(_7842), 0, 2815)]);
         float _7846 = fma(float(_7648), float(_7458), float(_7782));
         float _7848 = fma(float(_7466), float(_7684), float(_7784));
         float _7850 = fma(float(_7458), float(_7684), float(_7786));
@@ -2585,85 +2583,85 @@ void main()
         float _7856 = fma(float(_7458), float(_7712), float(_7820));
         int _7858 = _6716 + 8464;
         uint _7860 = uint(int(uint(_7858) >> uint(2)));
-        float _7862 = uintBitsToFloat(_35[int(_7860)]);
+        float _7862 = uintBitsToFloat(_35[clamp(int(_7860), 0, 2815)]);
         int _7864 = _6716 + 8468;
         uint _7866 = uint(int(uint(_7864) >> uint(2)));
-        float _7868 = uintBitsToFloat(_35[int(_7866)]);
+        float _7868 = uintBitsToFloat(_35[clamp(int(_7866), 0, 2815)]);
         int _7870 = _6716 + 8472;
         uint _7872 = uint(int(uint(_7870) >> uint(2)));
-        float _7874 = uintBitsToFloat(_35[int(_7872)]);
+        float _7874 = uintBitsToFloat(_35[clamp(int(_7872), 0, 2815)]);
         int _7876 = _6716 + 8476;
         uint _7878 = uint(int(uint(_7876) >> uint(2)));
-        float _7880 = uintBitsToFloat(_35[int(_7878)]);
+        float _7880 = uintBitsToFloat(_35[clamp(int(_7878), 0, 2815)]);
         float _7882 = fma(float(_7458), float(_7654), float(_7818));
         float _7884 = fma(float(_7554), float(_7654), float(_7846));
         float _7886 = fma(float(_7458), float(_7690), float(_7848));
         float _7888 = fma(float(_7554), float(_7690), float(_7850));
         int _7890 = _6716 + 8656;
         uint _7892 = uint(int(uint(_7890) >> uint(2)));
-        float _7894 = uintBitsToFloat(_35[int(_7892)]);
+        float _7894 = uintBitsToFloat(_35[clamp(int(_7892), 0, 2815)]);
         int _7896 = _6716 + 8660;
         uint _7898 = uint(int(uint(_7896) >> uint(2)));
-        float _7900 = uintBitsToFloat(_35[int(_7898)]);
+        float _7900 = uintBitsToFloat(_35[clamp(int(_7898), 0, 2815)]);
         int _7902 = _6716 + 8664;
         uint _7904 = uint(int(uint(_7902) >> uint(2)));
-        float _7906 = uintBitsToFloat(_35[int(_7904)]);
+        float _7906 = uintBitsToFloat(_35[clamp(int(_7904), 0, 2815)]);
         int _7908 = _6716 + 8668;
         uint _7910 = uint(int(uint(_7908) >> uint(2)));
-        float _7912 = uintBitsToFloat(_35[int(_7910)]);
+        float _7912 = uintBitsToFloat(_35[clamp(int(_7910), 0, 2815)]);
         float _7914 = fma(float(_7458), float(_7718), float(_7852));
         int _7916 = _676 + 4096;
         uint _7918 = uint(int(uint(_7916) >> uint(2)));
-        float _7920 = uintBitsToFloat(_35[int(_7918)]);
+        float _7920 = uintBitsToFloat(_35[clamp(int(_7918), 0, 2815)]);
         float _7922 = fma(float(_7554), float(_7718), float(_7856));
         int _7924 = _676 + 4224;
         uint _7926 = uint(int(uint(_7924) >> uint(2)));
-        float _7928 = uintBitsToFloat(_35[int(_7926)]);
+        float _7928 = uintBitsToFloat(_35[clamp(int(_7926), 0, 2815)]);
         float _7930 = fma(float(_7542), float(_7628), float(_7816));
         int _7932 = _676 + 4736;
         uint _7934 = uint(int(uint(_7932) >> uint(2)));
-        float _7936 = uintBitsToFloat(_35[int(_7934)]);
+        float _7936 = uintBitsToFloat(_35[clamp(int(_7934), 0, 2815)]);
         float _7938 = fma(float(_7404), float(_7628), float(_7854));
         float _7940 = fma(float(_7542), float(_7660), float(_7882));
         float _7942 = fma(float(_7542), float(_7696), float(_7886));
         float _7944 = fma(float(_7542), float(_7724), float(_7914));
         int _7946 = _676 + 4352;
         uint _7948 = uint(int(uint(_7946) >> uint(2)));
-        float _7950 = uintBitsToFloat(_35[int(_7948)]);
+        float _7950 = uintBitsToFloat(_35[clamp(int(_7948), 0, 2815)]);
         float _7952 = fma(float(_7404), float(_7696), float(_7888));
         float _7954 = fma(float(_7404), float(_7634), float(_7930));
         float _7956 = fma(float(_7404), float(_7660), float(_7884));
         float _7958 = fma(float(_7404), float(_7724), float(_7922));
         int _7960 = _676 + 7040;
         uint _7962 = uint(int(uint(_7960) >> uint(2)));
-        float _7964 = uintBitsToFloat(_35[int(_7962)]);
+        float _7964 = uintBitsToFloat(_35[clamp(int(_7962), 0, 2815)]);
         float _7966 = fma(float(_7532), float(_7634), float(_7938));
         float _7968 = fma(float(_7404), float(_7666), float(_7940));
         float _7970 = fma(float(_7404), float(_7702), float(_7942));
         float _7972 = fma(float(_7404), float(_7730), float(_7944));
         int _7974 = _6716 + 8096;
         uint _7976 = uint(int(uint(_7974) >> uint(2)));
-        float _7978 = uintBitsToFloat(_35[int(_7976)]);
+        float _7978 = uintBitsToFloat(_35[clamp(int(_7976), 0, 2815)]);
         int _7980 = _6716 + 8100;
         uint _7982 = uint(int(uint(_7980) >> uint(2)));
-        float _7984 = uintBitsToFloat(_35[int(_7982)]);
+        float _7984 = uintBitsToFloat(_35[clamp(int(_7982), 0, 2815)]);
         int _7986 = _6716 + 8104;
         uint _7988 = uint(int(uint(_7986) >> uint(2)));
-        float _7990 = uintBitsToFloat(_35[int(_7988)]);
+        float _7990 = uintBitsToFloat(_35[clamp(int(_7988), 0, 2815)]);
         int _7992 = _6716 + 8108;
         uint _7994 = uint(int(uint(_7992) >> uint(2)));
-        float _7996 = uintBitsToFloat(_35[int(_7994)]);
+        float _7996 = uintBitsToFloat(_35[clamp(int(_7994), 0, 2815)]);
         float _7998 = fma(float(_7532), float(_7796), float(_7954));
         int _8000 = _676 + 4608;
         uint _8002 = uint(int(uint(_8000) >> uint(2)));
-        float _8004 = uintBitsToFloat(_35[int(_8002)]);
+        float _8004 = uintBitsToFloat(_35[clamp(int(_8002), 0, 2815)]);
         float _8006 = fma(float(_7532), float(_7702), float(_7952));
         float _8008 = fma(float(_7532), float(_7666), float(_7956));
         float _8010 = fma(float(_7532), float(_7730), float(_7958));
         float _8012 = fma(float(_7796), float(_7740), float(_7966));
         int _8014 = _676 + 4480;
         uint _8016 = uint(int(uint(_8014) >> uint(2)));
-        float _8018 = uintBitsToFloat(_35[int(_8016)]);
+        float _8018 = uintBitsToFloat(_35[clamp(int(_8016), 0, 2815)]);
         float _8020 = fma(float(_7532), float(_7826), float(_7968));
         float _8022 = fma(float(_7532), float(_7862), float(_7970));
         float _8024 = fma(float(_7674), float(_7802), float(_7998));
@@ -2671,20 +2669,20 @@ void main()
         float _8028 = fma(float(_7532), float(_7894), float(_7972));
         int _8030 = _6716 + 8288;
         uint _8032 = uint(int(uint(_8030) >> uint(2)));
-        float _8034 = uintBitsToFloat(_35[int(_8032)]);
+        float _8034 = uintBitsToFloat(_35[clamp(int(_8032), 0, 2815)]);
         int _8036 = _6716 + 8292;
         uint _8038 = uint(int(uint(_8036) >> uint(2)));
-        float _8040 = uintBitsToFloat(_35[int(_8038)]);
+        float _8040 = uintBitsToFloat(_35[clamp(int(_8038), 0, 2815)]);
         int _8042 = _6716 + 8296;
         uint _8044 = uint(int(uint(_8042) >> uint(2)));
-        float _8046 = uintBitsToFloat(_35[int(_8044)]);
+        float _8046 = uintBitsToFloat(_35[clamp(int(_8044), 0, 2815)]);
         int _8048 = _6716 + 8300;
         uint _8050 = uint(int(uint(_8048) >> uint(2)));
-        float _8052 = uintBitsToFloat(_35[int(_8050)]);
+        float _8052 = uintBitsToFloat(_35[clamp(int(_8050), 0, 2815)]);
         float _8054 = fma(float(_7826), float(_7740), float(_8008));
         int _8056 = _676 + 7168;
         uint _8058 = uint(int(uint(_8056) >> uint(2)));
-        float _8060 = uintBitsToFloat(_35[int(_8058)]);
+        float _8060 = uintBitsToFloat(_35[clamp(int(_8058), 0, 2815)]);
         float _8062 = fma(float(_7748), float(_7802), float(_8012));
         float _8064 = fma(float(_7674), float(_7832), float(_8020));
         float _8066 = fma(float(_7740), float(_7894), float(_8010));
@@ -2694,16 +2692,16 @@ void main()
         float _8074 = fma(float(_7674), float(_7868), float(_8022));
         int _8076 = _6716 + 8480;
         uint _8078 = uint(int(uint(_8076) >> uint(2)));
-        float _8080 = uintBitsToFloat(_35[int(_8078)]);
+        float _8080 = uintBitsToFloat(_35[clamp(int(_8078), 0, 2815)]);
         int _8082 = _6716 + 8484;
         uint _8084 = uint(int(uint(_8082) >> uint(2)));
-        float _8086 = uintBitsToFloat(_35[int(_8084)]);
+        float _8086 = uintBitsToFloat(_35[clamp(int(_8084), 0, 2815)]);
         int _8088 = _6716 + 8488;
         uint _8090 = uint(int(uint(_8088) >> uint(2)));
-        float _8092 = uintBitsToFloat(_35[int(_8090)]);
+        float _8092 = uintBitsToFloat(_35[clamp(int(_8090), 0, 2815)]);
         int _8094 = _6716 + 8492;
         uint _8096 = uint(int(uint(_8094) >> uint(2)));
-        float _8098 = uintBitsToFloat(_35[int(_8096)]);
+        float _8098 = uintBitsToFloat(_35[clamp(int(_8096), 0, 2815)]);
         float _8100 = fma(float(_7772), float(_7808), float(_8062));
         float _8102 = fma(float(_7674), float(_7900), float(_8028));
         float _8104 = fma(float(_7748), float(_7900), float(_8066));
@@ -2711,16 +2709,16 @@ void main()
         float _8108 = fma(float(_7748), float(_7838), float(_8064));
         int _8110 = _6716 + 8672;
         uint _8112 = uint(int(uint(_8110) >> uint(2)));
-        float _8114 = uintBitsToFloat(_35[int(_8112)]);
+        float _8114 = uintBitsToFloat(_35[clamp(int(_8112), 0, 2815)]);
         int _8116 = _6716 + 8676;
         uint _8118 = uint(int(uint(_8116) >> uint(2)));
-        float _8120 = uintBitsToFloat(_35[int(_8118)]);
+        float _8120 = uintBitsToFloat(_35[clamp(int(_8118), 0, 2815)]);
         int _8122 = _6716 + 8680;
         uint _8124 = uint(int(uint(_8122) >> uint(2)));
-        float _8126 = uintBitsToFloat(_35[int(_8124)]);
+        float _8126 = uintBitsToFloat(_35[clamp(int(_8124), 0, 2815)]);
         int _8128 = _6716 + 8684;
         uint _8130 = uint(int(uint(_8128) >> uint(2)));
-        float _8132 = uintBitsToFloat(_35[int(_8130)]);
+        float _8132 = uintBitsToFloat(_35[clamp(int(_8130), 0, 2815)]);
         float _8134 = fma(float(_7772), float(_7838), float(_8070));
         float _8136 = fma(float(_7748), float(_7874), float(_8074));
         float _8138 = fma(float(_7780), float(_7814), float(_8100));
@@ -2731,11 +2729,11 @@ void main()
         float _8148 = fma(float(_7748), float(_7906), float(_8102));
         int _8150 = _676 + 4864;
         uint _8152 = uint(int(uint(_8150) >> uint(2)));
-        float _8154 = uintBitsToFloat(_35[int(_8152)]);
+        float _8154 = uintBitsToFloat(_35[clamp(int(_8152), 0, 2815)]);
         float _8156 = fma(float(_7978), float(_7928), float(_8138));
         int _8158 = _676 + 5120;
         uint _8160 = uint(int(uint(_8158) >> uint(2)));
-        float _8162 = uintBitsToFloat(_35[int(_8160)]);
+        float _8162 = uintBitsToFloat(_35[clamp(int(_8160), 0, 2815)]);
         float _8164 = fma(float(_7772), float(_7880), float(_8136));
         float _8166 = fma(float(_7772), float(_7906), float(_8104));
         float _8168 = fma(float(_7928), float(_7984), float(_8142));
@@ -2744,76 +2742,76 @@ void main()
         float _8174 = fma(float(_7772), float(_7912), float(_8148));
         int _8176 = _676 + 5248;
         uint _8178 = uint(int(uint(_8176) >> uint(2)));
-        float _8180 = uintBitsToFloat(_35[int(_8178)]);
+        float _8180 = uintBitsToFloat(_35[clamp(int(_8178), 0, 2815)]);
         float _8182 = fma(float(_7780), float(_7880), float(_8140));
         int _8184 = _6716 + 8112;
         uint _8186 = uint(int(uint(_8184) >> uint(2)));
-        float _8188 = uintBitsToFloat(_35[int(_8186)]);
+        float _8188 = uintBitsToFloat(_35[clamp(int(_8186), 0, 2815)]);
         int _8190 = _6716 + 8116;
         uint _8192 = uint(int(uint(_8190) >> uint(2)));
-        float _8194 = uintBitsToFloat(_35[int(_8192)]);
+        float _8194 = uintBitsToFloat(_35[clamp(int(_8192), 0, 2815)]);
         int _8196 = _6716 + 8120;
         uint _8198 = uint(int(uint(_8196) >> uint(2)));
-        float _8200 = uintBitsToFloat(_35[int(_8198)]);
+        float _8200 = uintBitsToFloat(_35[clamp(int(_8198), 0, 2815)]);
         int _8202 = _6716 + 8124;
         uint _8204 = uint(int(uint(_8202) >> uint(2)));
-        float _8206 = uintBitsToFloat(_35[int(_8204)]);
+        float _8206 = uintBitsToFloat(_35[clamp(int(_8204), 0, 2815)]);
         float _8208 = fma(float(_7950), float(_7984), float(_8156));
         float _8210 = fma(float(_7928), float(_8040), float(_8170));
         float _8212 = fma(float(_7950), float(_8040), float(_8172));
         float _8214 = fma(float(_7780), float(_7912), float(_8166));
         int _8216 = _676 + 5376;
         uint _8218 = uint(int(uint(_8216) >> uint(2)));
-        float _8220 = uintBitsToFloat(_35[int(_8218)]);
+        float _8220 = uintBitsToFloat(_35[clamp(int(_8218), 0, 2815)]);
         float _8222 = fma(float(_7950), float(_7990), float(_8168));
         float _8224 = fma(float(_7920), float(_8080), float(_8164));
         float _8226 = fma(float(_8018), float(_7990), float(_8208));
         float _8228 = fma(float(_7928), float(_8080), float(_8182));
         int _8230 = _6716 + 8304;
         uint _8232 = uint(int(uint(_8230) >> uint(2)));
-        float _8234 = uintBitsToFloat(_35[int(_8232)]);
+        float _8234 = uintBitsToFloat(_35[clamp(int(_8232), 0, 2815)]);
         int _8236 = _6716 + 8308;
         uint _8238 = uint(int(uint(_8236) >> uint(2)));
-        float _8240 = uintBitsToFloat(_35[int(_8238)]);
+        float _8240 = uintBitsToFloat(_35[clamp(int(_8238), 0, 2815)]);
         int _8242 = _6716 + 8312;
         uint _8244 = uint(int(uint(_8242) >> uint(2)));
-        float _8246 = uintBitsToFloat(_35[int(_8244)]);
+        float _8246 = uintBitsToFloat(_35[clamp(int(_8244), 0, 2815)]);
         int _8248 = _6716 + 8316;
         uint _8250 = uint(int(uint(_8248) >> uint(2)));
-        float _8252 = uintBitsToFloat(_35[int(_8250)]);
+        float _8252 = uintBitsToFloat(_35[clamp(int(_8250), 0, 2815)]);
         float _8254 = fma(float(_7950), float(_8046), float(_8210));
         float _8256 = fma(float(_8018), float(_8046), float(_8212));
         int _8258 = _6716 + 8496;
         uint _8260 = uint(int(uint(_8258) >> uint(2)));
-        float _8262 = uintBitsToFloat(_35[int(_8260)]);
+        float _8262 = uintBitsToFloat(_35[clamp(int(_8260), 0, 2815)]);
         int _8264 = _6716 + 8500;
         uint _8266 = uint(int(uint(_8264) >> uint(2)));
-        float _8268 = uintBitsToFloat(_35[int(_8266)]);
+        float _8268 = uintBitsToFloat(_35[clamp(int(_8266), 0, 2815)]);
         int _8270 = _6716 + 8504;
         uint _8272 = uint(int(uint(_8270) >> uint(2)));
-        float _8274 = uintBitsToFloat(_35[int(_8272)]);
+        float _8274 = uintBitsToFloat(_35[clamp(int(_8272), 0, 2815)]);
         int _8276 = _6716 + 8508;
         uint _8278 = uint(int(uint(_8276) >> uint(2)));
-        float _8280 = uintBitsToFloat(_35[int(_8278)]);
+        float _8280 = uintBitsToFloat(_35[clamp(int(_8278), 0, 2815)]);
         float _8282 = fma(float(_7920), float(_8114), float(_8174));
         int _8284 = _676 + 5632;
         uint _8286 = uint(int(uint(_8284) >> uint(2)));
-        float _8288 = uintBitsToFloat(_35[int(_8286)]);
+        float _8288 = uintBitsToFloat(_35[clamp(int(_8286), 0, 2815)]);
         float _8290 = fma(float(_7928), float(_8114), float(_8214));
         float _8292 = fma(float(_7928), float(_8086), float(_8224));
         float _8294 = fma(float(_7950), float(_8086), float(_8228));
         int _8296 = _6716 + 8688;
         uint _8298 = uint(int(uint(_8296) >> uint(2)));
-        float _8300 = uintBitsToFloat(_35[int(_8298)]);
+        float _8300 = uintBitsToFloat(_35[clamp(int(_8298), 0, 2815)]);
         int _8302 = _6716 + 8692;
         uint _8304 = uint(int(uint(_8302) >> uint(2)));
-        float _8306 = uintBitsToFloat(_35[int(_8304)]);
+        float _8306 = uintBitsToFloat(_35[clamp(int(_8304), 0, 2815)]);
         int _8308 = _6716 + 8696;
         uint _8310 = uint(int(uint(_8308) >> uint(2)));
-        float _8312 = uintBitsToFloat(_35[int(_8310)]);
+        float _8312 = uintBitsToFloat(_35[clamp(int(_8310), 0, 2815)]);
         int _8314 = _6716 + 8700;
         uint _8316 = uint(int(uint(_8314) >> uint(2)));
-        float _8318 = uintBitsToFloat(_35[int(_8316)]);
+        float _8318 = uintBitsToFloat(_35[clamp(int(_8316), 0, 2815)]);
         float _8320 = fma(float(_8004), float(_7996), float(_8222));
         float _8322 = fma(float(_7928), float(_8120), float(_8282));
         float _8324 = fma(float(_7950), float(_8120), float(_8290));
@@ -2827,55 +2825,55 @@ void main()
         float _8340 = fma(float(_7950), float(_8126), float(_8322));
         int _8342 = _676 + 5760;
         uint _8344 = uint(int(uint(_8342) >> uint(2)));
-        float _8346 = uintBitsToFloat(_35[int(_8344)]);
+        float _8346 = uintBitsToFloat(_35[clamp(int(_8344), 0, 2815)]);
         float _8348 = fma(float(_8188), float(_8154), float(_8326));
         float _8350 = fma(float(_8004), float(_8098), float(_8328));
         int _8352 = _6716 + 8128;
         uint _8354 = uint(int(uint(_8352) >> uint(2)));
-        float _8356 = uintBitsToFloat(_35[int(_8354)]);
+        float _8356 = uintBitsToFloat(_35[clamp(int(_8354), 0, 2815)]);
         int _8358 = _6716 + 8132;
         uint _8360 = uint(int(uint(_8358) >> uint(2)));
-        float _8362 = uintBitsToFloat(_35[int(_8360)]);
+        float _8362 = uintBitsToFloat(_35[clamp(int(_8360), 0, 2815)]);
         int _8364 = _6716 + 8136;
         uint _8366 = uint(int(uint(_8364) >> uint(2)));
-        float _8368 = uintBitsToFloat(_35[int(_8366)]);
+        float _8368 = uintBitsToFloat(_35[clamp(int(_8366), 0, 2815)]);
         int _8370 = _6716 + 8140;
         uint _8372 = uint(int(uint(_8370) >> uint(2)));
-        float _8374 = uintBitsToFloat(_35[int(_8372)]);
+        float _8374 = uintBitsToFloat(_35[clamp(int(_8372), 0, 2815)]);
         float _8376 = fma(float(_7936), float(_8098), float(_8330));
         float _8378 = fma(float(_8154), float(_8194), float(_8332));
         float _8380 = fma(float(_7936), float(_8234), float(_8336));
         int _8382 = _676 + 5888;
         uint _8384 = uint(int(uint(_8382) >> uint(2)));
-        float _8386 = uintBitsToFloat(_35[int(_8384)]);
+        float _8386 = uintBitsToFloat(_35[clamp(int(_8384), 0, 2815)]);
         float _8388 = fma(float(_8234), float(_8154), float(_8338));
         float _8390 = fma(float(_8004), float(_8132), float(_8340));
         float _8392 = fma(float(_6964), float(_8194), float(_8348));
         int _8394 = _6716 + 8320;
         uint _8396 = uint(int(uint(_8394) >> uint(2)));
-        float _8398 = uintBitsToFloat(_35[int(_8396)]);
+        float _8398 = uintBitsToFloat(_35[clamp(int(_8396), 0, 2815)]);
         int _8400 = _6716 + 8324;
         uint _8402 = uint(int(uint(_8400) >> uint(2)));
-        float _8404 = uintBitsToFloat(_35[int(_8402)]);
+        float _8404 = uintBitsToFloat(_35[clamp(int(_8402), 0, 2815)]);
         int _8406 = _6716 + 8328;
         uint _8408 = uint(int(uint(_8406) >> uint(2)));
-        float _8410 = uintBitsToFloat(_35[int(_8408)]);
+        float _8410 = uintBitsToFloat(_35[clamp(int(_8408), 0, 2815)]);
         int _8412 = _6716 + 8332;
         uint _8414 = uint(int(uint(_8412) >> uint(2)));
-        float _8416 = uintBitsToFloat(_35[int(_8414)]);
+        float _8416 = uintBitsToFloat(_35[clamp(int(_8414), 0, 2815)]);
         float _8418 = fma(float(_7936), float(_8262), float(_8350));
         int _8420 = _6716 + 8512;
         uint _8422 = uint(int(uint(_8420) >> uint(2)));
-        float _8424 = uintBitsToFloat(_35[int(_8422)]);
+        float _8424 = uintBitsToFloat(_35[clamp(int(_8422), 0, 2815)]);
         int _8426 = _6716 + 8516;
         uint _8428 = uint(int(uint(_8426) >> uint(2)));
-        float _8430 = uintBitsToFloat(_35[int(_8428)]);
+        float _8430 = uintBitsToFloat(_35[clamp(int(_8428), 0, 2815)]);
         int _8432 = _6716 + 8520;
         uint _8434 = uint(int(uint(_8432) >> uint(2)));
-        float _8436 = uintBitsToFloat(_35[int(_8434)]);
+        float _8436 = uintBitsToFloat(_35[clamp(int(_8434), 0, 2815)]);
         int _8438 = _6716 + 8524;
         uint _8440 = uint(int(uint(_8438) >> uint(2)));
-        float _8442 = uintBitsToFloat(_35[int(_8440)]);
+        float _8442 = uintBitsToFloat(_35[clamp(int(_8440), 0, 2815)]);
         float _8444 = fma(float(_8154), float(_8262), float(_8376));
         float _8446 = fma(float(_8154), float(_8240), float(_8380));
         float _8448 = fma(float(_6964), float(_8240), float(_8388));
@@ -2883,16 +2881,16 @@ void main()
         float _8452 = fma(float(_6964), float(_8268), float(_8444));
         int _8454 = _6716 + 8704;
         uint _8456 = uint(int(uint(_8454) >> uint(2)));
-        float _8458 = uintBitsToFloat(_35[int(_8456)]);
+        float _8458 = uintBitsToFloat(_35[clamp(int(_8456), 0, 2815)]);
         int _8460 = _6716 + 8708;
         uint _8462 = uint(int(uint(_8460) >> uint(2)));
-        float _8464 = uintBitsToFloat(_35[int(_8462)]);
+        float _8464 = uintBitsToFloat(_35[clamp(int(_8462), 0, 2815)]);
         int _8466 = _6716 + 8712;
         uint _8468 = uint(int(uint(_8466) >> uint(2)));
-        float _8470 = uintBitsToFloat(_35[int(_8468)]);
+        float _8470 = uintBitsToFloat(_35[clamp(int(_8468), 0, 2815)]);
         int _8472 = _6716 + 8716;
         uint _8474 = uint(int(uint(_8472) >> uint(2)));
-        float _8476 = uintBitsToFloat(_35[int(_8474)]);
+        float _8476 = uintBitsToFloat(_35[clamp(int(_8474), 0, 2815)]);
         float _8478 = fma(float(_8162), float(_8246), float(_8446));
         float _8480 = fma(float(_8162), float(_8200), float(_8378));
         float _8482 = fma(float(_8180), float(_8246), float(_8448));
@@ -2902,7 +2900,7 @@ void main()
         float _8490 = fma(float(_8180), float(_8206), float(_8480));
         int _8492 = _676 + 6272;
         uint _8494 = uint(int(uint(_8492) >> uint(2)));
-        float _8496 = uintBitsToFloat(_35[int(_8494)]);
+        float _8496 = uintBitsToFloat(_35[clamp(int(_8494), 0, 2815)]);
         float _8498 = fma(float(_8220), float(_8206), float(_8484));
         float _8500 = fma(float(_8180), float(_8280), float(_8486));
         float _8502 = fma(float(_7936), float(_8300), float(_8390));
@@ -2915,35 +2913,35 @@ void main()
         float _8516 = fma(float(_6972), float(_8424), float(_8506));
         int _8518 = _6716 + 8144;
         uint _8520 = uint(int(uint(_8518) >> uint(2)));
-        float _8522 = uintBitsToFloat(_35[int(_8520)]);
+        float _8522 = uintBitsToFloat(_35[clamp(int(_8520), 0, 2815)]);
         int _8524 = _6716 + 8148;
         uint _8526 = uint(int(uint(_8524) >> uint(2)));
-        float _8528 = uintBitsToFloat(_35[int(_8526)]);
+        float _8528 = uintBitsToFloat(_35[clamp(int(_8526), 0, 2815)]);
         int _8530 = _6716 + 8152;
         uint _8532 = uint(int(uint(_8530) >> uint(2)));
-        float _8534 = uintBitsToFloat(_35[int(_8532)]);
+        float _8534 = uintBitsToFloat(_35[clamp(int(_8532), 0, 2815)]);
         int _8536 = _6716 + 8156;
         uint _8538 = uint(int(uint(_8536) >> uint(2)));
-        float _8540 = uintBitsToFloat(_35[int(_8538)]);
+        float _8540 = uintBitsToFloat(_35[clamp(int(_8538), 0, 2815)]);
         float _8542 = fma(float(_8356), float(_6972), float(_8498));
         float _8544 = fma(float(_8398), float(_6972), float(_8508));
         float _8546 = fma(float(_8288), float(_8362), float(_8510));
         int _8548 = _6716 + 8336;
         uint _8550 = uint(int(uint(_8548) >> uint(2)));
-        float _8552 = uintBitsToFloat(_35[int(_8550)]);
+        float _8552 = uintBitsToFloat(_35[clamp(int(_8550), 0, 2815)]);
         int _8554 = _6716 + 8340;
         uint _8556 = uint(int(uint(_8554) >> uint(2)));
-        float _8558 = uintBitsToFloat(_35[int(_8556)]);
+        float _8558 = uintBitsToFloat(_35[clamp(int(_8556), 0, 2815)]);
         int _8560 = _6716 + 8344;
         uint _8562 = uint(int(uint(_8560) >> uint(2)));
-        float _8564 = uintBitsToFloat(_35[int(_8562)]);
+        float _8564 = uintBitsToFloat(_35[clamp(int(_8562), 0, 2815)]);
         int _8566 = _6716 + 8348;
         uint _8568 = uint(int(uint(_8566) >> uint(2)));
-        float _8570 = uintBitsToFloat(_35[int(_8568)]);
+        float _8570 = uintBitsToFloat(_35[clamp(int(_8568), 0, 2815)]);
         float _8572 = fma(float(_8162), float(_8312), float(_8512));
         int _8574 = _676 + 6400;
         uint _8576 = uint(int(uint(_8574) >> uint(2)));
-        float _8578 = uintBitsToFloat(_35[int(_8576)]);
+        float _8578 = uintBitsToFloat(_35[clamp(int(_8576), 0, 2815)]);
         float _8580 = fma(float(_8220), float(_8424), float(_8500));
         float _8582 = fma(float(_8346), float(_8362), float(_8542));
         float _8584 = fma(float(_8288), float(_8404), float(_8514));
@@ -2952,16 +2950,16 @@ void main()
         float _8590 = fma(float(_8180), float(_8318), float(_8572));
         int _8592 = _6716 + 8528;
         uint _8594 = uint(int(uint(_8592) >> uint(2)));
-        float _8596 = uintBitsToFloat(_35[int(_8594)]);
+        float _8596 = uintBitsToFloat(_35[clamp(int(_8594), 0, 2815)]);
         int _8598 = _6716 + 8532;
         uint _8600 = uint(int(uint(_8598) >> uint(2)));
-        float _8602 = uintBitsToFloat(_35[int(_8600)]);
+        float _8602 = uintBitsToFloat(_35[clamp(int(_8600), 0, 2815)]);
         int _8604 = _6716 + 8536;
         uint _8606 = uint(int(uint(_8604) >> uint(2)));
-        float _8608 = uintBitsToFloat(_35[int(_8606)]);
+        float _8608 = uintBitsToFloat(_35[clamp(int(_8606), 0, 2815)]);
         int _8610 = _6716 + 8540;
         uint _8612 = uint(int(uint(_8610) >> uint(2)));
-        float _8614 = uintBitsToFloat(_35[int(_8612)]);
+        float _8614 = uintBitsToFloat(_35[clamp(int(_8612), 0, 2815)]);
         float _8616 = fma(float(_8386), float(_8368), float(_8582));
         float _8618 = fma(float(_8346), float(_8410), float(_8584));
         float _8620 = fma(float(_8288), float(_8430), float(_8580));
@@ -2977,7 +2975,7 @@ void main()
         float _8640 = fma(float(_8220), float(_8458), float(_8590));
         int _8642 = _676 + 6912;
         uint _8644 = uint(int(uint(_8642) >> uint(2)));
-        float _8646 = uintBitsToFloat(_35[int(_8644)]);
+        float _8646 = uintBitsToFloat(_35[clamp(int(_8644), 0, 2815)]);
         float _8648 = fma(float(_8522), float(_8496), float(_8628));
         float _8650 = fma(float(_8386), float(_8442), float(_8632));
         float _8652 = fma(float(_7004), float(_8552), float(_8630));
@@ -2985,28 +2983,28 @@ void main()
         float _8656 = fma(float(_6996), float(_8442), float(_8636));
         int _8658 = _676 + 7424;
         uint _8660 = uint(int(uint(_8658) >> uint(2)));
-        float _8662 = uintBitsToFloat(_35[int(_8660)]);
+        float _8662 = uintBitsToFloat(_35[clamp(int(_8660), 0, 2815)]);
         float _8664 = fma(float(_8496), float(_8528), float(_8638));
         int _8666 = _6716 + 8160;
         uint _8668 = uint(int(uint(_8666) >> uint(2)));
-        float _8670 = uintBitsToFloat(_35[int(_8668)]);
+        float _8670 = uintBitsToFloat(_35[clamp(int(_8668), 0, 2815)]);
         int _8672 = _6716 + 8164;
         uint _8674 = uint(int(uint(_8672) >> uint(2)));
-        float _8676 = uintBitsToFloat(_35[int(_8674)]);
+        float _8676 = uintBitsToFloat(_35[clamp(int(_8674), 0, 2815)]);
         int _8678 = _6716 + 8168;
         uint _8680 = uint(int(uint(_8678) >> uint(2)));
-        float _8682 = uintBitsToFloat(_35[int(_8680)]);
+        float _8682 = uintBitsToFloat(_35[clamp(int(_8680), 0, 2815)]);
         int _8684 = _6716 + 8172;
         uint _8686 = uint(int(uint(_8684) >> uint(2)));
-        float _8688 = uintBitsToFloat(_35[int(_8686)]);
+        float _8688 = uintBitsToFloat(_35[clamp(int(_8686), 0, 2815)]);
         float _8690 = fma(float(_8288), float(_8464), float(_8640));
         int _8692 = _676 + 6784;
         uint _8694 = uint(int(uint(_8692) >> uint(2)));
-        float _8696 = uintBitsToFloat(_35[int(_8694)]);
+        float _8696 = uintBitsToFloat(_35[clamp(int(_8694), 0, 2815)]);
         float _8698 = fma(float(_8578), float(_8528), float(_8648));
         int _8700 = _676 + 7808;
         uint _8702 = uint(int(uint(_8700) >> uint(2)));
-        float _8704 = uintBitsToFloat(_35[int(_8702)]);
+        float _8704 = uintBitsToFloat(_35[clamp(int(_8702), 0, 2815)]);
         float _8706 = fma(float(_7004), float(_8596), float(_8650));
         float _8708 = fma(float(_8496), float(_8596), float(_8656));
         float _8710 = fma(float(_8578), float(_8534), float(_8664));
@@ -3015,30 +3013,30 @@ void main()
         float _8716 = fma(float(_7038), float(_8534), float(_8698));
         int _8718 = _6716 + 8352;
         uint _8720 = uint(int(uint(_8718) >> uint(2)));
-        float _8722 = uintBitsToFloat(_35[int(_8720)]);
+        float _8722 = uintBitsToFloat(_35[clamp(int(_8720), 0, 2815)]);
         int _8724 = _6716 + 8356;
         uint _8726 = uint(int(uint(_8724) >> uint(2)));
-        float _8728 = uintBitsToFloat(_35[int(_8726)]);
+        float _8728 = uintBitsToFloat(_35[clamp(int(_8726), 0, 2815)]);
         int _8730 = _6716 + 8360;
         uint _8732 = uint(int(uint(_8730) >> uint(2)));
-        float _8734 = uintBitsToFloat(_35[int(_8732)]);
+        float _8734 = uintBitsToFloat(_35[clamp(int(_8732), 0, 2815)]);
         int _8736 = _6716 + 8364;
         uint _8738 = uint(int(uint(_8736) >> uint(2)));
-        float _8740 = uintBitsToFloat(_35[int(_8738)]);
+        float _8740 = uintBitsToFloat(_35[clamp(int(_8738), 0, 2815)]);
         float _8742 = fma(float(_8496), float(_8602), float(_8706));
         float _8744 = fma(float(_8578), float(_8602), float(_8708));
         int _8746 = _6716 + 8544;
         uint _8748 = uint(int(uint(_8746) >> uint(2)));
-        float _8750 = uintBitsToFloat(_35[int(_8748)]);
+        float _8750 = uintBitsToFloat(_35[clamp(int(_8748), 0, 2815)]);
         int _8752 = _6716 + 8548;
         uint _8754 = uint(int(uint(_8752) >> uint(2)));
-        float _8756 = uintBitsToFloat(_35[int(_8754)]);
+        float _8756 = uintBitsToFloat(_35[clamp(int(_8754), 0, 2815)]);
         int _8758 = _6716 + 8552;
         uint _8760 = uint(int(uint(_8758) >> uint(2)));
-        float _8762 = uintBitsToFloat(_35[int(_8760)]);
+        float _8762 = uintBitsToFloat(_35[clamp(int(_8760), 0, 2815)]);
         int _8764 = _6716 + 8556;
         uint _8766 = uint(int(uint(_8764) >> uint(2)));
-        float _8768 = uintBitsToFloat(_35[int(_8766)]);
+        float _8768 = uintBitsToFloat(_35[clamp(int(_8766), 0, 2815)]);
         float _8770 = fma(float(_8578), float(_8564), float(_8712));
         float _8772 = fma(float(_8578), float(_8608), float(_8742));
         float _8774 = fma(float(_7038), float(_8564), float(_8714));
@@ -3046,7 +3044,7 @@ void main()
         float _8778 = fma(float(_7038), float(_8608), float(_8744));
         int _8780 = _676 + 7296;
         uint _8782 = uint(int(uint(_8780) >> uint(2)));
-        float _8784 = uintBitsToFloat(_35[int(_8782)]);
+        float _8784 = uintBitsToFloat(_35[clamp(int(_8782), 0, 2815)]);
         float _8786 = fma(float(_7046), float(_8570), float(_8770));
         float _8788 = fma(float(_8696), float(_8540), float(_8716));
         float _8790 = fma(float(_8696), float(_8570), float(_8774));
@@ -3058,7 +3056,7 @@ void main()
         float _8802 = fma(float(_8722), float(_8646), float(_8790));
         int _8804 = _676 + 7552;
         uint _8806 = uint(int(uint(_8804) >> uint(2)));
-        float _8808 = uintBitsToFloat(_35[int(_8806)]);
+        float _8808 = uintBitsToFloat(_35[clamp(int(_8806), 0, 2815)]);
         float _8810 = fma(float(_8646), float(_8676), float(_8792));
         float _8812 = fma(float(_7964), float(_8676), float(_8798));
         float _8814 = fma(float(_8696), float(_8750), float(_8794));
@@ -3066,20 +3064,20 @@ void main()
         float _8818 = fma(float(_8646), float(_8728), float(_8800));
         int _8820 = _6716 + 8176;
         uint _8822 = uint(int(uint(_8820) >> uint(2)));
-        float _8824 = uintBitsToFloat(_35[int(_8822)]);
+        float _8824 = uintBitsToFloat(_35[clamp(int(_8822), 0, 2815)]);
         int _8826 = _6716 + 8180;
         uint _8828 = uint(int(uint(_8826) >> uint(2)));
-        float _8830 = uintBitsToFloat(_35[int(_8828)]);
+        float _8830 = uintBitsToFloat(_35[clamp(int(_8828), 0, 2815)]);
         int _8832 = _6716 + 8184;
         uint _8834 = uint(int(uint(_8832) >> uint(2)));
-        float _8836 = uintBitsToFloat(_35[int(_8834)]);
+        float _8836 = uintBitsToFloat(_35[clamp(int(_8834), 0, 2815)]);
         int _8838 = _6716 + 8188;
         uint _8840 = uint(int(uint(_8838) >> uint(2)));
-        float _8842 = uintBitsToFloat(_35[int(_8840)]);
+        float _8842 = uintBitsToFloat(_35[clamp(int(_8840), 0, 2815)]);
         float _8844 = fma(float(_7964), float(_8728), float(_8802));
         int _8846 = _676 + 7680;
         uint _8848 = uint(int(uint(_8846) >> uint(2)));
-        float _8850 = uintBitsToFloat(_35[int(_8848)]);
+        float _8850 = uintBitsToFloat(_35[clamp(int(_8848), 0, 2815)]);
         float _8852 = fma(float(_8646), float(_8756), float(_8814));
         float _8854 = fma(float(_7964), float(_8756), float(_8816));
         float _8856 = fma(float(_8060), float(_8734), float(_8818));
@@ -3087,21 +3085,21 @@ void main()
         float _8860 = fma(float(_8784), float(_8734), float(_8844));
         int _8862 = _6716 + 8368;
         uint _8864 = uint(int(uint(_8862) >> uint(2)));
-        float _8866 = uintBitsToFloat(_35[int(_8864)]);
+        float _8866 = uintBitsToFloat(_35[clamp(int(_8864), 0, 2815)]);
         int _8868 = _6716 + 8372;
         uint _8870 = uint(int(uint(_8868) >> uint(2)));
-        float _8872 = uintBitsToFloat(_35[int(_8870)]);
+        float _8872 = uintBitsToFloat(_35[clamp(int(_8870), 0, 2815)]);
         int _8874 = _6716 + 8376;
         uint _8876 = uint(int(uint(_8874) >> uint(2)));
-        float _8878 = uintBitsToFloat(_35[int(_8876)]);
+        float _8878 = uintBitsToFloat(_35[clamp(int(_8876), 0, 2815)]);
         int _8880 = _6716 + 8380;
         uint _8882 = uint(int(uint(_8880) >> uint(2)));
-        float _8884 = uintBitsToFloat(_35[int(_8882)]);
+        float _8884 = uintBitsToFloat(_35[clamp(int(_8882), 0, 2815)]);
         float _8886 = fma(float(_8060), float(_8762), float(_8852));
         float _8888 = fma(float(_8784), float(_8762), float(_8854));
         int _8890 = _676 + 7936;
         uint _8892 = uint(int(uint(_8890) >> uint(2)));
-        float _8894 = uintBitsToFloat(_35[int(_8892)]);
+        float _8894 = uintBitsToFloat(_35[clamp(int(_8892), 0, 2815)]);
         float _8896 = fma(float(_8784), float(_8682), float(_8812));
         float _8898 = fma(float(_8784), float(_8688), float(_8858));
         float _8900 = fma(float(_8784), float(_8740), float(_8856));
@@ -3110,7 +3108,7 @@ void main()
         float _8906 = fma(float(_8662), float(_8768), float(_8888));
         int _8908 = _676 + 8064;
         uint _8910 = uint(int(uint(_8908) >> uint(2)));
-        float _8912 = uintBitsToFloat(_35[int(_8910)]);
+        float _8912 = uintBitsToFloat(_35[clamp(int(_8910), 0, 2815)]);
         float _8914 = fma(float(_8662), float(_8688), float(_8896));
         float _8916 = fma(float(_8662), float(_8824), float(_8898));
         float _8918 = fma(float(_8824), float(_8808), float(_8914));
@@ -3121,16 +3119,16 @@ void main()
         float _8928 = fma(float(_8704), float(_8836), float(_8920));
         int _8930 = _6716 + 8560;
         uint _8932 = uint(int(uint(_8930) >> uint(2)));
-        float _8934 = uintBitsToFloat(_35[int(_8932)]);
+        float _8934 = uintBitsToFloat(_35[clamp(int(_8932), 0, 2815)]);
         int _8936 = _6716 + 8564;
         uint _8938 = uint(int(uint(_8936) >> uint(2)));
-        float _8940 = uintBitsToFloat(_35[int(_8938)]);
+        float _8940 = uintBitsToFloat(_35[clamp(int(_8938), 0, 2815)]);
         int _8942 = _6716 + 8568;
         uint _8944 = uint(int(uint(_8942) >> uint(2)));
-        float _8946 = uintBitsToFloat(_35[int(_8944)]);
+        float _8946 = uintBitsToFloat(_35[clamp(int(_8944), 0, 2815)]);
         int _8948 = _6716 + 8572;
         uint _8950 = uint(int(uint(_8948) >> uint(2)));
-        float _8952 = uintBitsToFloat(_35[int(_8950)]);
+        float _8952 = uintBitsToFloat(_35[clamp(int(_8950), 0, 2815)]);
         float _8954 = fma(float(_8894), float(_8836), float(_8922));
         float _8956 = fma(float(_8894), float(_8842), float(_8928));
         float _8958 = fma(float(_8912), float(_8842), float(_8954));
@@ -3142,16 +3140,16 @@ void main()
         float _8970 = fma(float(_8704), float(_8872), float(_8926));
         int _8972 = _6716 + 8720;
         uint _8974 = uint(int(uint(_8972) >> uint(2)));
-        float _8976 = uintBitsToFloat(_35[int(_8974)]);
+        float _8976 = uintBitsToFloat(_35[clamp(int(_8974), 0, 2815)]);
         int _8978 = _6716 + 8724;
         uint _8980 = uint(int(uint(_8978) >> uint(2)));
-        float _8982 = uintBitsToFloat(_35[int(_8980)]);
+        float _8982 = uintBitsToFloat(_35[clamp(int(_8980), 0, 2815)]);
         int _8984 = _6716 + 8728;
         uint _8986 = uint(int(uint(_8984) >> uint(2)));
-        float _8988 = uintBitsToFloat(_35[int(_8986)]);
+        float _8988 = uintBitsToFloat(_35[clamp(int(_8986), 0, 2815)]);
         int _8990 = _6716 + 8732;
         uint _8992 = uint(int(uint(_8990) >> uint(2)));
-        float _8994 = uintBitsToFloat(_35[int(_8992)]);
+        float _8994 = uintBitsToFloat(_35[clamp(int(_8992), 0, 2815)]);
         float _8996 = fma(float(_8386), float(_8476), float(_8960));
         float _8998 = fma(float(_8662), float(_8934), float(_8904));
         int _9000 = _61 << 6;
@@ -3192,12 +3190,12 @@ void main()
         if (_8966)
         {
             uint _9044 = uint(int(uint(_9036) >> uint(2)));
-            cp_s3_1._m0[int(_9044)] = uint(_9040);
+            cp_s3_1._m0[clamp(int(_9044), 0, 65535)] = uint(_9040);
         }
         if (!_8966)
         {
             uint _9046 = uint(int(uint(_7562) >> uint(2)));
-            float _9048 = uintBitsToFloat(cp_s2_1._m0[int(_9046)]);
+            float _9048 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9046), 0, 65535)]);
             _9010 = _9048;
         }
         float _9050 = _9010;
@@ -3232,10 +3230,10 @@ void main()
         if (!_8966)
         {
             uint _9072 = uint(int(uint(_9062) >> uint(2)));
-            cp_s3_1._m0[int(_9072)] = uint(_9070);
+            cp_s3_1._m0[clamp(int(_9072), 0, 65535)] = uint(_9070);
         }
         uint _9074 = uint(int(uint(_7562) >> uint(2)));
-        float _9076 = uintBitsToFloat(cp_s2_1._m0[int(_9074)]);
+        float _9076 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9074), 0, 65535)]);
         float _9078 = fma(float(_7004), float(_8976), float(_8996));
         float _9080 = -_9076;
         bool _9082 = _8958 > _9080;
@@ -3269,12 +3267,12 @@ void main()
         if (_9082)
         {
             uint _9104 = uint(int(uint(_9098) >> uint(2)));
-            cp_s3_1._m0[int(_9104)] = uint(_9102);
+            cp_s3_1._m0[clamp(int(_9104), 0, 65535)] = uint(_9102);
         }
         if (!_9082)
         {
             uint _9106 = uint(int(uint(_7562) >> uint(2)));
-            float _9108 = uintBitsToFloat(cp_s2_1._m0[int(_9106)]);
+            float _9108 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9106), 0, 65535)]);
             _9096 = _9108;
         }
         float _9110 = _9096;
@@ -3323,10 +3321,10 @@ void main()
         if (!_9082)
         {
             uint _9152 = uint(int(uint(_9128) >> uint(2)));
-            cp_s3_1._m0[int(_9152)] = uint(_9150);
+            cp_s3_1._m0[clamp(int(_9152), 0, 65535)] = uint(_9150);
         }
         uint _9154 = uint(int(uint(_9126) >> uint(2)));
-        float _9156 = uintBitsToFloat(cp_s2_1._m0[int(_9154)]);
+        float _9156 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9154), 0, 65535)]);
         float _9158 = fma(float(_8704), float(_8878), float(_8968));
         float _9160 = fma(float(_8894), float(_8884), float(_9158));
         int _9162 = _61 << 2;
@@ -3338,16 +3336,16 @@ void main()
         float _9174 = fma(float(_7046), float(_8994), float(_9172));
         int _9176 = _6716 + 8736;
         uint _9178 = uint(int(uint(_9176) >> uint(2)));
-        float _9180 = uintBitsToFloat(_35[int(_9178)]);
+        float _9180 = uintBitsToFloat(_35[clamp(int(_9178), 0, 2815)]);
         int _9182 = _6716 + 8740;
         uint _9184 = uint(int(uint(_9182) >> uint(2)));
-        float _9186 = uintBitsToFloat(_35[int(_9184)]);
+        float _9186 = uintBitsToFloat(_35[clamp(int(_9184), 0, 2815)]);
         int _9188 = _6716 + 8744;
         uint _9190 = uint(int(uint(_9188) >> uint(2)));
-        float _9192 = uintBitsToFloat(_35[int(_9190)]);
+        float _9192 = uintBitsToFloat(_35[clamp(int(_9190), 0, 2815)]);
         int _9194 = _6716 + 8748;
         uint _9196 = uint(int(uint(_9194) >> uint(2)));
-        float _9198 = uintBitsToFloat(_35[int(_9196)]);
+        float _9198 = uintBitsToFloat(_35[clamp(int(_9196), 0, 2815)]);
         float _9200 = fma(float(_8704), float(_8940), float(_9042));
         float _9202 = fma(float(_8894), float(_8878), float(_8970));
         float _9204 = fma(float(_8894), float(_8946), float(_9200));
@@ -3370,7 +3368,7 @@ void main()
         if (_9208)
         {
             uint _9228 = uint(int(uint(_9166) >> uint(2)));
-            float _9230 = uintBitsToFloat(cp_s2_1._m0[int(_9228)]);
+            float _9230 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9228), 0, 65535)]);
             _9022 = _9230;
         }
         float _9232 = _9022;
@@ -3383,16 +3381,16 @@ void main()
         int _9246 = _9244 + 1024;
         int _9248 = _6716 + 8752;
         uint _9250 = uint(int(uint(_9248) >> uint(2)));
-        float _9252 = uintBitsToFloat(_35[int(_9250)]);
+        float _9252 = uintBitsToFloat(_35[clamp(int(_9250), 0, 2815)]);
         int _9254 = _6716 + 8756;
         uint _9256 = uint(int(uint(_9254) >> uint(2)));
-        float _9258 = uintBitsToFloat(_35[int(_9256)]);
+        float _9258 = uintBitsToFloat(_35[clamp(int(_9256), 0, 2815)]);
         int _9260 = _6716 + 8760;
         uint _9262 = uint(int(uint(_9260) >> uint(2)));
-        float _9264 = uintBitsToFloat(_35[int(_9262)]);
+        float _9264 = uintBitsToFloat(_35[clamp(int(_9262), 0, 2815)]);
         int _9266 = _6716 + 8764;
         uint _9268 = uint(int(uint(_9266) >> uint(2)));
-        float _9270 = uintBitsToFloat(_35[int(_9268)]);
+        float _9270 = uintBitsToFloat(_35[clamp(int(_9268), 0, 2815)]);
         int _9272 = floatBitsToInt(_50) << 6;
         int _9274 = _9272 + _9246;
         float _9276 = fma(float(_8704), float(_8946), float(_9170));
@@ -3474,12 +3472,12 @@ void main()
         if (_9208)
         {
             uint _9356 = uint(int(uint(_9300) >> uint(2)));
-            cp_s3_1._m0[int(_9356)] = uint(_9354);
+            cp_s3_1._m0[clamp(int(_9356), 0, 65535)] = uint(_9354);
         }
         if (!_9208)
         {
             uint _9358 = uint(int(uint(int(_9348)) >> uint(2)));
-            float _9360 = uintBitsToFloat(cp_s2_1._m0[int(_9358)]);
+            float _9360 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9358), 0, 65535)]);
             _9334 = _9360;
         }
         float _9362 = _9334;
@@ -3524,16 +3522,16 @@ void main()
         if (!_9208)
         {
             uint _9394 = uint(int(uint(_9376) >> uint(2)));
-            cp_s3_1._m0[int(_9394)] = uint(_9392);
+            cp_s3_1._m0[clamp(int(_9394), 0, 65535)] = uint(_9392);
         }
         uint _9396 = uint(int(uint(_9126) >> uint(2)));
-        float _9398 = uintBitsToFloat(cp_s2_1._m0[int(_9396)]);
+        float _9398 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9396), 0, 65535)]);
         float _9400 = -_9398;
         bool _9402 = _9240 > _9400;
         if (_9402)
         {
             uint _9404 = uint(int(uint(int(_9348)) >> uint(2)));
-            float _9406 = uintBitsToFloat(cp_s2_1._m0[int(_9404)]);
+            float _9406 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9404), 0, 65535)]);
             _9028 = _9406;
         }
         float _9408 = _9028;
@@ -3565,12 +3563,12 @@ void main()
         if (_9402)
         {
             uint _9432 = uint(int(uint(_9420) >> uint(2)));
-            cp_s3_1._m0[int(_9432)] = uint(_9430);
+            cp_s3_1._m0[clamp(int(_9432), 0, 65535)] = uint(_9430);
         }
         if (!_9402)
         {
             uint _9434 = uint(int(uint(int(_9348)) >> uint(2)));
-            float _9436 = uintBitsToFloat(cp_s2_1._m0[int(_9434)]);
+            float _9436 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9434), 0, 65535)]);
             _9418 = _9436;
         }
         float _9438 = _9418;
@@ -3613,10 +3611,10 @@ void main()
         if (!_9402)
         {
             uint _9474 = uint(int(uint(_9450) >> uint(2)));
-            cp_s3_1._m0[int(_9474)] = uint(_9472);
+            cp_s3_1._m0[clamp(int(_9474), 0, 65535)] = uint(_9472);
         }
         uint _9476 = uint(int(uint(_9448) >> uint(2)));
-        float _9478 = uintBitsToFloat(cp_s2_1._m0[int(_9476)]);
+        float _9478 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9476), 0, 65535)]);
         int _9480 = _61 << 12;
         int _9482 = _9480 + 2048;
         float _9484 = -_9478;
@@ -3640,7 +3638,7 @@ void main()
         if (_9486)
         {
             uint _9510 = uint(int(uint(_9492) >> uint(2)));
-            float _9512 = uintBitsToFloat(cp_s2_1._m0[int(_9510)]);
+            float _9512 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9510), 0, 65535)]);
             _9410 = _9512;
         }
         float _9514 = _9410;
@@ -3701,12 +3699,12 @@ void main()
         if (_9486)
         {
             uint _9568 = uint(int(uint(_9530) >> uint(2)));
-            cp_s3_1._m0[int(_9568)] = uint(_9566);
+            cp_s3_1._m0[clamp(int(_9568), 0, 65535)] = uint(_9566);
         }
         if (!_9486)
         {
             uint _9570 = uint(int(uint(int(_9562)) >> uint(2)));
-            float _9572 = uintBitsToFloat(cp_s2_1._m0[int(_9570)]);
+            float _9572 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9570), 0, 65535)]);
             _9552 = _9572;
         }
         float _9574 = _9552;
@@ -3745,17 +3743,17 @@ void main()
         if (!_9486)
         {
             uint _9602 = uint(int(uint(_9584) >> uint(2)));
-            cp_s3_1._m0[int(_9602)] = uint(_9600);
+            cp_s3_1._m0[clamp(int(_9602), 0, 65535)] = uint(_9600);
         }
         uint _9604 = uint(int(uint(_9448) >> uint(2)));
-        float _9606 = uintBitsToFloat(cp_s2_1._m0[int(_9604)]);
+        float _9606 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9604), 0, 65535)]);
         float _9608 = -_9606;
         bool _9610 = _9328 > _9608;
         uint _9612 = floatBitsToUint(_9606);
         if (_9610)
         {
             uint _9614 = uint(int(uint(int(_9562)) >> uint(2)));
-            float _9616 = uintBitsToFloat(cp_s2_1._m0[int(_9614)]);
+            float _9616 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9614), 0, 65535)]);
             _9336 = _9616;
         }
         float _9618 = _9336;
@@ -3787,12 +3785,12 @@ void main()
         if (_9610)
         {
             uint _9642 = uint(int(uint(_9630) >> uint(2)));
-            cp_s3_1._m0[int(_9642)] = uint(_9640);
+            cp_s3_1._m0[clamp(int(_9642), 0, 65535)] = uint(_9640);
         }
         if (!_9610)
         {
             uint _9644 = uint(int(uint(int(_9562)) >> uint(2)));
-            float _9646 = uintBitsToFloat(cp_s2_1._m0[int(_9644)]);
+            float _9646 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9644), 0, 65535)]);
             _9628 = _9646;
         }
         float _9648 = _9628;
@@ -3837,10 +3835,10 @@ void main()
         if (!_9610)
         {
             uint _9688 = uint(int(uint(_9658) >> uint(2)));
-            cp_s3_1._m0[int(_9688)] = uint(_9684);
+            cp_s3_1._m0[clamp(int(_9688), 0, 65535)] = uint(_9684);
         }
         uint _9690 = uint(int(uint(_9666) >> uint(2)));
-        float _9692 = uintBitsToFloat(cp_s2_1._m0[int(_9690)]);
+        float _9692 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9690), 0, 65535)]);
         float _9694 = fma(float(_8704), float(_9264), float(_9350));
         float _9696 = fma(float(_8894), float(_9270), float(_9694));
         float _9698 = -_9692;
@@ -3863,7 +3861,7 @@ void main()
         if (_9700)
         {
             uint _9722 = uint(int(uint(_9706) >> uint(2)));
-            float _9724 = uintBitsToFloat(cp_s2_1._m0[int(_9722)]);
+            float _9724 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9722), 0, 65535)]);
             _9338 = _9724;
         }
         float _9726 = _9338;
@@ -3921,12 +3919,12 @@ void main()
         if (_9700)
         {
             uint _9776 = uint(int(uint(_9742) >> uint(2)));
-            cp_s3_1._m0[int(_9776)] = uint(_9774);
+            cp_s3_1._m0[clamp(int(_9776), 0, 65535)] = uint(_9774);
         }
         if (!_9700)
         {
             uint _9778 = uint(int(uint(int(_9770)) >> uint(2)));
-            float _9780 = uintBitsToFloat(cp_s2_1._m0[int(_9778)]);
+            float _9780 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9778), 0, 65535)]);
             _9760 = _9780;
         }
         float _9782 = _9760;
@@ -3969,10 +3967,10 @@ void main()
         if (!_9700)
         {
             uint _9820 = uint(int(uint(_9790) >> uint(2)));
-            cp_s3_1._m0[int(_9820)] = uint(_9818);
+            cp_s3_1._m0[clamp(int(_9820), 0, 65535)] = uint(_9818);
         }
         uint _9822 = uint(int(uint(_9666) >> uint(2)));
-        float _9824 = uintBitsToFloat(cp_s2_1._m0[int(_9822)]);
+        float _9824 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9822), 0, 65535)]);
         float _9826 = fma(float(_8496), float(_8976), float(_9808));
         float _9828 = fma(float(_8578), float(_8982), float(_9826));
         float _9830 = fma(float(_7038), float(_8988), float(_9828));
@@ -3992,31 +3990,31 @@ void main()
             int _9854 = _9290 + 32;
             int _9856 = _9854 + _9734;
             uint _9858 = uint(int(uint(int(_9770)) >> uint(2)));
-            float _9860 = uintBitsToFloat(cp_s2_1._m0[int(_9858)]);
+            float _9860 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9858), 0, 65535)]);
             int _9862 = _9856 << 2;
             precise float _27976 = _9848 + _9860;
             float _9864 = _27976;
             uint _9866 = uint(int(uint(_9862) >> uint(2)));
-            cp_s3_1._m0[int(_9866)] = floatBitsToUint(_9864);
+            cp_s3_1._m0[clamp(int(_9866), 0, 65535)] = floatBitsToUint(_9864);
             return;
         }
         int _9868 = _9290 + 32;
         int _9870 = _9868 + _9734;
         uint _9872 = uint(int(uint(int(_9770)) >> uint(2)));
-        float _9874 = uintBitsToFloat(cp_s2_1._m0[int(_9872)]);
+        float _9874 = uintBitsToFloat(cp_s2_1._m0[clamp(int(_9872), 0, 65535)]);
         int _9876 = _9870 << 2;
         precise float _28004 = _9848 + _9874;
         float _9878 = _28004;
         precise float _28006 = _9878 * 0.20000000298023223876953125;
         float _9880 = _28006;
         uint _9882 = uint(int(uint(_9876) >> uint(2)));
-        cp_s3_1._m0[int(_9882)] = floatBitsToUint(_9880);
+        cp_s3_1._m0[clamp(int(_9882), 0, 65535)] = floatBitsToUint(_9880);
     }
     
     // 所有线程 barrier（原始代码中 if (_3678) 块内的 barrier 被移到这里）
     barrier();
     
-    // 输出共享内存的值（简单输出，避免复杂计算）
+    // 输出共享内存的值
     uint out_val = _35[0];
     uint gidx = gl_GlobalInvocationID.x;
     if (gidx < 65535u) {
