@@ -5,6 +5,7 @@ on:
     branches: [ "jiaoben" ]  
   pull_request:
     branches: [ "jiaoben" ]
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -14,7 +15,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # 如果原始着色器文件在私有仓库中，参考 az (9).yml 中的方式指定 token
+        # 如果需要从私有仓库拉取，可以添加 token
         # with:
         #   token: ${{ secrets.GITLAB_TOKEN }}
 
@@ -32,8 +33,18 @@ jobs:
           name: test10-shader
           path: test10.comp
 
-      - name: (Optional) Compile with glslangValidator
+      - name: Install glslang-tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y spirv-tools
+          sudo apt-get install -y glslang-tools
+          glslangValidator --version
+
+      - name: Compile test10.comp to SPIR-V
+        run: |
           glslangValidator -V test10.comp -o test10.spv
+
+      - name: Upload SPIR-V binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test10-spv
+          path: test10.spv
