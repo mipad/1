@@ -6,16 +6,16 @@ output_file = "test10.comp"
 with open(input_file, "r") as f:
     content = f.read()
 
-# 取消注释所有被注释的 cp_s3 写入行（删除行首的 "// "）
-# 注意：原始 test10.comp 中 cp_s3 写入行已被注释为 "// cp_s3_1._m0[...] = ...;"
+# 1. 替换 cp_s0 读取为 0.0f（与测试10相同）
 content = re.sub(
-    r'^//\s*(cp_s3_1\._m0\[.*\] = .*;)\s*$',
-    r'\1',
-    content,
-    flags=re.MULTILINE
+    r'uintBitsToFloat\(cp_s0_1\._m0\[[^\]]*\]\)',
+    '0.0f',
+    content
 )
+
+# 2. 不要注释 cp_s3 写入行（所以什么都不做）
 
 with open(output_file, "w") as f:
     f.write(content)
 
-print(f"Generated {output_file} (cp_s0 remains 0.0f, cp_s3 writes restored)")
+print(f"Generated {output_file} (cp_s0 = 0.0f, cp_s3 writes enabled)")
