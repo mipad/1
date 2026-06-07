@@ -1,10 +1,10 @@
 name: Generate Test10 Shader
 
 on:
-  push:
-    paths:
-      - 'BBFC05FA3DE7666C.comp'
-  workflow_dispatch:
+  push:   
+    branches: [ "jiaoben" ]  
+  pull_request:
+    branches: [ "jiaoben" ]
 
 jobs:
   generate:
