@@ -1,7 +1,7 @@
 import re
 
 input_file = "BBFC05FA3DE7666C.comp"
-output_file = "test11.comp"
+output_file = "test10.comp"
 
 with open(input_file, "r") as f:
     content = f.read()
