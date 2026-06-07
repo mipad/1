@@ -1,6 +1,6 @@
 import re
 
-input_file = "test10.comp"
+input_file = "BBFC05FA3DE7666C.comp"
 output_file = "test10.comp"
 
 with open(input_file, "r") as f:
