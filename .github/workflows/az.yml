@@ -1,7 +1,7 @@
 name: Generate Test10 Shader
 
 on:
-  push:   
+push:   
     branches: [ "jiaoben" ]  
   pull_request:
     branches: [ "jiaoben" ]
