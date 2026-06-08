@@ -2,7 +2,7 @@ import re
 
 input_file = "BBFC05FA3DE7666C.comp"
 TARGET = 7   # 改成你要测试的写入编号，比如 7,8,9,...,16
-output_file = f"test{TARGET:02d}.comp"
+output_file = "test10.comp"
 
 with open(input_file, "r") as f:
     lines = f.readlines()
