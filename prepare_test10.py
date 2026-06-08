@@ -1,45 +1,29 @@
 import re
 
 input_file = "BBFC05FA3DE7666C.comp"
-output_file = "test10.comp"
+output_file = "test10_fixed_all.comp"
 
 with open(input_file, "r") as f:
     content = f.read()
 
-# 替换第6个 if 块
-pattern_if = r'(if\s*\(\s*!_\s*9208\s*\)\s*\{)([\s\S]*?)(\})'
-def repl(match):
-    block_body = match.group(2)
-    # 将写入语句拆分成多步
-    new_body = re.sub(
-        r'(cp_s3_1\._m0\[[^\]]+\]\s*=\s*)(uint\(_9392\);)',
-        r'int _tmp_idx = int(_9394);\n    uint _idx = uint(_tmp_idx);\n    uint _val = \2;\n    cp_s3_1._m0[int(_idx)] = _val;',
-        block_body
-    )
-    return match.group(1) + new_body + match.group(3)
+# 匹配每个 cp_s3 写入语句（假设单行）
+def split_write(match):
+    indent = match.group(1)                     # 前导空白
+    array_part = match.group(2)                # 包括数组索引的部分
+    value_part = match.group(3).strip().rstrip(';')  # 值部分，去掉结尾分号
+    # 提取索引表达式（方括号内的内容）
+    index_expr = re.search(r'\[([^\]]+)\]', array_part).group(1)
+    # 生成拆分后的代码
+    return (f"{indent}int _tmp_idx = int({index_expr});\n"
+            f"{indent}uint _idx = uint(_tmp_idx);\n"
+            f"{indent}uint _val = {value_part};\n"
+            f"{indent}cp_s3_1._m0[int(_idx)] = _val;\n")
 
-content = re.sub(pattern_if, repl, content, count=1)
-
-# 注释掉第7个及之后的 cp_s3 写入（保留前5个和第6个修改后的）
-lines = content.splitlines(keepends=True)
-output_lines = []
-cp_s3_count = 0
-for line in lines:
-    if re.match(r'^\s*cp_s3_1\._m0\[', line):
-        cp_s3_count += 1
-        if cp_s3_count <= 5:
-            output_lines.append(line)
-        else:
-            # 第6个及之后的行，但我们希望保留第6个新生成的写入，需要判断一下
-            # 这里简单处理：如果行中包含 '_idx' 或 '_val'，认为是新生成的，保留
-            if '_idx' in line or '_val' in line:
-                output_lines.append(line)
-            else:
-                output_lines.append("// " + line)
-    else:
-        output_lines.append(line)
+# 正则匹配整行：可选空白 + cp_s3_1._m0[ ... ] = ... ;
+pattern = r'^(\s*)(cp_s3_1\._m0\[[^\]]+\]\s*=\s*[^;]+;)\s*$'
+content = re.sub(pattern, split_write, content, flags=re.MULTILINE)
 
 with open(output_file, "w") as f:
-    f.writelines(output_lines)
+    f.write(content)
 
-print("Generated test10.comp: kept first 5 writes, split 6th write, commented others")
+print(f"Generated {output_file}: all cp_s3 writes split into safe steps")
