@@ -1,37 +1,27 @@
 import re
 
 input_file = "BBFC05FA3DE7666C.comp"
-output_file = "test10.comp"
-
-def split_write(line):
-    """将 cp_s3 写入语句拆分为多步安全操作"""
-    match = re.match(r'^(\s*)(cp_s3_1\._m0\[)([^\]]+)(\]\s*=\s*)([^;]+);', line)
-    if not match:
-        return line
-    indent = match.group(1)
-    index_expr = match.group(3).strip()
-    value_expr = match.group(5).strip()
-    return (f"{indent}int _tmp_idx = int({index_expr});\n"
-            f"{indent}uint _idx = uint(_tmp_idx);\n"
-            f"{indent}uint _val = {value_expr};\n"
-            f"{indent}cp_s3_1._m0[int(_idx)] = _val;\n")
+TARGET = 7   # 改成你要测试的写入编号，比如 7,8,9,...,16
+output_file = f"test{TARGET:02d}.comp"
 
 with open(input_file, "r") as f:
     lines = f.readlines()
 
-count = 0
-output = []
+cp_count = 0
+out_lines = []
 for line in lines:
     if re.match(r'^\s*cp_s3_1\._m0\[', line):
-        count += 1
-        if count <= 5:
-            output.append(line)          # 前5个原样保留
+        cp_count += 1
+        if cp_count <= 5:
+            out_lines.append(line)          # 保留前5个
+        elif cp_count == TARGET:
+            out_lines.append(line)          # 只保留第 TARGET 个
         else:
-            output.append(split_write(line))  # 第6个及之后拆分
+            out_lines.append("// " + line)  # 注释其他所有
     else:
-        output.append(line)
+        out_lines.append(line)
 
 with open(output_file, "w") as f:
-    f.writelines(output)
+    f.writelines(out_lines)
 
-print(f"Generated {output_file}: kept first 5 cp_s3 writes, split writes 6..{count}")
+print(f"Generated {output_file}: kept writes 1-5 and write #{TARGET}")
