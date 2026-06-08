@@ -6,20 +6,16 @@ output_file = "test10.comp"
 with open(input_file, "r") as f:
     content = f.read()
 
-# 替换第6个 if 块为更细致的拆分版本
-pattern_if = r'(if\s*\(\s*!_\s*9208\s*\)\s*\{)([^{}]*)(\})'
-
+# 找到第6个 if (!_9208) 块，并在内部添加临时变量，修改写入行
+pattern = r'(if\s*\(\s*!_\s*9208\s*\)\s*\{)([\s\S]*?)(\})'
 def repl(match):
-    return """if (!_9208)
-{
-    uint _temp_shift = uint(_9376);
-    uint _temp_shifted = _temp_shift >> 2u;
-    uint _9394 = _temp_shifted;
-    uint _temp_val = uint(_9392);
-    cp_s3_1._m0[int(_9394)] = _temp_val;
-}"""
+    block_body = match.group(2)
+    # 在块内查找写入语句的行
+    # 简单方法：在块内替换写入语句为两行
+    new_body = re.sub(r'(cp_s3_1\._m0\[[^\]]+\]\s*=\s*)(uint\(_9392\);)', r'\1_temp_val;\n    uint _temp_val = \2', block_body)
+    return match.group(1) + new_body + match.group(3)
 
-content = re.sub(pattern_if, repl, content, count=1)
+content = re.sub(pattern, repl, content, count=1)
 
 # 保留前5个 cp_s3 写入，注释其他
 lines = content.splitlines(keepends=True)
@@ -40,4 +36,4 @@ for line in lines:
 with open(output_file, "w") as f:
     f.writelines(output_lines)
 
-print("Generated test10.comp: split calculations into multiple steps")
+print("Generated test10.comp: split 6th cp_s3 write into two statements (temp variable)")
