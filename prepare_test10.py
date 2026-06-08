@@ -4,7 +4,7 @@ input_file = "BBFC05FA3DE7666C.comp"
 output_file = "test10.comp"
 
 # 选择测试模式: 'A' 或 'B'
-TEST_MODE = 'A'   # 改为 'B' 进行测试B
+TEST_MODE = 'B'   # 改为 'B' 进行测试B
 
 with open(input_file, "r") as f:
     content = f.read()
