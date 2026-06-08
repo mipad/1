@@ -4,7 +4,7 @@ input_file = "BBFC05FA3DE7666C.comp"
 output_file = "test10.comp"
 
 # 选择测试模式: 'C2' 或 'C3'
-TEST_MODE = 'C2'   # 修改此处
+TEST_MODE = 'C3'   # 修改此处
 
 with open(input_file, "r") as f:
     content = f.read()
