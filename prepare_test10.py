@@ -4,7 +4,7 @@ input_file = "BBFC05FA3DE7666C.comp"
 output_file = "test10.comp"
 
 # 要保留的 cp_s3 写入个数（从1开始，逐步增大）
-KEEP_COUNT = 4
+KEEP_COUNT = 8
 
 with open(input_file, "r") as f:
     lines = f.readlines()
