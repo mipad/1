@@ -1,8 +1,10 @@
-name: Compile All Shaders
+name: Compile Test Shaders
 
 on:
   push:
     branches: [ "jiaoben" ]
+    paths:
+      - 'prepare_*.py'
   pull_request:
     branches: [ "jiaoben" ]
   workflow_dispatch:
@@ -18,12 +20,10 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5
-        if: hashFiles('prepare_*.py') != ''
         with:
           python-version: '3.x'
 
       - name: Run all prepare scripts
-        if: hashFiles('prepare_*.py') != ''
         run: |
           for script in prepare_*.py; do
             echo "Running $script"
@@ -36,10 +36,10 @@ jobs:
           sudo apt-get install -y glslang-tools
           glslangValidator --version
 
-      - name: Find and compile all .comp files
+      - name: Compile all test*.comp files
         run: |
           shopt -s nullglob
-          for comp in *.comp; do
+          for comp in test*.comp; do
             echo "Compiling $comp -> ${comp%.comp}.spv"
             glslangValidator -V "$comp" -o "${comp%.comp}.spv"
           done
@@ -47,7 +47,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-shaders
+          name: compiled-test-shaders
           path: |
-            *.comp
-            *.spv
+            test*.comp
+            test*.spv
