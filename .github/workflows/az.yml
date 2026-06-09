@@ -3,8 +3,6 @@ name: Compile Test Shaders
 on:
   push:
     branches: [ "jiaoben" ]
-    paths:
-      - 'prepare_*.py'
   pull_request:
     branches: [ "jiaoben" ]
   workflow_dispatch:
