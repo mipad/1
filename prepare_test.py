@@ -1,69 +1,256 @@
 import re
 
-input_file = "882C700EBC5FADF5_Compute.glsl"
+INPUT = "882C700EBC5FADF5_Compute.glsl"
 
-def read_file():
-    with open(input_file, "r") as f:
-        return f.read()
+with open(INPUT, "r", encoding="utf-8") as f:
+    original = f.read()
 
-def write_test(content, name):
-    with open(name, "w") as f:
+
+def save(filename, content):
+    with open(filename, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"Generated: {name}")
+    print("Generated:", filename)
 
-original = read_file()
 
-# 1. 注释所有 early return
-content1 = re.sub(r'^(\s*)return;$', r'\1// return;', original, flags=re.MULTILINE)
-write_test(content1, "test_no_early_return.comp")
+# ==========================================================
+# test_original
+# ==========================================================
 
-# 2. 注释所有 barrier()
-content2 = re.sub(r'^(\s*)barrier\(\);', r'\1// barrier();', original, flags=re.MULTILINE)
-write_test(content2, "test_no_barrier.comp")
+save(
+    "test_original_882C700EBC5FADF5.comp",
+    original
+)
 
-# 3. 注释所有 _53 函数调用（cp_s3 原子写入）
-content3 = re.sub(r'^(\s*)_53\([^;]+\);', r'\1// _53(...);', original, flags=re.MULTILINE)
-write_test(content3, "test_no_cp_s3_writes.comp")
+# ==========================================================
+# test_barrier
+# ==========================================================
 
-# 4. 注释所有 _51 函数调用（cp_s1 原子写入）
-content4 = re.sub(r'^(\s*)_51\([^;]+\);', r'\1// _51(...);', original, flags=re.MULTILINE)
-write_test(content4, "test_no_cp_s1_writes.comp")
+v1 = original
 
-# 5. 注释所有共享内存写入 _35[...] = ...
-content5 = re.sub(r'^(\s*)_35\[[^\]]+\]\s*=\s*[^;]+;', r'\1// _35[...] = ...;', original, flags=re.MULTILINE)
-write_test(content5, "test_no_shared_writes.comp")
+v1 = re.sub(
+    r'''
+bool _95 = _93 != 0;
+\s*
+if \(!_95\)
+\s*\{
+\s*return;
+\s*\}
+''',
+    '''
+bool _95 = _93 != 0;
+''',
+    v1,
+    flags=re.VERBOSE
+)
 
-# 6. 注释所有 cp_s0 读取（函数 _47 内部）
-content6 = re.sub(r'float _1646 = uintBitsToFloat\(cp_s0_1\._m0\[int\(_1644\)\]\);', 
-                  '// float _1646 = 0.0;', original)
-write_test(content6, "test_no_cp_s0_reads.comp")
+v1 = v1.replace(
+'''barrier();
+    int _103''',
+'''barrier();
 
-# 7. 简化复杂移位和类型转换
-def simplify_bitops(content):
-    content = re.sub(r'uint\(int\(uint\(([^)]+)\)\s*>>\s*uint\(2\)\)\)', r'(uint(\1) >> 2u)', content)
-    return content
-content7 = simplify_bitops(original)
-write_test(content7, "test_simplified_bitops.comp")
+    if (!_95)
+    {
+        return;
+    }
 
-# 8. 禁用原子交换（保留循环，但用简单赋值替换 atomicCompSwap）
-def disable_atomic_swap(content):
-    # 将 atomicCompSwap 行替换为直接赋值 0，并提供 dummy 变量
-    def repl(match):
-        indent = match.group(1)
-        return f'{indent}uint _1887 = 0; // atomicCompSwap disabled'
-    content = re.sub(r'^(\s*)uint _1887 = atomicCompSwap\(.*\);', repl, content, flags=re.MULTILINE)
-    # 同时修改 while 条件，避免使用未定义的 _1857，直接 break
-    content = re.sub(r'do\s*\{([^{}]*)\}\s*while\s*\([^;]+\);', r'{\1}', content, flags=re.DOTALL)
-    return content
-content8 = disable_atomic_swap(original)
-write_test(content8, "test_no_atomic_swap.comp")
+    int _103'''
+)
 
-# 9. 注释所有对 _52 的调用（cp_s3 读取）
-content9 = re.sub(r'^(\s*)_52\([^;]+\);', r'\1// _52(...);', original, flags=re.MULTILINE)
-write_test(content9, "test_no_cp_s3_reads.comp")
+save(
+    "test_barrier_882C700EBC5FADF5.comp",
+    v1
+)
 
-# 10. 注释所有对 _48 和 _49 的调用（cp_s1/cp_s2 读取）
-content10 = re.sub(r'^(\s*)_(48|49)\([^;]+\);', r'\1// _\2(...);', original, flags=re.MULTILINE)
-write_test(content10, "test_no_cp_s1_s2_reads.comp")
+# ==========================================================
+# test_shared_atomic
+# ==========================================================
 
-print("\n所有测试版本已生成在当前目录。")
+v2 = original
+
+v2 = re.sub(
+    r'_35\[0\]\s*=\s*uint\([^;]+\);',
+    'atomicOr(_35[0], 1u);',
+    v2
+)
+
+v2 = v2.replace(
+    '_35[0] = 1u;',
+    'atomicOr(_35[0], 1u);'
+)
+
+save(
+    "test_shared_atomic_882C700EBC5FADF5.comp",
+    v2
+)
+
+# ==========================================================
+# test_atomic_uint
+# ==========================================================
+
+v3 = original
+
+v3 = re.sub(
+    r'float _1760 = uintBitsToFloat\(([^;]+)\);',
+    r'uint _1760 = \1;',
+    v3
+)
+
+v3 = v3.replace(
+    'floatBitsToUint(_1760)',
+    '_1760'
+)
+
+v3 = v3.replace(
+    'floatBitsToInt(_1760)',
+    'int(_1760)'
+)
+
+v3 = re.sub(
+    r'float _1853 = uintBitsToFloat\(([^;]+)\);',
+    r'uint _1853 = \1;',
+    v3
+)
+
+v3 = v3.replace(
+    'floatBitsToUint(_1853)',
+    '_1853'
+)
+
+v3 = v3.replace(
+    'floatBitsToInt(_1853)',
+    'int(_1853)'
+)
+
+save(
+    "test_atomic_uint_882C700EBC5FADF5.comp",
+    v3
+)
+
+# ==========================================================
+# test_remove_bitcast
+# ==========================================================
+
+v4 = original
+
+v4 = re.sub(
+    r'uintBitsToFloat\(',
+    '(',
+    v4
+)
+
+v4 = re.sub(
+    r'floatBitsToInt\(',
+    'int(',
+    v4
+)
+
+v4 = re.sub(
+    r'floatBitsToUint\(',
+    'uint(',
+    v4
+)
+
+save(
+    "test_remove_bitcast_882C700EBC5FADF5.comp",
+    v4
+)
+
+# ==========================================================
+# test_all
+# ==========================================================
+
+v5 = original
+
+# barrier
+
+v5 = re.sub(
+    r'''
+bool _95 = _93 != 0;
+\s*
+if \(!_95\)
+\s*\{
+\s*return;
+\s*\}
+''',
+    '''
+bool _95 = _93 != 0;
+''',
+    v5,
+    flags=re.VERBOSE
+)
+
+v5 = v5.replace(
+'''barrier();
+    int _103''',
+'''barrier();
+
+    if (!_95)
+    {
+        return;
+    }
+
+    int _103'''
+)
+
+# shared
+
+v5 = re.sub(
+    r'_35\[0\]\s*=\s*uint\([^;]+\);',
+    'atomicOr(_35[0], 1u);',
+    v5
+)
+
+v5 = v5.replace(
+    '_35[0] = 1u;',
+    'atomicOr(_35[0], 1u);'
+)
+
+# atomic
+
+v5 = re.sub(
+    r'float _1760 = uintBitsToFloat\(([^;]+)\);',
+    r'uint _1760 = \1;',
+    v5
+)
+
+v5 = v5.replace(
+    'floatBitsToUint(_1760)',
+    '_1760'
+)
+
+v5 = v5.replace(
+    'floatBitsToInt(_1760)',
+    'int(_1760)'
+)
+
+v5 = re.sub(
+    r'float _1853 = uintBitsToFloat\(([^;]+)\);',
+    r'uint _1853 = \1;',
+    v5
+)
+
+v5 = v5.replace(
+    'floatBitsToUint(_1853)',
+    '_1853'
+)
+
+v5 = v5.replace(
+    'floatBitsToInt(_1853)',
+    'int(_1853)'
+)
+
+save(
+    "test_all_882C700EBC5FADF5.comp",
+    v5
+)
+
+print()
+print("====================================")
+print("Generated:")
+print("test_original_882C700EBC5FADF5.comp")
+print("test_barrier_882C700EBC5FADF5.comp")
+print("test_shared_atomic_882C700EBC5FADF5.comp")
+print("test_atomic_uint_882C700EBC5FADF5.comp")
+print("test_remove_bitcast_882C700EBC5FADF5.comp")
+print("test_all_882C700EBC5FADF5.comp")
+print("====================================")
