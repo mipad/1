@@ -5,87 +5,68 @@ INPUT = "882C700EBC5FADF5_Compute.glsl"
 with open(INPUT, "r", encoding="utf-8") as f:
     original = f.read()
 
+matches = list(re.finditer(r'floatBitsToInt\s*\(', original))
 
-def save(name, text):
-    with open(name, "w", encoding="utf-8") as f:
-        f.write(text)
-    print("Generated:", name)
+count = len(matches)
+
+print("floatBitsToInt count =", count)
+
+half = count // 2
+
+
+def replace_selected(text, start_idx, end_idx):
+    result = []
+    last = 0
+
+    for i, m in enumerate(matches):
+        result.append(text[last:m.start()])
+
+        if start_idx <= i < end_idx:
+            result.append("int(")
+        else:
+            result.append(m.group(0))
+
+        last = m.end()
+
+    result.append(text[last:])
+    return "".join(result)
 
 
 # =====================================================
-# test_floatBitsToInt_only_buffer
-#
-# 只修改:
-# _47
-# _48
-# _49
-# _52
+# 前半部分替换
 # =====================================================
 
-buffer_ver = original
-
-for fn in ["_47", "_48", "_49", "_52"]:
-
-    pattern = rf'(int\s+{fn}\s*\([^{{]+\{{.*?\n\}})'
-
-    m = re.search(pattern, buffer_ver, re.S)
-
-    if m:
-        body = m.group(1)
-
-        body2 = body.replace(
-            "floatBitsToInt(",
-            "int("
-        )
-
-        buffer_ver = (
-            buffer_ver[:m.start()]
-            + body2
-            + buffer_ver[m.end():]
-        )
-
-save(
-    "test_floatBitsToInt_only_buffer.comp",
-    buffer_ver
+first_half = replace_selected(
+    original,
+    0,
+    half
 )
 
+with open(
+    "test_fbi_first_half.comp",
+    "w",
+    encoding="utf-8"
+) as f:
+    f.write(first_half)
+
+print("Generated: test_fbi_first_half.comp")
+
 
 # =====================================================
-# test_floatBitsToInt_only_main
-#
-# 只修改 main()
+# 后半部分替换
 # =====================================================
 
-main_ver = original
-
-m = re.search(
-    r'void\s+main\s*\(\)\s*\{.*\}\s*$',
-    main_ver,
-    re.S
+second_half = replace_selected(
+    original,
+    half,
+    count
 )
 
-if m:
-    body = m.group(0)
+with open(
+    "test_fbi_second_half.comp",
+    "w",
+    encoding="utf-8"
+) as f:
+    f.write(second_half)
 
-    body2 = body.replace(
-        "floatBitsToInt(",
-        "int("
-    )
-
-    main_ver = (
-        main_ver[:m.start()]
-        + body2
-        + main_ver[m.end():]
-    )
-
-save(
-    "test_floatBitsToInt_only_main.comp",
-    main_ver
-)
-
-print()
-print("====================================")
-print("Generated:")
-print("test_floatBitsToInt_only_buffer.comp")
-print("test_floatBitsToInt_only_main.comp")
-print("====================================")
+print("Generated: test_fbi_second_half.comp")
