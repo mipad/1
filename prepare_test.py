@@ -10,15 +10,15 @@ count = len(matches)
 
 print(f"floatBitsToInt count = {count}")
 
-def generate(replace_count):
-    filename = f"test_fbi_first{replace_count}.comp"
+def generate(target_idx):
+    filename = f"test_only_fbi{target_idx}.comp"
 
     result = []
 
     header = f"""// ========================================
 // {filename}
 // floatBitsToInt count = {count}
-// replace range = [0, {replace_count})
+// replace FBI#{target_idx} only
 // ========================================
 
 """
@@ -31,7 +31,7 @@ def generate(replace_count):
 
         result.append(original[last:m.start()])
 
-        if idx < replace_count:
+        if idx == target_idx:
             result.append(
                 f"/* FBI#{idx} REPLACED */ int("
             )
@@ -49,18 +49,14 @@ def generate(replace_count):
 
     print("Generated:", filename)
 
+generate(0)
 generate(1)
 generate(2)
-generate(4)
-generate(6)
-generate(8)
 
 print()
 print("========================================")
 print("Generated files:")
-print("test_fbi_first1.comp")
-print("test_fbi_first2.comp")
-print("test_fbi_first4.comp")
-print("test_fbi_first6.comp")
-print("test_fbi_first8.comp")
+print("test_only_fbi0.comp")
+print("test_only_fbi1.comp")
+print("test_only_fbi2.comp")
 print("========================================")
