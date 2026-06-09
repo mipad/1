@@ -11,17 +11,18 @@ count = len(matches)
 
 print("floatBitsToInt count =", count)
 
-half = count // 2
+q1_end = count // 4
+q2_end = count // 2
 
 
-def replace_selected(text, start_idx, end_idx):
+def replace_range(text, begin_idx, end_idx):
     result = []
     last = 0
 
     for i, m in enumerate(matches):
         result.append(text[last:m.start()])
 
-        if start_idx <= i < end_idx:
+        if begin_idx <= i < end_idx:
             result.append("int(")
         else:
             result.append(m.group(0))
@@ -33,40 +34,47 @@ def replace_selected(text, start_idx, end_idx):
 
 
 # =====================================================
-# 前半部分替换
+# Q1 : 0 ~ 25%
 # =====================================================
 
-first_half = replace_selected(
+q1 = replace_range(
     original,
     0,
-    half
+    q1_end
 )
 
 with open(
-    "test_fbi_first_half.comp",
+    "test_fbi_q1.comp",
     "w",
     encoding="utf-8"
 ) as f:
-    f.write(first_half)
+    f.write(q1)
 
-print("Generated: test_fbi_first_half.comp")
+print("Generated: test_fbi_q1.comp")
 
 
 # =====================================================
-# 后半部分替换
+# Q2 : 25% ~ 50%
 # =====================================================
 
-second_half = replace_selected(
+q2 = replace_range(
     original,
-    half,
-    count
+    q1_end,
+    q2_end
 )
 
 with open(
-    "test_fbi_second_half.comp",
+    "test_fbi_q2.comp",
     "w",
     encoding="utf-8"
 ) as f:
-    f.write(second_half)
+    f.write(q2)
 
-print("Generated: test_fbi_second_half.comp")
+print("Generated: test_fbi_q2.comp")
+
+print()
+print("====================================")
+print("Generated:")
+print("test_fbi_q1.comp")
+print("test_fbi_q2.comp")
+print("====================================")
