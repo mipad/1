@@ -9,72 +9,77 @@ matches = list(re.finditer(r'floatBitsToInt\s*\(', original))
 
 count = len(matches)
 
-print("floatBitsToInt count =", count)
+print(f"floatBitsToInt count = {count}")
 
 q1_end = count // 4
-q2_end = count // 2
+
+q1a_end = q1_end // 2
+
+q1a_begin = 0
+q1b_begin = q1a_end
+q1b_end = q1_end
 
 
-def replace_range(text, begin_idx, end_idx):
+def make_shader(begin_idx, end_idx, filename):
     result = []
+
+    result.append(
+        f"""// ========================================
+// {filename}
+// floatBitsToInt count = {count}
+// replace range = [{begin_idx}, {end_idx})
+// ========================================
+
+"""
+    )
+
     last = 0
 
-    for i, m in enumerate(matches):
-        result.append(text[last:m.start()])
+    for idx, m in enumerate(matches):
 
-        if begin_idx <= i < end_idx:
-            result.append("int(")
+        result.append(original[last:m.start()])
+
+        if begin_idx <= idx < end_idx:
+            result.append(
+                f"/* FBI#{idx} REPLACED */ int("
+            )
         else:
-            result.append(m.group(0))
+            result.append(
+                f"/* FBI#{idx} */ floatBitsToInt("
+            )
 
         last = m.end()
 
-    result.append(text[last:])
-    return "".join(result)
+    result.append(original[last:])
+
+    text = "".join(result)
+
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(text)
+
+    print("Generated:", filename)
 
 
-# =====================================================
-# Q1 : 0 ~ 25%
-# =====================================================
-
-q1 = replace_range(
-    original,
-    0,
-    q1_end
+make_shader(
+    q1a_begin,
+    q1a_end,
+    "test_fbi_q1a.comp"
 )
 
-with open(
-    "test_fbi_q1.comp",
-    "w",
-    encoding="utf-8"
-) as f:
-    f.write(q1)
-
-print("Generated: test_fbi_q1.comp")
-
-
-# =====================================================
-# Q2 : 25% ~ 50%
-# =====================================================
-
-q2 = replace_range(
-    original,
-    q1_end,
-    q2_end
+make_shader(
+    q1b_begin,
+    q1b_end,
+    "test_fbi_q1b.comp"
 )
-
-with open(
-    "test_fbi_q2.comp",
-    "w",
-    encoding="utf-8"
-) as f:
-    f.write(q2)
-
-print("Generated: test_fbi_q2.comp")
 
 print()
-print("====================================")
-print("Generated:")
-print("test_fbi_q1.comp")
-print("test_fbi_q2.comp")
-print("====================================")
+print("================================")
+print("floatBitsToInt count =", count)
+print()
+print(
+    f"Q1A replace FBI#{q1a_begin} ~ FBI#{q1a_end - 1}"
+)
+print(
+    f"Q1B replace FBI#{q1b_begin} ~ FBI#{q1b_end - 1}"
+)
+print("================================")
