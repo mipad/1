@@ -3,9 +3,6 @@ name: Compile All Shaders
 on:
   push:
     branches: [ "jiaoben" ]
-    paths:
-      - '*.comp'
-      - 'prepare_*.py'
   pull_request:
     branches: [ "jiaoben" ]
   workflow_dispatch:
