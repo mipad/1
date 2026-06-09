@@ -11,23 +11,15 @@ count = len(matches)
 
 print(f"floatBitsToInt count = {count}")
 
-q1_end = count // 4
 
-q1a_end = q1_end // 2
-
-q1a_begin = 0
-q1b_begin = q1a_end
-q1b_end = q1_end
-
-
-def make_shader(begin_idx, end_idx, filename):
+def generate(indices, filename):
     result = []
 
     result.append(
-        f"""// ========================================
+f"""// ========================================
 // {filename}
 // floatBitsToInt count = {count}
-// replace range = [{begin_idx}, {end_idx})
+// replaced = {sorted(indices)}
 // ========================================
 
 """
@@ -39,7 +31,7 @@ def make_shader(begin_idx, end_idx, filename):
 
         result.append(original[last:m.start()])
 
-        if begin_idx <= idx < end_idx:
+        if idx in indices:
             result.append(
                 f"/* FBI#{idx} REPLACED */ int("
             )
@@ -52,34 +44,43 @@ def make_shader(begin_idx, end_idx, filename):
 
     result.append(original[last:])
 
-    text = "".join(result)
-
     with open(filename, "w", encoding="utf-8") as f:
-        f.write(text)
+        f.write("".join(result))
 
     print("Generated:", filename)
 
 
-make_shader(
-    q1a_begin,
-    q1a_end,
-    "test_fbi_q1a.comp"
+# =========================================
+# _47 _48 _49 _52
+# =========================================
+
+generate(
+    {0, 1, 2, 4},
+    "test_fbi_0124.comp"
 )
 
-make_shader(
-    q1b_begin,
-    q1b_end,
-    "test_fbi_q1b.comp"
+# =========================================
+# atomic CAS compare
+# =========================================
+
+generate(
+    {3, 5},
+    "test_fbi_35.comp"
+)
+
+# =========================================
+# main() 开头
+# =========================================
+
+generate(
+    {6, 7, 8, 9},
+    "test_fbi_6789.comp"
 )
 
 print()
-print("================================")
-print("floatBitsToInt count =", count)
-print()
-print(
-    f"Q1A replace FBI#{q1a_begin} ~ FBI#{q1a_end - 1}"
-)
-print(
-    f"Q1B replace FBI#{q1b_begin} ~ FBI#{q1b_end - 1}"
-)
-print("================================")
+print("========================================")
+print("Generated:")
+print("test_fbi_0124.comp")
+print("test_fbi_35.comp")
+print("test_fbi_6789.comp")
+print("========================================")
