@@ -45,16 +45,16 @@ def simplify_bitops(content):
 content7 = simplify_bitops(original)
 write_test(content7, "test_simplified_bitops.comp")
 
-# 8. 注释所有 atomicCompSwap 操作（保留 _53 函数结构，但禁用原子交换）
+# 8. 禁用原子交换（保留循环，但用简单赋值替换 atomicCompSwap）
 def disable_atomic_swap(content):
-    lines = content.splitlines()
-    new_lines = []
-    for line in lines:
-        if 'atomicCompSwap' in line and 'cp_s3_1' in line:
-            new_lines.append('// ' + line)
-        else:
-            new_lines.append(line)
-    return '\n'.join(new_lines)
+    # 将 atomicCompSwap 行替换为直接赋值 0，并提供 dummy 变量
+    def repl(match):
+        indent = match.group(1)
+        return f'{indent}uint _1887 = 0; // atomicCompSwap disabled'
+    content = re.sub(r'^(\s*)uint _1887 = atomicCompSwap\(.*\);', repl, content, flags=re.MULTILINE)
+    # 同时修改 while 条件，避免使用未定义的 _1857，直接 break
+    content = re.sub(r'do\s*\{([^{}]*)\}\s*while\s*\([^;]+\);', r'{\1}', content, flags=re.DOTALL)
+    return content
 content8 = disable_atomic_swap(original)
 write_test(content8, "test_no_atomic_swap.comp")
 
@@ -67,4 +67,3 @@ content10 = re.sub(r'^(\s*)_(48|49)\([^;]+\);', r'\1// _\2(...);', original, fla
 write_test(content10, "test_no_cp_s1_s2_reads.comp")
 
 print("\n所有测试版本已生成在当前目录。")
-print("建议依次编译测试，找出哪个修改使崩溃消失。")
