@@ -1,0 +1,540 @@
+#version 450
+layout(local_size_x = 28, local_size_y = 28, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+    uint _m1[8];
+    vec4 _m2;
+    vec4 _m3;
+    int _m4;
+    float _m5[73];
+    ivec4 _m6;
+    int _m7;
+} support_buffer_1;
+
+layout(set = 0, binding = 1, std140) uniform cp_c0
+{
+    vec4 _m0[4096];
+} cp_c0_1;
+
+layout(set = 1, binding = 0, std430) buffer cp_s0
+{
+    uint _m0[];
+} cp_s0_1;
+
+layout(set = 1, binding = 1, std430) buffer cp_s1
+{
+    uint _m0[];
+} cp_s1_1;
+
+layout(set = 1, binding = 2, std430) buffer cp_s2
+{
+    uint _m0[];
+} cp_s2_1;
+
+layout(set = 1, binding = 3, std430) buffer cp_s3
+{
+    uint _m0[];
+} cp_s3_1;
+
+shared uint _35[64];
+
+int _47(int _1641)
+{
+    uint _1644 = uint(int(uint(_1641) >> uint(2)));
+    float _1646 = uintBitsToFloat(cp_s0_1._m0[int(_1644)]);
+    int _1648 = _1641 & 3;
+    int _1650 = _1648 << 3;
+    uint _1652 = uint(int(uint(floatBitsToInt(_1646)) >> uint(_1650)));
+    int _1654 = int(_1652) & 65535;
+    return _1654;
+}
+
+int _48(int _1677)
+{
+    uint _1680 = uint(int(uint(_1677) >> uint(2)));
+    float _1682 = uintBitsToFloat(cp_s1_1._m0[int(_1680)]);
+    int _1684 = _1677 & 3;
+    int _1686 = _1684 << 3;
+    uint _1688 = uint(int(uint(floatBitsToInt(_1682)) >> uint(_1686)));
+    int _1690 = int(_1688) & 255;
+    return _1690;
+}
+
+int _49(int _1713)
+{
+    uint _1716 = uint(int(uint(_1713) >> uint(2)));
+    float _1718 = uintBitsToFloat(cp_s2_1._m0[int(_1716)]);
+    int _1720 = _1713 & 3;
+    int _1722 = _1720 << 3;
+    uint _1724 = uint(int(uint(floatBitsToInt(_1718)) >> uint(_1722)));
+    int _1726 = int(_1724) & 255;
+    return _1726;
+}
+
+void _51(int _1748, int _1749)
+{
+    uint _1752 = uint(int(uint(_1748) >> uint(2)));
+    int _1754 = _1748 & 3;
+    int _1756 = _1754 << 3;
+    bool _1758;
+    do
+    {
+        float _1760 = uintBitsToFloat(cp_s1_1._m0[int(_1752)]);
+        int _1762 = int(bitfieldInsert(floatBitsToUint(_1760), uint(_1749), int(uint(_1756)), int(8u)));
+        uint _1797 = atomicCompSwap(cp_s1_1._m0[int(_1752)], floatBitsToUint(_1760), uint(_1762));
+        uint _1764 = _1797;
+        _1758 = int(_1764) != floatBitsToInt(_1760);
+    } while (_1758);
+}
+
+int _52(int _1806)
+{
+    uint _1809 = uint(int(uint(_1806) >> uint(2)));
+    float _1811 = uintBitsToFloat(cp_s3_1._m0[int(_1809)]);
+    int _1813 = _1806 & 3;
+    int _1815 = _1813 << 3;
+    uint _1817 = uint(int(uint(floatBitsToInt(_1811)) >> uint(_1815)));
+    int _1819 = int(_1817) & 255;
+    return _1819;
+}
+
+void _53(int _1841, int _1842)
+{
+    uint _1845 = uint(int(uint(_1841) >> uint(2)));
+    int _1847 = _1841 & 3;
+    int _1849 = _1847 << 3;
+    bool _1851;
+    do
+    {
+        float _1853 = uintBitsToFloat(cp_s3_1._m0[int(_1845)]);
+        int _1855 = int(bitfieldInsert(floatBitsToUint(_1853), uint(_1842), int(uint(_1849)), int(8u)));
+        uint _1887 = atomicCompSwap(cp_s3_1._m0[int(_1845)], floatBitsToUint(_1853), uint(_1855));
+        uint _1857 = _1887;
+        _1851 = int(_1857) != floatBitsToInt(_1853);
+    } while (_1851);
+}
+
+void main()
+{
+    bool _488 = false;
+    float _57 = uintBitsToFloat(gl_WorkGroupID.y);
+    float _59 = uintBitsToFloat(gl_LocalInvocationID.y);
+    int _61 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+    int _63 = floatBitsToInt(cp_c0_1._m0[52].x) - _61;
+    int _65 = _63;
+    int _67 = _47(_65);
+    float _69 = uintBitsToFloat(gl_WorkGroupID.x);
+    float _71 = uintBitsToFloat(gl_LocalInvocationID.x);
+    int _73 = floatBitsToInt(_57) * 28;
+    int _75 = _73 + floatBitsToInt(_59);
+    int _77 = floatBitsToInt(_69) * 28;
+    int _79 = _77 + floatBitsToInt(_71);
+    bool _83 = uint(_75) >= uint(_67);
+    bool _85 = uint(_79) >= uint(_67);
+    bool _87 = _85 || _83;
+    int _89 = 1;
+    int _91 = floatBitsToInt(cp_c0_1._m0[52].y);
+    if (_87)
+    {
+        _89 = 0;
+    }
+    int _93 = _89;
+    bool _95 = _93 != 0;
+    if (!_95)
+    {
+        return;
+    }
+    bool _97 = floatBitsToInt(_59) == 0;
+    bool _99 = floatBitsToInt(_71) == 0;
+    bool _101 = _99 && _97;
+    if (_101)
+    {
+        _35[0] = 0u;
+    }
+    barrier();
+    int _103 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+    int _105 = floatBitsToInt(cp_c0_1._m0[52].x) - _103;
+    int _107 = _105;
+    int _109 = _47(_107);
+    int _111 = _75 * _109;
+    int _113 = _111 + _79;
+    int _115 = _113 << 2;
+    int _117 = _115 + floatBitsToInt(cp_c0_1._m0[50].x);
+    int _119 = _115 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _121 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+    int _123 = _117 - _121;
+    int _125 = _123;
+    int _127 = _48(_125);
+    int _129 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _131 = _119 - _129;
+    int _133 = _131;
+    int _135 = _49(_133);
+    bool _137 = _135 != _127;
+    int _139 = 0;
+    if (_137)
+    {
+        int _141 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _143 = _119 - _141;
+        int _145 = _143;
+        int _147 = _49(_145);
+        _139 = _147;
+    }
+    int _149 = _139;
+    int _151 = _149;
+    if (_137)
+    {
+        int _153 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+        int _155 = _117 - _153;
+        int _157 = _155;
+        int _159 = _149;
+        _51(_157, _159);
+    }
+    int _161 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+    int _163 = floatBitsToInt(cp_c0_1._m0[52].x) - _161;
+    int _165 = _163;
+    int _167 = _47(_165);
+    int _169 = _75 * _167;
+    int _171 = _169 + _79;
+    int _173 = _171 << 2;
+    int _175 = _173 + 1;
+    int _177 = _175 + floatBitsToInt(cp_c0_1._m0[50].x);
+    int _179 = _175 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _181 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+    int _183 = _177 - _181;
+    int _185 = _183;
+    int _187 = _48(_185);
+    int _189 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _191 = _179 - _189;
+    int _193 = _191;
+    int _195 = _49(_193);
+    bool _197 = _195 != _187;
+    if (_197)
+    {
+        int _199 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _201 = _179 - _199;
+        int _203 = _201;
+        int _205 = _49(_203);
+        _151 = _205;
+    }
+    int _207 = _151;
+    int _209 = _207;
+    if (_197)
+    {
+        int _211 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+        int _213 = _177 - _211;
+        int _215 = _213;
+        int _217 = _207;
+        _51(_215, _217);
+    }
+    int _219 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+    int _221 = floatBitsToInt(cp_c0_1._m0[52].x) - _219;
+    int _223 = _221;
+    int _225 = _47(_223);
+    int _227 = _75 * _225;
+    int _229 = _227 + _79;
+    int _231 = _229 << 2;
+    int _233 = _231 + 2;
+    int _235 = _233 + floatBitsToInt(cp_c0_1._m0[50].x);
+    int _237 = _233 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _239 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+    int _241 = _235 - _239;
+    int _243 = _241;
+    int _245 = _48(_243);
+    int _247 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _249 = _237 - _247;
+    int _251 = _249;
+    int _253 = _49(_251);
+    bool _255 = _253 != _245;
+    if (_255)
+    {
+        int _257 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _259 = _237 - _257;
+        int _261 = _259;
+        int _263 = _49(_261);
+        _209 = _263;
+    }
+    int _265 = _209;
+    if (_255)
+    {
+        int _267 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+        int _269 = _235 - _267;
+        int _271 = _269;
+        int _273 = _265;
+        _51(_271, _273);
+    }
+    int _275 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+    int _277 = floatBitsToInt(cp_c0_1._m0[52].x) - _275;
+    int _279 = _277;
+    int _281 = _47(_279);
+    int _283 = _75 * _281;
+    int _285 = _283 + _79;
+    int _287 = _285 << 2;
+    int _289 = _287 + 3;
+    int _291 = _289 + floatBitsToInt(cp_c0_1._m0[50].x);
+    int _293 = _289 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _295 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+    int _297 = _291 - _295;
+    int _299 = _297;
+    int _301 = _48(_299);
+    int _303 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _305 = _293 - _303;
+    int _307 = _305;
+    int _309 = _49(_307);
+    int _311 = _281;
+    int _313 = _309;
+    if (_137)
+    {
+        _311 = 1;
+    }
+    int _315 = _311;
+    if (_137)
+    {
+        _35[0] = uint(_315);
+    }
+    if (_197)
+    {
+        _91 = 1;
+    }
+    int _317 = _91;
+    if (_197)
+    {
+        _35[0] = uint(_317);
+    }
+    bool _319 = _309 != _301;
+    if (_255)
+    {
+        _313 = 1;
+    }
+    int _321 = _313;
+    if (_255)
+    {
+        _35[0] = uint(_321);
+    }
+    if (_319)
+    {
+        int _323 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _325 = _293 - _323;
+        int _327 = _325;
+        int _329 = _49(_327);
+        _35[0] = 1u;
+        int _331 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+        int _333 = _291 - _331;
+        int _335 = _333;
+        int _337 = _329;
+        _51(_335, _337);
+    }
+    bool _339 = !_101;
+    int _341 = _339 ? 0 : 1;
+    barrier();
+    float _343 = uintBitsToFloat(_35[0]);
+    int _345 = _341 & floatBitsToInt(_343);
+    bool _347 = _345 != 0;
+    if (!_347)
+    {
+        return;
+    }
+    int _349 = floatBitsToInt(_57) * 10;
+    int _351 = _349 + floatBitsToInt(_69);
+    int _353 = _351 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _355 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _357 = _353 - _355;
+    int _359 = _357;
+    int _361 = _52(_359);
+    int _363 = _353 + 100;
+    int _365 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _367 = _363 - _365;
+    int _369 = _367;
+    int _371 = _52(_369);
+    bool _373 = floatBitsToUint(_69) > 0u;
+    int _375 = _79 & 65535;
+    int _377 = _375 * 18725;
+    int _379 = _79 & 65535;
+    int _381 = _379 * 9362;
+    uint _384 = uint(int(uint(_79) >> uint(16)));
+    int _386 = int(_384) * 18725;
+    uint _388 = uint(int(uint(_377) >> uint(16)));
+    int _390 = _386 + int(_388);
+    uint _392 = uint(int(uint(_79) >> uint(16)));
+    int _394 = int(_392) * 9362;
+    int _396 = _390 + _381;
+    uint _398 = uint(int(uint(_396) >> uint(16)));
+    int _400 = int(_398) + _394;
+    int _402 = -_400;
+    int _404 = _79 + _402;
+    uint _406 = uint(int(uint(_404) >> uint(1)));
+    int _408 = int(_406) + _400;
+    int _410 = _351 + 100;
+    uint _412 = uint(int(uint(_408) >> uint(4)));
+    int _414 = _410 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _416 = int(_412) * (-28);
+    int _418 = _416 + _79;
+    bool _420 = uint(_418) < 1u;
+    bool _422 = _420 && _373;
+    int _424 = _361 + 1;
+    int _426 = _371 + 1;
+    int _428 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _430 = _353 - _428;
+    int _432 = _430;
+    int _434 = _424;
+    _53(_432, _434);
+    int _436 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _438 = _414 - _436;
+    int _440 = _438;
+    int _442 = _426;
+    _53(_440, _442);
+    if (_422)
+    {
+        int _444 = _351 + (-1);
+        int _446 = _444 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _448 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _450 = _446 - _448;
+        int _452 = _450;
+        int _454 = _52(_452);
+        int _456 = _351 + 99;
+        int _458 = _456 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _460 = _454 + 1;
+        int _462 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _464 = _446 - _462;
+        int _466 = _464;
+        int _468 = _460;
+        _53(_466, _468);
+        int _470 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _472 = _458 - _470;
+        int _474 = _472;
+        int _476 = _52(_474);
+        int _478 = _476 + 1;
+        int _480 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _482 = _458 - _480;
+        int _484 = _482;
+        int _486 = _478;
+        _53(_484, _486);
+        _488 = true;
+    }
+    else
+    {
+        bool _490 = floatBitsToUint(_69) < 9u;
+        bool _492 = uint(_418) > 26u;
+        bool _494 = _492 && _490;
+        if (_494)
+        {
+            int _496 = floatBitsToInt(_69) + 1;
+            int _498 = floatBitsToInt(_57) * 10;
+            int _500 = _498 + _496;
+            int _502 = _500 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _504 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+            int _506 = _502 - _504;
+            int _508 = _506;
+            int _510 = _52(_508);
+            int _512 = _502 + 100;
+            int _514 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+            int _516 = _512 - _514;
+            int _518 = _516;
+            int _520 = _52(_518);
+            int _522 = _500 + 100;
+            int _524 = _522 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _526 = _510 + 1;
+            int _528 = _520 + 1;
+            int _530 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+            int _532 = _502 - _530;
+            int _534 = _532;
+            int _536 = _526;
+            _53(_534, _536);
+            int _538 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+            int _540 = _524 - _538;
+            int _542 = _540;
+            int _544 = _528;
+            _53(_542, _544);
+        }
+    }
+    _488 = false;
+    bool _546 = floatBitsToUint(_57) > 0u;
+    int _548 = _75 & 65535;
+    int _550 = _548 * 18725;
+    int _552 = _75 & 65535;
+    int _554 = _552 * 9362;
+    uint _556 = uint(int(uint(_75) >> uint(16)));
+    int _558 = int(_556) * 9362;
+    uint _560 = uint(int(uint(_75) >> uint(16)));
+    int _562 = int(_560) * 18725;
+    uint _564 = uint(int(uint(_550) >> uint(16)));
+    int _566 = _562 + int(_564);
+    int _568 = _566 + _554;
+    uint _570 = uint(int(uint(_568) >> uint(16)));
+    int _572 = int(_570) + _558;
+    int _574 = -_572;
+    int _576 = _75 + _574;
+    uint _578 = uint(int(uint(_576) >> uint(1)));
+    int _580 = int(_578) + _572;
+    uint _582 = uint(int(uint(_580) >> uint(4)));
+    int _584 = int(_582) * (-28);
+    int _586 = _584 + _75;
+    bool _588 = uint(_586) < 1u;
+    bool _590 = _588 && _546;
+    if (_590)
+    {
+        int _592 = floatBitsToInt(_57) + (-1);
+        int _594 = _592 * 10;
+        int _596 = _594 + floatBitsToInt(_69);
+        int _598 = _596 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _600 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _602 = _598 - _600;
+        int _604 = _602;
+        int _606 = _52(_604);
+        int _608 = _596 + 100;
+        int _610 = _608 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _612 = _606 + 1;
+        int _614 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _616 = _598 - _614;
+        int _618 = _616;
+        int _620 = _612;
+        _53(_618, _620);
+        int _622 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _624 = _610 - _622;
+        int _626 = _624;
+        int _628 = _52(_626);
+        int _630 = _628 + 1;
+        int _632 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _634 = _610 - _632;
+        int _636 = _634;
+        int _638 = _630;
+        _53(_636, _638);
+        return;
+    }
+    bool _640 = floatBitsToUint(_57) < 9u;
+    bool _642 = uint(_586) > 26u;
+    bool _644 = _642 && _640;
+    if (!_644)
+    {
+        return;
+    }
+    int _646 = floatBitsToInt(_57) + 1;
+    int _648 = _646 * 10;
+    int _650 = _648 + floatBitsToInt(_69);
+    int _652 = _650 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _654 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _656 = _652 - _654;
+    int _658 = _656;
+    int _660 = _52(_658);
+    int _662 = _652 + 100;
+    int _664 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _666 = _662 - _664;
+    int _668 = _666;
+    int _670 = _52(_668);
+    int _672 = _650 + 100;
+    int _674 = _672 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _676 = _660 + 1;
+    int _678 = _670 + 1;
+    int _680 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _682 = _652 - _680;
+    int _684 = _682;
+    int _686 = _676;
+    _53(_684, _686);
+    int _688 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _690 = _674 - _688;
+    int _692 = _690;
+    int _694 = _678;
+    _53(_692, _694);
+}
+
