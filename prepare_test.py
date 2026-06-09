@@ -6,64 +6,86 @@ with open(INPUT, "r", encoding="utf-8") as f:
     original = f.read()
 
 
-def save(name, content):
+def save(name, text):
     with open(name, "w", encoding="utf-8") as f:
-        f.write(content)
+        f.write(text)
     print("Generated:", name)
 
 
 # =====================================================
-# test_safe_remove_uintBitsToFloat
-# uintBitsToFloat(x) -> float(x)
+# test_floatBitsToInt_only_buffer
+#
+# 只修改:
+# _47
+# _48
+# _49
+# _52
 # =====================================================
 
-v1 = re.sub(
-    r'uintBitsToFloat\s*\(',
-    'float(',
-    original
-)
+buffer_ver = original
+
+for fn in ["_47", "_48", "_49", "_52"]:
+
+    pattern = rf'(int\s+{fn}\s*\([^{{]+\{{.*?\n\}})'
+
+    m = re.search(pattern, buffer_ver, re.S)
+
+    if m:
+        body = m.group(1)
+
+        body2 = body.replace(
+            "floatBitsToInt(",
+            "int("
+        )
+
+        buffer_ver = (
+            buffer_ver[:m.start()]
+            + body2
+            + buffer_ver[m.end():]
+        )
 
 save(
-    "test_safe_remove_uintBitsToFloat.comp",
-    v1
+    "test_floatBitsToInt_only_buffer.comp",
+    buffer_ver
 )
 
+
 # =====================================================
-# test_safe_remove_floatBitsToInt
-# floatBitsToInt(x) -> int(x)
+# test_floatBitsToInt_only_main
+#
+# 只修改 main()
 # =====================================================
 
-v2 = re.sub(
-    r'floatBitsToInt\s*\(',
-    'int(',
-    original
+main_ver = original
+
+m = re.search(
+    r'void\s+main\s*\(\)\s*\{.*\}\s*$',
+    main_ver,
+    re.S
 )
+
+if m:
+    body = m.group(0)
+
+    body2 = body.replace(
+        "floatBitsToInt(",
+        "int("
+    )
+
+    main_ver = (
+        main_ver[:m.start()]
+        + body2
+        + main_ver[m.end():]
+    )
 
 save(
-    "test_safe_remove_floatBitsToInt.comp",
-    v2
-)
-
-# =====================================================
-# test_safe_remove_floatBitsToUint
-# floatBitsToUint(x) -> uint(x)
-# =====================================================
-
-v3 = re.sub(
-    r'floatBitsToUint\s*\(',
-    'uint(',
-    original
-)
-
-save(
-    "test_safe_remove_floatBitsToUint.comp",
-    v3
+    "test_floatBitsToInt_only_main.comp",
+    main_ver
 )
 
 print()
 print("====================================")
 print("Generated:")
-print("test_safe_remove_uintBitsToFloat.comp")
-print("test_safe_remove_floatBitsToInt.comp")
-print("test_safe_remove_floatBitsToUint.comp")
+print("test_floatBitsToInt_only_buffer.comp")
+print("test_floatBitsToInt_only_main.comp")
 print("====================================")
