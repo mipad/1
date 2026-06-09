@@ -1,37 +1,37 @@
-name: Generate Test10 Shader
+name: Compile All Shaders
 
 on:
-  push:   
-    branches: [ "jiaoben" ]  
+  push:
+    branches: [ "jiaoben" ]
+    paths:
+      - '*.comp'
+      - 'prepare_*.py'
   pull_request:
     branches: [ "jiaoben" ]
   workflow_dispatch:
 
 jobs:
-  generate:
+  compile:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # 如果需要从私有仓库拉取，可以添加 token
-        # with:
-        #   token: ${{ secrets.GITLAB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
+        if: hashFiles('prepare_*.py') != ''
         with:
           python-version: '3.x'
 
-      - name: Run replacement script
-        run: python prepare_test10.py
-
-      - name: Upload test10.comp as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: test10-shader
-          path: test10.comp
+      - name: Run all prepare scripts
+        if: hashFiles('prepare_*.py') != ''
+        run: |
+          for script in prepare_*.py; do
+            echo "Running $script"
+            python "$script"
+          done
 
       - name: Install glslang-tools
         run: |
@@ -39,12 +39,18 @@ jobs:
           sudo apt-get install -y glslang-tools
           glslangValidator --version
 
-      - name: Compile test10.comp to SPIR-V
+      - name: Find and compile all .comp files
         run: |
-          glslangValidator -V test10.comp -o test10.spv
+          shopt -s nullglob
+          for comp in *.comp; do
+            echo "Compiling $comp -> ${comp%.comp}.spv"
+            glslangValidator -V "$comp" -o "${comp%.comp}.spv"
+          done
 
-      - name: Upload SPIR-V binary
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test10-spv
-          path: test10.spv
+          name: compiled-shaders
+          path: |
+            *.comp
+            *.spv
