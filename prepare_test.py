@@ -6,251 +6,179 @@ with open(INPUT, "r", encoding="utf-8") as f:
     original = f.read()
 
 
-def save(filename, content):
-    with open(filename, "w", encoding="utf-8") as f:
+def save(name, content):
+    with open(name, "w", encoding="utf-8") as f:
         f.write(content)
-    print("Generated:", filename)
+    print("Generated:", name)
 
 
-# ==========================================================
-# test_original
-# ==========================================================
+# =====================================================
+# test_remove_workgroup_bitcast
+#
+# 只处理:
+# gl_WorkGroupID
+# gl_LocalInvocationID
+# =====================================================
 
-save(
-    "test_original_882C700EBC5FADF5.comp",
-    original
+wg = original
+
+wg = wg.replace(
+    "float _57 = uintBitsToFloat(gl_WorkGroupID.y);",
+    "int _57 = int(gl_WorkGroupID.y);"
 )
 
-# ==========================================================
-# test_barrier
-# ==========================================================
+wg = wg.replace(
+    "float _59 = uintBitsToFloat(gl_LocalInvocationID.y);",
+    "int _59 = int(gl_LocalInvocationID.y);"
+)
 
-v1 = original
+wg = wg.replace(
+    "float _69 = uintBitsToFloat(gl_WorkGroupID.x);",
+    "int _69 = int(gl_WorkGroupID.x);"
+)
 
-v1 = re.sub(
-    r'''
-bool _95 = _93 != 0;
+wg = wg.replace(
+    "float _71 = uintBitsToFloat(gl_LocalInvocationID.x);",
+    "int _71 = int(gl_LocalInvocationID.x);"
+)
+
+wg = wg.replace(
+    "floatBitsToInt(_57)",
+    "_57"
+)
+
+wg = wg.replace(
+    "floatBitsToInt(_59)",
+    "_59"
+)
+
+wg = wg.replace(
+    "floatBitsToInt(_69)",
+    "_69"
+)
+
+wg = wg.replace(
+    "floatBitsToInt(_71)",
+    "_71"
+)
+
+wg = wg.replace(
+    "floatBitsToUint(_57)",
+    "uint(_57)"
+)
+
+wg = wg.replace(
+    "floatBitsToUint(_69)",
+    "uint(_69)"
+)
+
+save(
+    "test_remove_workgroup_bitcast_882C700EBC5FADF5.comp",
+    wg
+)
+
+# =====================================================
+# test_remove_buffer_bitcast
+#
+# 只处理 _47 _48 _49 _52
+# =====================================================
+
+buf = original
+
+# _47
+
+buf = re.sub(
+r'''
+float\s+(_1646)\s*=\s*uintBitsToFloat\(([^;]+)\);
 \s*
-if \(!_95\)
-\s*\{
-\s*return;
-\s*\}
-''',
-    '''
-bool _95 = _93 != 0;
-''',
-    v1,
-    flags=re.VERBOSE
-)
-
-v1 = v1.replace(
-'''barrier();
-    int _103''',
-'''barrier();
-
-    if (!_95)
-    {
-        return;
-    }
-
-    int _103'''
-)
-
-save(
-    "test_barrier_882C700EBC5FADF5.comp",
-    v1
-)
-
-# ==========================================================
-# test_shared_atomic
-# ==========================================================
-
-v2 = original
-
-v2 = re.sub(
-    r'_35\[0\]\s*=\s*uint\([^;]+\);',
-    'atomicOr(_35[0], 1u);',
-    v2
-)
-
-v2 = v2.replace(
-    '_35[0] = 1u;',
-    'atomicOr(_35[0], 1u);'
-)
-
-save(
-    "test_shared_atomic_882C700EBC5FADF5.comp",
-    v2
-)
-
-# ==========================================================
-# test_atomic_uint
-# ==========================================================
-
-v3 = original
-
-v3 = re.sub(
-    r'float _1760 = uintBitsToFloat\(([^;]+)\);',
-    r'uint _1760 = \1;',
-    v3
-)
-
-v3 = v3.replace(
-    'floatBitsToUint(_1760)',
-    '_1760'
-)
-
-v3 = v3.replace(
-    'floatBitsToInt(_1760)',
-    'int(_1760)'
-)
-
-v3 = re.sub(
-    r'float _1853 = uintBitsToFloat\(([^;]+)\);',
-    r'uint _1853 = \1;',
-    v3
-)
-
-v3 = v3.replace(
-    'floatBitsToUint(_1853)',
-    '_1853'
-)
-
-v3 = v3.replace(
-    'floatBitsToInt(_1853)',
-    'int(_1853)'
-)
-
-save(
-    "test_atomic_uint_882C700EBC5FADF5.comp",
-    v3
-)
-
-# ==========================================================
-# test_remove_bitcast
-# ==========================================================
-
-v4 = original
-
-v4 = re.sub(
-    r'uintBitsToFloat\(',
-    '(',
-    v4
-)
-
-v4 = re.sub(
-    r'floatBitsToInt\(',
-    'int(',
-    v4
-)
-
-v4 = re.sub(
-    r'floatBitsToUint\(',
-    'uint(',
-    v4
-)
-
-save(
-    "test_remove_bitcast_882C700EBC5FADF5.comp",
-    v4
-)
-
-# ==========================================================
-# test_all
-# ==========================================================
-
-v5 = original
-
-# barrier
-
-v5 = re.sub(
-    r'''
-bool _95 = _93 != 0;
+int\s+(_1648)\s*=\s*_1641\s*&\s*3;
 \s*
-if \(!_95\)
-\s*\{
-\s*return;
-\s*\}
+int\s+(_1650)\s*=\s*\3\s*<<\s*3;
+\s*
+uint\s+(_1652)\s*=\s*uint\(int\(uint\(floatBitsToInt\(\1\)\)\s*>>\s*uint\(\4\)\)\);
 ''',
-    '''
-bool _95 = _93 != 0;
+r'''
+uint \1 = \2;
+int \3 = _1641 & 3;
+int \4 = \3 << 3;
+uint \5 = \1 >> uint(\4);
 ''',
-    v5,
-    flags=re.VERBOSE
+buf,
+flags=re.VERBOSE
 )
 
-v5 = v5.replace(
-'''barrier();
-    int _103''',
-'''barrier();
+# _48
 
-    if (!_95)
-    {
-        return;
-    }
-
-    int _103'''
+buf = re.sub(
+r'''
+float\s+(_1682)\s*=\s*uintBitsToFloat\(([^;]+)\);
+\s*
+int\s+(_1684)\s*=\s*_1677\s*&\s*3;
+\s*
+int\s+(_1686)\s*=\s*\3\s*<<\s*3;
+\s*
+uint\s+(_1688)\s*=\s*uint\(int\(uint\(floatBitsToInt\(\1\)\)\s*>>\s*uint\(\4\)\)\);
+''',
+r'''
+uint \1 = \2;
+int \3 = _1677 & 3;
+int \4 = \3 << 3;
+uint \5 = \1 >> uint(\4);
+''',
+buf,
+flags=re.VERBOSE
 )
 
-# shared
+# _49
 
-v5 = re.sub(
-    r'_35\[0\]\s*=\s*uint\([^;]+\);',
-    'atomicOr(_35[0], 1u);',
-    v5
+buf = re.sub(
+r'''
+float\s+(_1718)\s*=\s*uintBitsToFloat\(([^;]+)\);
+\s*
+int\s+(_1720)\s*=\s*_1713\s*&\s*3;
+\s*
+int\s+(_1722)\s*=\s*\3\s*<<\s*3;
+\s*
+uint\s+(_1724)\s*=\s*uint\(int\(uint\(floatBitsToInt\(\1\)\)\s*>>\s*uint\(\4\)\)\);
+''',
+r'''
+uint \1 = \2;
+int \3 = _1713 & 3;
+int \4 = \3 << 3;
+uint \5 = \1 >> uint(\4);
+''',
+buf,
+flags=re.VERBOSE
 )
 
-v5 = v5.replace(
-    '_35[0] = 1u;',
-    'atomicOr(_35[0], 1u);'
-)
+# _52
 
-# atomic
-
-v5 = re.sub(
-    r'float _1760 = uintBitsToFloat\(([^;]+)\);',
-    r'uint _1760 = \1;',
-    v5
-)
-
-v5 = v5.replace(
-    'floatBitsToUint(_1760)',
-    '_1760'
-)
-
-v5 = v5.replace(
-    'floatBitsToInt(_1760)',
-    'int(_1760)'
-)
-
-v5 = re.sub(
-    r'float _1853 = uintBitsToFloat\(([^;]+)\);',
-    r'uint _1853 = \1;',
-    v5
-)
-
-v5 = v5.replace(
-    'floatBitsToUint(_1853)',
-    '_1853'
-)
-
-v5 = v5.replace(
-    'floatBitsToInt(_1853)',
-    'int(_1853)'
+buf = re.sub(
+r'''
+float\s+(_1811)\s*=\s*uintBitsToFloat\(([^;]+)\);
+\s*
+int\s+(_1813)\s*=\s*_1806\s*&\s*3;
+\s*
+int\s+(_1815)\s*=\s*\3\s*<<\s*3;
+\s*
+uint\s+(_1817)\s*=\s*uint\(int\(uint\(floatBitsToInt\(\1\)\)\s*>>\s*uint\(\4\)\)\);
+''',
+r'''
+uint \1 = \2;
+int \3 = _1806 & 3;
+int \4 = \3 << 3;
+uint \5 = \1 >> uint(\4);
+''',
+buf,
+flags=re.VERBOSE
 )
 
 save(
-    "test_all_882C700EBC5FADF5.comp",
-    v5
+    "test_remove_buffer_bitcast_882C700EBC5FADF5.comp",
+    buf
 )
 
 print()
-print("====================================")
 print("Generated:")
-print("test_original_882C700EBC5FADF5.comp")
-print("test_barrier_882C700EBC5FADF5.comp")
-print("test_shared_atomic_882C700EBC5FADF5.comp")
-print("test_atomic_uint_882C700EBC5FADF5.comp")
-print("test_remove_bitcast_882C700EBC5FADF5.comp")
-print("test_all_882C700EBC5FADF5.comp")
-print("====================================")
+print("test_remove_workgroup_bitcast_882C700EBC5FADF5.comp")
+print("test_remove_buffer_bitcast_882C700EBC5FADF5.comp")
