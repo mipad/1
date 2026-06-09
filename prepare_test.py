@@ -1,71 +1,76 @@
 import re
+import os
 
 input_file = "882C700EBC5FADF5_Compute.glsl"
-output_file = "test_fixed.comp"
+output_dir = "test_variants"
+os.makedirs(output_dir, exist_ok=True)
 
-print(f"Reading {input_file}...")
-with open(input_file, "r") as f:
-    content = f.read()
+def read_file():
+    with open(input_file, "r") as f:
+        return f.read()
 
-# 1. 查找 main 函数体
-main_match = re.search(r'(void main\(\)\s*\{)([\s\S]*?)(\})', content)
-if not main_match:
-    raise Exception("Could not find main() function")
+def write_test(content, name):
+    path = os.path.join(output_dir, name)
+    with open(path, "w") as f:
+        f.write(content)
+    print(f"Generated: {path}")
 
-prefix = main_match.group(1)
-body = main_match.group(2)
-suffix = main_match.group(3)
+original = read_file()
 
-print("Main function body found.")
+# 1. 注释所有 early return
+content1 = re.sub(r'^(\s*)return;$', r'\1// return;', original, flags=re.MULTILINE)
+write_test(content1, "01_no_early_return.comp")
 
-# 2. 在 body 开头添加 bool active = true;
-body = "    bool active = true;\n" + body
+# 2. 注释所有 barrier()
+content2 = re.sub(r'^(\s*)barrier\(\);', r'\1// barrier();', original, flags=re.MULTILINE)
+write_test(content2, "02_no_barrier.comp")
 
-# 3. 替换第一个 early return (if (!_95) { return; })
-pattern_early = r'if\s*\(\s*!_95\s*\)\s*\{\s*return;\s*\}'
-if re.search(pattern_early, body):
-    body = re.sub(pattern_early, 'if (!_95) { active = false; }', body, count=1)
-    print("Replaced early return.")
-else:
-    print("Warning: Could not find early return pattern. Proceeding anyway.")
+# 3. 注释所有 _53 函数调用（cp_s3 原子写入）
+content3 = re.sub(r'^(\s*)_53\([^;]+\);', r'\1// _53(...);', original, flags=re.MULTILINE)
+write_test(content3, "03_no_cp_s3_writes.comp")
 
-# 4. 查找第一个 barrier() 的位置（使用更宽松的正则）
-lines = body.split('\n')
-barrier_idx = -1
-for i, line in enumerate(lines):
-    if re.search(r'^\s*barrier\s*\(\s*\)\s*;', line):
-        barrier_idx = i
-        break
+# 4. 注释所有 _51 函数调用（cp_s1 原子写入）
+content4 = re.sub(r'^(\s*)_51\([^;]+\);', r'\1// _51(...);', original, flags=re.MULTILINE)
+write_test(content4, "04_no_cp_s1_writes.comp")
 
-if barrier_idx == -1:
-    raise Exception("No barrier() found in shader. Please check the source.")
+# 5. 注释所有共享内存写入 _35[...] = ...
+content5 = re.sub(r'^(\s*)_35\[[^\]]+\]\s*=\s*[^;]+;', r'\1// _35[...] = ...;', original, flags=re.MULTILINE)
+write_test(content5, "05_no_shared_writes.comp")
 
-print(f"Found barrier() at line {barrier_idx+1}")
+# 6. 注释所有 cp_s0 读取（函数 _47 内部）
+content6 = re.sub(r'float _1646 = uintBitsToFloat\(cp_s0_1\._m0\[int\(_1644\)\]\);', 
+                  '// float _1646 = 0.0;', original)
+write_test(content6, "06_no_cp_s0_reads.comp")
 
-# 分割
-before_barrier = lines[:barrier_idx+1]
-after_barrier = lines[barrier_idx+1:]
+# 7. 简化复杂移位和类型转换
+def simplify_bitops(content):
+    # 将 uint(int(uint(x) >> uint(2))) 替换为 (uint(x) >> 2u)
+    content = re.sub(r'uint\(int\(uint\(([^)]+)\)\s*>>\s*uint\(2\)\)\)', r'(uint(\1) >> 2u)', content)
+    # 可选：进一步简化其他类似模式
+    return content
+content7 = simplify_bitops(original)
+write_test(content7, "07_simplified_bitops.comp")
 
-# 5. 处理 after_barrier 中的第二个 return (if (!_347) { return; })
-new_after = []
-for line in after_barrier:
-    if re.search(r'if\s*\(\s*!_347\s*\)\s*\{\s*return;\s*\}', line):
-        new_after.append('    if (!_347) { active = false; }')
-    else:
-        new_after.append(line)
+# 8. 注释所有 atomicCompSwap 操作（保留 _53 函数结构，但禁用原子交换）
+def disable_atomic_swap(content):
+    lines = content.splitlines()
+    new_lines = []
+    for line in lines:
+        if 'atomicCompSwap' in line and 'cp_s3_1' in line:
+            new_lines.append('// ' + line)
+        else:
+            new_lines.append(line)
+    return '\n'.join(new_lines)
+content8 = disable_atomic_swap(original)
+write_test(content8, "08_no_atomic_swap.comp")
 
-# 6. 将 after_barrier 缩进并包裹在 if (active) 中
-indented_after = ['    ' + ln if ln.strip() else ln for ln in new_after]
-wrapped_after = [
-    '    if (active) {',
-    *indented_after,
-    '    }'
-]
+# 9. 注释所有对 _52 的调用（cp_s3 读取）
+content9 = re.sub(r'^(\s*)_52\([^;]+\);', r'\1// _52(...);', original, flags=re.MULTILINE)
+write_test(content9, "09_no_cp_s3_reads.comp")
 
-new_body = '\n'.join(before_barrier + wrapped_after)
-final_content = prefix + new_body + suffix
+# 10. 注释所有对 _48 和 _49 的调用（cp_s1/cp_s2 读取）
+content10 = re.sub(r'^(\s*)_(48|49)\([^;]+\);', r'\1// _\2(...);', original, flags=re.MULTILINE)
+write_test(content10, "10_no_cp_s1_s2_reads.comp")
 
-with open(output_file, "w") as f:
-    f.write(final_content)
-
-print(f"Successfully generated {output_file}")
+print("\n所有测试版本已生成在 'test_variants' 目录下。")
+print("建议依次编译测试，找出哪个修改使崩溃消失。")
