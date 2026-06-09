@@ -1,0 +1,32 @@
+#version 450
+layout(local_size_x = 28, local_size_y = 28, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+} support_buffer_1;
+
+layout(set = 0, binding = 1, std140) uniform cp_c0
+{
+    vec4 _m0[4096];
+} cp_c0_1;
+
+layout(set = 1, binding = 0, std430) buffer cp_s0 { uint _m0[]; } cp_s0_1;
+layout(set = 1, binding = 1, std430) buffer cp_s1 { uint _m0[]; } cp_s1_1;
+layout(set = 1, binding = 2, std430) buffer cp_s2 { uint _m0[]; } cp_s2_1;
+layout(set = 1, binding = 3, std430) buffer cp_s3 { uint _m0[]; } cp_s3_1;
+
+shared uint _35[64];   // 恢复共享内存
+
+void main()
+{
+    uint gx = gl_WorkGroupID.x;
+    uint gy = gl_WorkGroupID.y;
+    uint lx = gl_LocalInvocationID.x;
+    uint ly = gl_LocalInvocationID.y;
+    uint sum = gx + gy + lx + ly;
+    sum = sum * 0x9e3779b9u;
+    sum = sum ^ (sum >> 16);
+
+    barrier();          // 恢复 barrier
+}

@@ -1,0 +1,83 @@
+#version 450
+layout(local_size_x = 28, local_size_y = 28, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+} support_buffer_1;
+
+layout(set = 0, binding = 1, std140) uniform cp_c0
+{
+    vec4 _m0[4096];
+} cp_c0_1;
+
+layout(set = 1, binding = 0, std430) buffer cp_s0 { uint _m0[]; } cp_s0_1;
+layout(set = 1, binding = 1, std430) buffer cp_s1 { uint _m0[]; } cp_s1_1;
+layout(set = 1, binding = 2, std430) buffer cp_s2 { uint _m0[]; } cp_s2_1;
+layout(set = 1, binding = 3, std430) buffer cp_s3 { uint _m0[]; } cp_s3_1;
+
+shared uint _35[64];
+
+// 函数 _47 (从 cp_s0 读取)
+int _47(int _1641)
+{
+    uint _1644 = uint(int(uint(_1641) >> uint(2)));
+    float _1646 = uintBitsToFloat(cp_s0_1._m0[int(_1644)]);
+    int _1648 = _1641 & 3;
+    int _1650 = _1648 << 3;
+    uint _1652 = uint(int(uint(floatBitsToInt(_1646)) >> uint(_1650)));
+    int _1654 = int(_1652) & 65535;
+    return _1654;
+}
+
+// 函数 _48 (从 cp_s1 读取)
+int _48(int _1677)
+{
+    uint _1680 = uint(int(uint(_1677) >> uint(2)));
+    float _1682 = uintBitsToFloat(cp_s1_1._m0[int(_1680)]);
+    int _1684 = _1677 & 3;
+    int _1686 = _1684 << 3;
+    uint _1688 = uint(int(uint(floatBitsToInt(_1682)) >> uint(_1686)));
+    int _1690 = int(_1688) & 255;
+    return _1690;
+}
+
+// 函数 _49 (从 cp_s2 读取)
+int _49(int _1713)
+{
+    uint _1716 = uint(int(uint(_1713) >> uint(2)));
+    float _1718 = uintBitsToFloat(cp_s2_1._m0[int(_1716)]);
+    int _1720 = _1713 & 3;
+    int _1722 = _1720 << 3;
+    uint _1724 = uint(int(uint(floatBitsToInt(_1718)) >> uint(_1722)));
+    int _1726 = int(_1724) & 255;
+    return _1726;
+}
+
+// 占位函数 _51, _52, _53 (避免编译错误，但未调用)
+void _51(int _1748, int _1749) {}
+int _52(int _1806) { return 0; }
+void _53(int _1841, int _1842) {}
+
+void main()
+{
+    uint gx = gl_WorkGroupID.x;
+    uint gy = gl_WorkGroupID.y;
+    uint lx = gl_LocalInvocationID.x;
+    uint ly = gl_LocalInvocationID.y;
+
+    int val52x = floatBitsToInt(cp_c0_1._m0[52].x);
+    int val52y = floatBitsToInt(cp_c0_1._m0[52].y);
+    int val51x = floatBitsToInt(cp_c0_1._m0[51].x);
+
+    // 调用 _47, _48, _49，传入0（或任意值）
+    int r0 = _47(0);
+    int r1 = _48(0);
+    int r2 = _49(0);
+
+    uint sum = gx + gy + lx + ly;
+    sum = sum * 0x9e3779b9u;
+    sum = sum ^ (sum >> 16);
+
+    barrier();
+}
