@@ -1,6 +1,6 @@
 name: Android CIFixed    
                             
-on:                                         
+on:                                          
   push:   
     branches: [ "12" ]  
   pull_request:
