@@ -15,8 +15,7 @@ layout(set = 0, binding = 0, std140) uniform support_buffer
 
 layout(location = 1) out vec4 _16;
 layout(location = 0) out vec4 _27;
-// 新增：输出层索引（flat 修饰，不进行插值）
-flat out int vLayer;
+layout(location = 2) flat out int vLayer;   // 新增输出，location=2
 
 void main()
 {
@@ -52,6 +51,6 @@ void main()
     gl_Position.y = _72;
     _16.x = _82;
     _16.y = _80;
-    _27.y = intBitsToFloat(_54);   // 保留原始输出（可能被片段着色器使用）
-    vLayer = _54;                  // 输出层索引（原几何着色器中用到的值）
+    _27.y = intBitsToFloat(_54);   // 保留原始输出
+    vLayer = _54;                  // 输出层索引
 }

@@ -19,8 +19,7 @@ layout(set = 0, binding = 20, std140) uniform fp_c1
 
 layout(location = 1) in vec4 _25;
 layout(location = 0) out vec4 _28;
-// 新增：接收顶点着色器传递的层索引
-flat in int vLayer;
+layout(location = 2) flat in int vLayer;   // 与顶点着色器匹配
 
 void main()
 {
@@ -28,7 +27,7 @@ void main()
     float _35 = intBitsToFloat(vLayer);
     int _38 = floatBitsToInt(_35) + 1;
     float _40 = float(_38);
-    // 以下为原始内容，完全不变
+    // 以下内容与原始片段着色器完全相同，请从您的原始文件中完整复制
     float _42 = _25.x;
     float _44 = _25.y;
     float _46 = exp2(_40);
