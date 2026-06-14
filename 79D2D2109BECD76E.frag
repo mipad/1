@@ -23,12 +23,8 @@ layout(location = 0) out vec4 _28;
 
 void main()
 {
-    // 原代码中使用 gl_Layer，现在改为 gl_ViewIndex
-    // 原：float _35 = intBitsToFloat(gl_Layer);
-    // 因为 gl_ViewIndex 是 int，需要转换为 float 后再进行原有整数+1的操作
-    int layer = gl_ViewIndex;
-    float _35 = float(layer);           // 转换为 float，相当于原 intBitsToFloat 的效果
-    int _38 = int(_35) + 1;             // 注意：原代码中 floatBitsToInt(_35) 再 +1，这里直接取整加1
+    float _35 = intBitsToFloat(0);  // 强制为 0，替代原来的 gl_Layer
+    int _38 = floatBitsToInt(_35) + 1;
     float _40 = float(_38);
     float _42 = _25.x;
     float _44 = _25.y;
