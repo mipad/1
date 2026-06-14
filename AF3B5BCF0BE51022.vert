@@ -1,6 +1,5 @@
 #version 450
 #extension GL_ARB_shader_draw_parameters : require
-#extension GL_EXT_multiview : enable
 
 layout(set = 0, binding = 0, std140) uniform support_buffer
 {
@@ -16,6 +15,8 @@ layout(set = 0, binding = 0, std140) uniform support_buffer
 
 layout(location = 1) out vec4 _16;
 layout(location = 0) out vec4 _27;
+// 新增：输出层索引（flat 修饰，不进行插值）
+flat out int vLayer;
 
 void main()
 {
@@ -49,10 +50,8 @@ void main()
 
     gl_Position.x = _78;
     gl_Position.y = _72;
-    // gl_Position.z, w 保持默认 0,1
     _16.x = _82;
     _16.y = _80;
-    _27.y = intBitsToFloat(_54);
-    // 设置 gl_ViewIndex 为计算出的层索引（原几何着色器使用的值）
-    gl_ViewIndex = _54;   // _54 即是几何着色器中 `_18[0].y` 的整数值
+    _27.y = intBitsToFloat(_54);   // 保留原始输出（可能被片段着色器使用）
+    vLayer = _54;                  // 输出层索引（原几何着色器中用到的值）
 }

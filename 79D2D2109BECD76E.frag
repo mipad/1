@@ -1,5 +1,4 @@
 #version 450
-#extension GL_EXT_multiview : enable
 
 layout(set = 0, binding = 0, std140) uniform support_buffer
 {
@@ -20,12 +19,16 @@ layout(set = 0, binding = 20, std140) uniform fp_c1
 
 layout(location = 1) in vec4 _25;
 layout(location = 0) out vec4 _28;
+// 新增：接收顶点着色器传递的层索引
+flat in int vLayer;
 
 void main()
 {
-    float _35 = intBitsToFloat(0);  // 强制为 0，替代原来的 gl_Layer
+    // 使用 vLayer 替代原来的 gl_Layer
+    float _35 = intBitsToFloat(vLayer);
     int _38 = floatBitsToInt(_35) + 1;
     float _40 = float(_38);
+    // 以下为原始内容，完全不变
     float _42 = _25.x;
     float _44 = _25.y;
     float _46 = exp2(_40);
