@@ -61,13 +61,23 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    # ========== 4. 权限设置（根目录） ==========
+    # ========== 4. 权限和Gradle设置（在子目录） ==========
     - name: Set execution permissions
-      working-directory: ${{ github.workspace }}/Test-ryu
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
         find . -name "gradlew" -exec chmod +x {} \;
         find . -name "*.sh" -exec chmod +x {} \;
         find . -name "*.bat" -exec chmod +x {} \; 2>/dev/null || true
+
+    - name: Setup Gradle Wrapper
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
+      run: |
+        if [ ! -f "gradlew" ]; then
+          echo "Initializing Gradle Wrapper"
+          gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }}
+        else
+          echo "Gradle Wrapper already exists"
+        fi
 
     # ========== 5. 验证环境 ==========
     - name: Verify .NET SDK Installation
@@ -102,7 +112,7 @@ jobs:
         ninja --version
 
     - name: Validate Build Environment
-      working-directory: ${{ github.workspace }}/Test-ryu
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
         echo "=== 环境验证 ==="
         echo "Java version:"
@@ -117,9 +127,9 @@ jobs:
         echo $LLVM_PATH
         echo "=== 环境验证完成 ==="
 
-    # ========== 6. 主构建流程（根目录执行，传递项目属性） ==========
+    # ========== 6. 主构建流程（使用 -P 传递项目属性） ==========
     - name: Build APK
-      working-directory: ${{ github.workspace }}/Test-ryu
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
       run: |
@@ -127,8 +137,8 @@ jobs:
         echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 
-        # 使用 -P 传递项目属性，指定应用模块（根据目录名推测为 RyujinxAndroid）
-        ./gradlew :RyujinxAndroid:assembleRelease \
+        # 关键修改：将 -D 改为 -P，传递项目属性
+        ./gradlew clean assembleRelease \
           -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
           -Porg.ryujinx.config=Release \
           -Porg.ryujinx.symbols.strip=true \
