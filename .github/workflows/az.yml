@@ -1,9 +1,9 @@
 name:  Android  Ced                                                                                                                                                                                              
 on:                                                             
   push:   
-    branches: [ "3" ]  
+    branches: [ "4" ]  
   pull_request:
-    branches: [ "3" ]
+    branches: [ "4" ]
 
 jobs: 
   build:
