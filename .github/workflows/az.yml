@@ -1,11 +1,21 @@
-name:  Android  Ced                                                                                                                                                                                              
-on:                                                             
-  push:   
-    branches: [ "4" ]  
+name:  Android  Ced
+on:
+  workflow_dispatch:
+    inputs:
+      pgo_mode:
+        description: 'PGO mode (collect or optimize)'
+        required: true
+        default: 'collect'
+        type: choice
+        options:
+          - collect
+          - optimize
+  push:
+    branches: [ "4" ]
   pull_request:
     branches: [ "4" ]
 
-jobs: 
+jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -127,8 +137,25 @@ jobs:
         echo $LLVM_PATH
         echo "=== 环境验证完成 ==="
 
-    # ========== 6. 构建 Release APK ==========
-    - name: Build APK (Release)
+    # ========== 6. 准备 PGO 模式 ==========
+    - name: Prepare PGO mode
+      working-directory: ${{ github.workspace }}/Test-ryu
+      run: |
+        if [ "${{ github.event.inputs.pgo_mode }}" == "optimize" ]; then
+          # 优化模式：必须存在 pgo-data 文件夹
+          if [ ! -d "pgo-data" ]; then
+            echo "ERROR: pgo-data directory not found for optimize mode."
+            exit 1
+          fi
+          echo "Optimize mode: using existing pgo-data."
+        else
+          # 收集模式：删除可能存在的 pgo-data，强制生成新数据
+          rm -rf pgo-data
+          echo "Collect mode: pgo-data removed, will generate new profile data."
+        fi
+
+    # ========== 7. 构建 Release APK ==========
+    - name: Build APK
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
@@ -141,25 +168,6 @@ jobs:
           -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
           -Porg.ryujinx.config=Release \
           -Porg.ryujinx.symbols.strip=true \
-          -Pandroid.overridePathCheck=true \
-          --no-daemon \
-          --stacktrace \
-          --info
-
-    # ========== 7. 构建 Debug APK ==========
-    - name: Build APK (Debug)
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      env:
-        OPENSSL_ROOT_DIR: /opt/openssl-x64
-      run: |
-        echo "LLVM_PATH: $LLVM_PATH"
-        echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
-        echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-
-        ./gradlew assembleDebug \
-          -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
-          -Porg.ryujinx.config=Debug \
-          -Porg.ryujinx.symbols.strip=false \
           -Pandroid.overridePathCheck=true \
           --no-daemon \
           --stacktrace \
@@ -188,23 +196,15 @@ jobs:
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
         retention-days: 7
 
-    # ========== 10. 上传 Release APK ==========
-    - name: Upload APK (Release)
+    # ========== 10. 上传 APK ==========
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-arm64-release
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
 
-    # ========== 11. 上传 Debug APK ==========
-    - name: Upload APK (Debug)
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-arm64-debug
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
-        retention-days: 7
-
-    # ========== 12. 上传构建报告 ==========
+    # ========== 11. 上传构建报告 ==========
     - name: Upload Build Reports
       uses: actions/upload-artifact@v4
       if: always()
