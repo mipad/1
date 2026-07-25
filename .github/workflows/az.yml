@@ -127,8 +127,8 @@ jobs:
         echo $LLVM_PATH
         echo "=== 环境验证完成 ==="
 
-    # ========== 6. 主构建流程（使用 -P 传递项目属性） ==========
-    - name: Build APK
+    # ========== 6. 构建 Release APK ==========
+    - name: Build APK (Release)
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
@@ -137,8 +137,7 @@ jobs:
         echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 
-        # 关键修改：将 -D 改为 -P，传递项目属性
-        ./gradlew clean assembleRelease \
+        ./gradlew assembleRelease \
           -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
           -Porg.ryujinx.config=Release \
           -Porg.ryujinx.symbols.strip=true \
@@ -147,7 +146,26 @@ jobs:
           --stacktrace \
           --info
 
-    # ========== 7. 构建产物检查 ==========
+    # ========== 7. 构建 Debug APK ==========
+    - name: Build APK (Debug)
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
+      env:
+        OPENSSL_ROOT_DIR: /opt/openssl-x64
+      run: |
+        echo "LLVM_PATH: $LLVM_PATH"
+        echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
+        echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+
+        ./gradlew assembleDebug \
+          -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
+          -Porg.ryujinx.config=Debug \
+          -Porg.ryujinx.symbols.strip=false \
+          -Pandroid.overridePathCheck=true \
+          --no-daemon \
+          --stacktrace \
+          --info
+
+    # ========== 8. 产物检查 ==========
     - name: Find Native Libraries (.so)
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
@@ -162,7 +180,7 @@ jobs:
         find app/build/outputs/apk -name "*.apk" -print
         echo "========== 列表完成 =========="
 
-    # ========== 8. 产物处理 ==========
+    # ========== 9. 上传 Native Libraries ==========
     - name: Upload Native Libraries
       uses: actions/upload-artifact@v4
       with:
@@ -170,13 +188,23 @@ jobs:
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
         retention-days: 7
 
-    - name: Upload APK Artifact
+    # ========== 10. 上传 Release APK ==========
+    - name: Upload APK (Release)
       uses: actions/upload-artifact@v4
       with:
         name: android-arm64-release
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
 
+    # ========== 11. 上传 Debug APK ==========
+    - name: Upload APK (Debug)
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-arm64-debug
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+        retention-days: 7
+
+    # ========== 12. 上传构建报告 ==========
     - name: Upload Build Reports
       uses: actions/upload-artifact@v4
       if: always()
