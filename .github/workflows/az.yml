@@ -1,21 +1,12 @@
 name:  Android Ced
-on:
-  workflow_dispatch:
-    inputs:
-      pgo_mode:
-        description: 'PGO mode (collect or optimize)'
-        required: true
-        default: 'collect'
-        type: choice
-        options:
-          - collect
-          - optimize
-  push:
-    branches: [ "4" ]
+                
+on:                                      
+  push:   
+    branches: [ "4" ]  
   pull_request:
     branches: [ "4" ]
 
-jobs:
+jobs: 
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -37,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: main-11-pgo 
+        ref: main-11-xiu
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
@@ -137,24 +128,7 @@ jobs:
         echo $LLVM_PATH
         echo "=== 环境验证完成 ==="
 
-    # ========== 6. 准备 PGO 模式 ==========
-    - name: Prepare PGO mode
-      working-directory: ${{ github.workspace }}/Test-ryu
-      run: |
-        if [ "${{ github.event.inputs.pgo_mode }}" == "optimize" ]; then
-          # 优化模式：必须存在 pgo-data 文件夹
-          if [ ! -d "pgo-data" ]; then
-            echo "ERROR: pgo-data directory not found for optimize mode."
-            exit 1
-          fi
-          echo "Optimize mode: using existing pgo-data."
-        else
-          # 收集模式：删除可能存在的 pgo-data，强制生成新数据
-          rm -rf pgo-data
-          echo "Collect mode: pgo-data removed, will generate new profile data."
-        fi
-
-    # ========== 7. 构建 Release APK ==========
+    # ========== 6. 主构建流程（使用 -P 传递项目属性） ==========
     - name: Build APK
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
@@ -164,7 +138,8 @@ jobs:
         echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 
-        ./gradlew assembleRelease \
+        # 关键修改：将 -D 改为 -P，传递项目属性
+        ./gradlew clean assembleRelease \
           -Porg.ryujinx.llvm.toolchain.path=$LLVM_PATH \
           -Porg.ryujinx.config=Release \
           -Porg.ryujinx.symbols.strip=true \
@@ -173,7 +148,7 @@ jobs:
           --stacktrace \
           --info
 
-    # ========== 8. 产物检查 ==========
+    # ========== 7. 构建产物检查 ==========
     - name: Find Native Libraries (.so)
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
@@ -188,7 +163,7 @@ jobs:
         find app/build/outputs/apk -name "*.apk" -print
         echo "========== 列表完成 =========="
 
-    # ========== 9. 上传 Native Libraries ==========
+    # ========== 8. 产物处理 ==========
     - name: Upload Native Libraries
       uses: actions/upload-artifact@v4
       with:
@@ -196,15 +171,13 @@ jobs:
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
         retention-days: 7
 
-    # ========== 10. 上传 APK ==========
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-arm64-release
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
 
-    # ========== 11. 上传构建报告 ==========
     - name: Upload Build Reports
       uses: actions/upload-artifact@v4
       if: always()
