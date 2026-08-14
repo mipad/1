@@ -5,10 +5,12 @@ layout(location = 0) out vec4 color;
 
 layout(binding = 0) uniform sampler2D input_texture;
 
-layout(push_constant) uniform PushConstants {
+// ---------- 修改点：将 push_constant 改为 binding = 1 的 Uniform Block ----------
+layout(binding = 1) uniform PushConstantsBlock {
     float exposure;
     float gamma;
 } constants;
+// -----------------------------------------------------------------------------
 
 vec3 tonemap(vec3 hdr) {
     // Reinhard tonemapping
