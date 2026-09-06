@@ -1,4 +1,4 @@
-name: Androi concurrency: 
+name: Androi 
 
 on:                                               
   push:   
