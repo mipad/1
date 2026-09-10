@@ -33,11 +33,12 @@ void main()
     gl_Position.y = 0.0;
     gl_Position.z = 0.0;
     gl_Position.w = 1.0;
+
     int _68 = gl_InstanceIndex - gl_BaseInstanceARB;
-    float _70 = uintBitsToFloat(_43.x);
-    float _72 = uintBitsToFloat(_43.y);
-    float _74 = uintBitsToFloat(_43.z);
-    float _76 = uintBitsToFloat(_43.w);
+    int _70 = int(_43.x);
+    int _72 = int(_43.y);
+    int _74 = int(_43.z);
+    int _76 = int(_43.w);
     int _78 = _68 + int(vp_c4_1._m0[0].x);
     int _80 = _78 * 112;
     int _82 = _80 + 96;
@@ -45,7 +46,7 @@ void main()
     int _86 = int(vp_c0_1._m0[32].x) & (-64);
     int _88 = _84 - _86;
     uint _91 = uint(int(uint(_88) >> uint(2)));
-    float _93 = uintBitsToFloat(vp_s0_1._m0[int(_91)]);
+    int _93 = int(vp_s0_1._m0[int(_91)]);
     int _95 = _80 + int(vp_c0_1._m0[32].x);
     int _97 = _80 + 36;
     int _99 = _80 + 32;
@@ -86,10 +87,10 @@ void main()
     int _169 = _155 - _167;
     uint _171 = uint(int(uint(_169) >> uint(2)));
     float _173 = uintBitsToFloat(vp_s0_1._m0[int(_171)]);
-    int _175 = floatBitsToInt(_93) + floatBitsToInt(_72);
-    int _177 = floatBitsToInt(_93) + floatBitsToInt(_70);
-    int _179 = floatBitsToInt(_93) + floatBitsToInt(_74);
-    int _181 = floatBitsToInt(_93) + floatBitsToInt(_76);
+    int _175 = _93 + _72;
+    int _177 = _93 + _70;
+    int _179 = _93 + _74;
+    int _181 = _93 + _76;
     int _183 = _175 * 48;
     int _185 = _177 * 48;
     int _187 = _183 + int(vp_c0_1._m0[17].x);
