@@ -34,7 +34,7 @@ void main()
     gl_Position.z = 0.0;
     gl_Position.w = 1.0;
 
-    int _68 = gl_InstanceIndex - gl_BaseInstanceARB;
+    int _68 = max(gl_InstanceIndex - gl_BaseInstanceARB, 0);
     int _70 = int(_43.x);
     int _72 = int(_43.y);
     int _74 = int(_43.z);
