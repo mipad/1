@@ -61,7 +61,7 @@ void main()
     gl_Position.z = 0.0;
     gl_Position.w = 1.0;
 
-    // ============ 修复：直接用整数减法，避免 intBitsToFloat/floatBitsToInt 往返 ============
+    // ============ 修复：直接整数减法，消除 intBitsToFloat/floatBitsToInt 往返 ============
     int _68 = gl_InstanceIndex - gl_BaseInstanceARB;
     // =====================================================================================
 
