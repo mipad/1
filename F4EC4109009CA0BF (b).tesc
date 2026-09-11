@@ -33,22 +33,18 @@ void _72(int _964, int _965, int _966)
 void main()
 {
     bool _373 = false;
-    float _76 = intBitsToFloat(gl_InvocationID);
-    _27[floatBitsToInt(_76)].x = 0.0;
-    float _78 = intBitsToFloat(gl_InvocationID);
-    _27[floatBitsToInt(_78)].y = 0.0;
-    float _80 = intBitsToFloat(gl_InvocationID);
-    _27[floatBitsToInt(_80)].z = 0.0;
-    float _82 = intBitsToFloat(gl_InvocationID);
-    _29[floatBitsToInt(_82)].x = 0.0;
-    float _84 = intBitsToFloat(gl_InvocationID);
-    _29[floatBitsToInt(_84)].y = 0.0;
-    float _86 = intBitsToFloat(gl_InvocationID);
-    _29[floatBitsToInt(_86)].z = 0.0;
-    float _88 = intBitsToFloat(gl_InvocationID);
-    _31[floatBitsToInt(_88)].x = 0.0;
-    float _90 = intBitsToFloat(gl_InvocationID);
-    _31[floatBitsToInt(_90)].y = 0.0;
+
+    // ===== 修正：TCS 输出数组必须用 gl_InvocationID 直接索引 =====
+    _27[gl_InvocationID].x = 0.0;
+    _27[gl_InvocationID].y = 0.0;
+    _27[gl_InvocationID].z = 0.0;
+    _29[gl_InvocationID].x = 0.0;
+    _29[gl_InvocationID].y = 0.0;
+    _29[gl_InvocationID].z = 0.0;
+    _31[gl_InvocationID].x = 0.0;
+    _31[gl_InvocationID].y = 0.0;
+    // =============================================================
+
     float _92 = uintBitsToFloat(gl_SubgroupInvocationID);
     int _94 = ~0;
     bool _98 = floatBitsToInt(_92) < 0;
