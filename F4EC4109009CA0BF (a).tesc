@@ -34,7 +34,7 @@ void main()
 {
     bool _373 = false;
 
-    // ===== 修复：TCS 输出数组必须用 gl_InvocationID 直接索引 =====
+    // ===== 修复 1：TCS 输出数组必须用 gl_InvocationID 直接索引 =====
     _27[gl_InvocationID].x = 0.0;
     _27[gl_InvocationID].y = 0.0;
     _27[gl_InvocationID].z = 0.0;
@@ -61,10 +61,9 @@ void main()
     // ===== 实验 A：去掉 subgroup 条件，无条件执行核心逻辑 =====
     {
         float _110 = intBitsToFloat(gl_InvocationID);
-        // ===== 修复：gl_BuiltIn_14 -> gl_PrimitiveID =====
-        float _112 = intBitsToFloat(gl_PrimitiveID);
-        // =================================================
-        int _114 = floatBitsToInt(_112) << 16;
+        // ===== 修复 2：gl_BuiltIn_14 -> gl_PrimitiveID =====
+        int _114 = gl_PrimitiveID << 16;
+        // ===================================================
         int _116 = floatBitsToInt(_110) << 2;
         int _118 = _116 >> 2;
         int _120 = _114 & 255;
