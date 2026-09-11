@@ -61,7 +61,9 @@ void main()
     // ===== 实验 A：去掉 subgroup 条件，无条件执行核心逻辑 =====
     {
         float _110 = intBitsToFloat(gl_InvocationID);
-        float _112 = intBitsToFloat(gl_BuiltIn_14);
+        // ===== 修复：gl_BuiltIn_14 -> gl_PrimitiveID =====
+        float _112 = intBitsToFloat(gl_PrimitiveID);
+        // =================================================
         int _114 = floatBitsToInt(_112) << 16;
         int _116 = floatBitsToInt(_110) << 2;
         int _118 = _116 >> 2;
