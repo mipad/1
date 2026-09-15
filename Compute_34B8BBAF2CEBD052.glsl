@@ -1,0 +1,2674 @@
+#version 450
+#extension GL_KHR_shader_subgroup_basic : require
+#extension GL_KHR_shader_subgroup_shuffle : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_vote : require
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std140) uniform support_buffer
+{
+    uint _m0;
+    uint _m1[8];
+    vec4 _m2;
+    vec4 _m3;
+    int _m4;
+    float _m5[73];
+    ivec4 _m6;
+    int _m7;
+} support_buffer_1;
+
+layout(set = 0, binding = 6, std140) uniform cp_c5
+{
+    vec4 _m0[4096];
+} cp_c5_1;
+
+layout(set = 0, binding = 1, std140) uniform cp_c0
+{
+    vec4 _m0[4096];
+} cp_c0_1;
+
+layout(set = 0, binding = 2, std140) uniform cp_c1
+{
+    vec4 _m0[4096];
+} cp_c1_1;
+
+layout(set = 0, binding = 4, std140) uniform cp_c3
+{
+    vec4 _m0[4096];
+} cp_c3_1;
+
+layout(set = 1, binding = 0, std430) buffer cp_s0
+{
+    uint _m0[];
+} cp_s0_1;
+
+layout(set = 1, binding = 1, std430) buffer cp_s1
+{
+    uint _m0[];
+} cp_s1_1;
+
+layout(set = 1, binding = 2, std430) buffer cp_s2
+{
+    uint _m0[];
+} cp_s2_1;
+
+layout(set = 1, binding = 3, std430) buffer cp_s3
+{
+    uint _m0[];
+} cp_s3_1;
+
+layout(set = 1, binding = 4, std430) buffer cp_s4
+{
+    uint _m0[];
+} cp_s4_1;
+
+layout(set = 1, binding = 5, std430) buffer cp_s5
+{
+    uint _m0[];
+} cp_s5_1;
+
+layout(set = 2, binding = 0) uniform sampler2D cp_t_tcb_66;
+
+shared uint _45[8192];
+
+int _69(int _10218, int _10219)
+{
+    int _10222 = 1 + _10219;
+    float _10224 = support_buffer_1._m5[_10222];
+    bool _10226 = _10224 == 1.0;
+    if (_10226)
+    {
+        return _10218;
+    }
+    float _10228 = float(_10218);
+    precise float _10248 = _10228 * _10224;
+    float _10230 = _10248;
+    int _10232 = int(_10230);
+    return _10232;
+}
+
+int _71(int _10252, int _10253, int _10254, out int _10255)
+{
+    int _10258 = _10254 & 31;
+    uint _10260 = uint(int(uint(_10254) >> uint(8)));
+    int _10262 = int(_10260) & 31;
+    float _10264 = uintBitsToFloat(gl_SubgroupInvocationID);
+    int _10266 = floatBitsToInt(_10264) & _10262;
+    int _10268 = ~_10262;
+    int _10270 = _10258 & _10268;
+    int _10272 = _10270 | _10266;
+    int _10274 = ~_10262;
+    int _10276 = _10253 & _10274;
+    int _10278 = _10276 | _10266;
+    bool _10280 = uint(_10278) <= uint(_10272);
+    _10255 = _10280 ? (-1) : 0;
+    float _10282 = subgroupShuffle(intBitsToFloat(_10252), uint(_10278));
+    uint _10284 = uint(_10280 ? floatBitsToInt(_10282) : _10252);
+    return int(_10284);
+}
+
+int _72(int _10335, int _10336, int _10337, out int _10338)
+{
+    int _10341 = _10337 & 31;
+    uint _10343 = uint(int(uint(_10337) >> uint(8)));
+    int _10345 = int(_10343) & 31;
+    float _10347 = uintBitsToFloat(gl_SubgroupInvocationID);
+    int _10349 = floatBitsToInt(_10347) & _10345;
+    int _10351 = ~_10345;
+    int _10353 = _10341 & _10351;
+    int _10355 = _10353 | _10349;
+    int _10357 = floatBitsToInt(_10347) ^ _10336;
+    bool _10359 = uint(_10357) <= uint(_10355);
+    _10338 = _10359 ? (-1) : 0;
+    float _10361 = subgroupShuffle(intBitsToFloat(_10335), uint(_10357));
+    uint _10363 = uint(_10359 ? floatBitsToInt(_10361) : _10335);
+    return int(_10363);
+}
+
+void main()
+{
+    bool _2239 = false;
+    bool _467 = false;
+    bool _1987 = false;
+    bool _1973 = false;
+    bool _1963 = false;
+    bool _701 = false;
+    bool _303 = false;
+    float _76 = uintBitsToFloat(gl_LocalInvocationID.x);
+    float _78 = uintBitsToFloat(gl_LocalInvocationID.y);
+    int _80 = floatBitsToInt(_78) & 65535;
+    int _82 = _80 * 1024;
+    int _84 = _82 + floatBitsToInt(_76);
+    int _86 = _84 & 65535;
+    int _88 = _86 * 44;
+    float _90 = uintBitsToFloat(gl_WorkGroupID.x);
+    float _92 = uintBitsToFloat(gl_LocalInvocationID.x);
+    int _94 = floatBitsToInt(_90) << 10;
+    int _96 = _94 + floatBitsToInt(_92);
+    bool _100 = uint(_96) >= floatBitsToUint(cp_c5_1._m0[10].x);
+    int _102 = 1;
+    if (_100)
+    {
+        _102 = 0;
+    }
+    int _104 = _102;
+    bool _106 = _104 != 0;
+    int _108 = _104;
+    if (!_106)
+    {
+        return;
+    }
+    int _110 = _96 * 80;
+    int _112 = _110 + 8;
+    int _114 = _112 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _116 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _118 = _114 - _116;
+    int _120 = max(_118, 0);
+    uint _123 = uint(int(uint(_120) >> uint(2)));
+    float _125 = uintBitsToFloat(cp_s0_1._m0[int(_123)]);
+    int _127 = floatBitsToInt(_125) & floatBitsToInt(cp_c1_1._m0[0].x);
+    bool _129 = _127 != 0;
+    int _131 = floatBitsToInt(_125);
+    if (_129)
+    {
+        _108 = 0;
+    }
+    int _133 = _108;
+    bool _135 = _133 != 0;
+    int _137 = _133;
+    int _139 = _133;
+    if (!_135)
+    {
+        return;
+    }
+    int _141 = _96 * 80;
+    int _143 = _141 + 64;
+    int _145 = _141 + 68;
+    int _147 = _141 + 72;
+    int _149 = _143 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _151 = _145 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _153 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _155 = _149 - _153;
+    int _157 = max(_155, 0);
+    uint _159 = uint(int(uint(_157) >> uint(2)));
+    float _161 = uintBitsToFloat(cp_s0_1._m0[int(_159)]);
+    int _163 = _147 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _165 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _167 = _151 - _165;
+    int _169 = max(_167, 0);
+    uint _171 = uint(int(uint(_169) >> uint(2)));
+    float _173 = uintBitsToFloat(cp_s0_1._m0[int(_171)]);
+    int _175 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _177 = _163 - _175;
+    int _179 = max(_177, 0);
+    uint _181 = uint(int(uint(_179) >> uint(2)));
+    float _183 = uintBitsToFloat(cp_s0_1._m0[int(_181)]);
+    int _185 = floatBitsToInt(_125) & 128;
+    bool _187 = _185 != 0;
+    float _189 = cp_c3_1._m0[4].w;
+    float _191 = cp_c3_1._m0[5].w;
+    float _193 = cp_c3_1._m0[6].w;
+    if (_187)
+    {
+        precise float _4042 = cp_c3_1._m0[4].w + cp_c5_1._m0[11].x;
+        float _195 = _4042;
+        _189 = _195;
+    }
+    float _197 = _189;
+    float _199 = _197;
+    if (!_187)
+    {
+        _199 = cp_c5_1._m0[11].x;
+    }
+    float _201 = _199;
+    int _203 = floatBitsToInt(_201);
+    if (_187)
+    {
+        precise float _4062 = cp_c3_1._m0[5].w + cp_c5_1._m0[11].y;
+        float _205 = _4062;
+        _191 = _205;
+    }
+    float _207 = _191;
+    float _209 = _207;
+    if (!_187)
+    {
+        _209 = cp_c5_1._m0[11].y;
+    }
+    float _211 = _209;
+    float _213 = _211;
+    if (_187)
+    {
+        precise float _4081 = cp_c3_1._m0[6].w + cp_c5_1._m0[11].z;
+        float _215 = _4081;
+        _193 = _215;
+    }
+    float _217 = _193;
+    float _219 = _217;
+    if (!_187)
+    {
+        _219 = cp_c5_1._m0[11].z;
+    }
+    float _221 = _219;
+    int _223 = floatBitsToInt(_125) & 8;
+    bool _225 = _223 != 0;
+    precise float _4100 = _161 + _201;
+    float _227 = _4100;
+    float _229 = -cp_c3_1._m0[4].w;
+    precise float _4106 = _227 + _229;
+    float _231 = _4106;
+    precise float _4109 = _173 + _211;
+    float _233 = _4109;
+    precise float _4112 = _231 * _231;
+    float _235 = _4112;
+    float _237 = -cp_c3_1._m0[5].w;
+    precise float _4118 = _233 + _237;
+    float _239 = _4118;
+    precise float _4121 = _183 + _221;
+    float _241 = _4121;
+    float _243 = fma(_239, _239, _235);
+    float _245 = -cp_c3_1._m0[6].w;
+    precise float _4131 = _241 + _245;
+    float _247 = _4131;
+    float _249 = fma(_247, _247, _243);
+    float _251 = sqrt(_249);
+    int _253 = floatBitsToInt(_249);
+    int _255 = floatBitsToInt(_221);
+    bool _297;
+    int _301;
+    if (_225)
+    {
+        int _257 = _96 * 80;
+        int _259 = _257 + 52;
+        int _261 = _259 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _263 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _265 = _261 - _263;
+        int _267 = max(_265, 0);
+        uint _269 = uint(int(uint(_267) >> uint(2)));
+        float _271 = uintBitsToFloat(cp_s0_1._m0[int(_269)]);
+        int _273 = floatBitsToInt(_125) & 16;
+        bool _275 = _273 != 0;
+        bool _277 = 0 == floatBitsToInt(cp_c5_1._m0[10].y);
+        if (!_275)
+        {
+            _253 = -1;
+        }
+        int _279 = _253;
+        int _281 = _279;
+        if (_275)
+        {
+            _281 = 0;
+        }
+        int _283 = _281;
+        int _285 = (_277 ? (-1) : 0) | _283;
+        bool _287 = _285 != 0;
+        bool _289 = _251 < _271;
+        bool _291 = !_289;
+        int _293 = _291 ? 1065353216 : floatBitsToInt(cp_c1_1._m0[0].w);
+        int _295 = _293;
+        _297 = _287;
+        if (!_287)
+        {
+            _295 = 1065353216;
+        }
+        int _299 = _295;
+        _301 = _299;
+        _303 = true;
+    }
+    else
+    {
+        _297 = false;
+        _301 = 1065353216;
+    }
+    _303 = false;
+    bool _305 = _297;
+    int _307 = _301;
+    int _309 = _141 + 56;
+    int _311 = _141 + 60;
+    int _313 = _141 + 8;
+    int _315 = _309 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _317 = uint(_315) < uint(_309);
+    int _319 = (_317 ? (-1) : 0) & 1;
+    int _321 = floatBitsToInt(cp_c0_1._m0[51].y) + _319;
+    int _323 = _311 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _325 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _327 = _315 - _325;
+    int _329 = max(_327, 0);
+    uint _331 = uint(int(uint(_329) >> uint(2)));
+    float _333 = uintBitsToFloat(cp_s0_1._m0[int(_331)]);
+    int _335 = _313 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _337 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _339 = _323 - _337;
+    int _341 = max(_339, 0);
+    uint _343 = uint(int(uint(_341) >> uint(2)));
+    float _345 = uintBitsToFloat(cp_s0_1._m0[int(_343)]);
+    int _347 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _349 = _335 - _347;
+    int _351 = max(_349, 0);
+    uint _353 = uint(int(uint(_351) >> uint(2)));
+    float _355 = uintBitsToFloat(cp_s0_1._m0[int(_353)]);
+    int _357 = floatBitsToInt(_125) & 1024;
+    bool _359 = _357 != 0;
+    bool _361 = 0.0 != cp_c3_1._m0[25].w;
+    bool _363 = isnan(0.0);
+    bool _365 = _361 || _363;
+    bool _367 = isnan(cp_c3_1._m0[25].w);
+    bool _369 = _365 || _367;
+    bool _371 = !_369;
+    bool _373 = _305;
+    float _375 = intBitsToFloat(_321);
+    float _377 = intBitsToFloat(_307);
+    if (_359)
+    {
+        bool _379 = (_371 ? (-1) : 0) != 0;
+        _373 = _379;
+    }
+    bool _381 = _373;
+    bool _383 = _381;
+    if (!_359)
+    {
+        _383 = false;
+    }
+    bool _385 = _383;
+    bool _387 = _333 < _251;
+    int _389 = _96 * 80;
+    int _391 = _389 + 60;
+    if (_387)
+    {
+        _375 = -1.0;
+    }
+    float _393 = _375;
+    float _395 = _393;
+    if (_385)
+    {
+        int _397 = _141 + 52;
+        int _399 = _397 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _401 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _403 = _399 - _401;
+        int _405 = max(_403, 0);
+        uint _407 = uint(int(uint(_405) >> uint(2)));
+        float _409 = uintBitsToFloat(cp_s0_1._m0[int(_407)]);
+        precise float _4392 = _227 * cp_c3_1._m0[2].x;
+        float _411 = _4392;
+        float _413 = fma(_233, cp_c3_1._m0[2].y, _411);
+        float _415 = fma(_241, cp_c3_1._m0[2].z, _413);
+        precise float _4406 = _415 + cp_c3_1._m0[2].w;
+        float _417 = _4406;
+        float _419 = -_417;
+        bool _421 = _419 < _409;
+        bool _423 = !_421;
+        float _425 = _423 ? intBitsToFloat(_307) : cp_c1_1._m0[0].w;
+        _377 = _425;
+    }
+    float _427 = _377;
+    int _429 = floatBitsToInt(_355) & 4;
+    bool _431 = _429 != 0;
+    if (!_387)
+    {
+        _395 = _427;
+    }
+    float _433 = _395;
+    int _435 = _391 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _437 = 0 != floatBitsToInt(cp_c5_1._m0[11].w);
+    float _439 = _433;
+    if (!_431)
+    {
+        _439 = _427;
+    }
+    float _441 = _439;
+    float _443 = fma(_441, cp_c5_1._m0[10].z, _345);
+    float _445 = clamp(_443, 0.0, 1.0);
+    int _447 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _449 = _435 - _447;
+    int _451 = max(_449, 0);
+    uint _453 = uint(int(uint(_451) >> uint(2)));
+    cp_s0_1._m0[int(_453)] = floatBitsToUint(_445);
+    if (_437)
+    {
+        bool _455 = _445 <= 0.0;
+        int _457 = _88 + 4;
+        uint _459 = uint(int(uint(_457) >> uint(2)));
+        _45[int(_459)] = floatBitsToUint(_445);
+        if (_455)
+        {
+            _137 = 0;
+        }
+        int _461 = _137;
+        bool _463 = _461 != 0;
+        int _465 = _461;
+        _139 = _461;
+        _467 = !_463;
+        if (!_467)
+        {
+            int _469 = _141 + 16;
+            int _471 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+            int _473 = _335 - _471;
+            int _475 = max(_473, 0);
+            uint _477 = uint(int(uint(_475) >> uint(2)));
+            float _479 = uintBitsToFloat(cp_s0_1._m0[int(_477)]);
+            int _481 = _141 + 20;
+            int _483 = _141 + 24;
+            int _485 = _141 + 32;
+            int _487 = _141 + 40;
+            int _489 = _469 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _491 = _481 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _493 = _483 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _495 = _485 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _497 = _141 + 36;
+            int _499 = _497 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _501 = _487 + floatBitsToInt(cp_c0_1._m0[51].x);
+            int _503 = floatBitsToInt(_479) & 1;
+            bool _505 = _503 != 0;
+            _131 = _499;
+            _467 = !_505;
+            if (!_467)
+            {
+                int _507 = _141 + 48;
+                int _509 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _511 = _489 - _509;
+                int _513 = max(_511, 0);
+                uint _515 = uint(int(uint(_513) >> uint(2)));
+                float _517 = uintBitsToFloat(cp_s0_1._m0[int(_515)]);
+                int _519 = _507 + floatBitsToInt(cp_c0_1._m0[51].x);
+                int _521 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _523 = _495 - _521;
+                int _525 = max(_523, 0);
+                uint _527 = uint(int(uint(_525) >> uint(2)));
+                float _529 = uintBitsToFloat(cp_s0_1._m0[int(_527)]);
+                int _531 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _533 = _491 - _531;
+                int _535 = max(_533, 0);
+                uint _537 = uint(int(uint(_535) >> uint(2)));
+                float _539 = uintBitsToFloat(cp_s0_1._m0[int(_537)]);
+                int _541 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _543 = _499 - _541;
+                int _545 = max(_543, 0);
+                uint _547 = uint(int(uint(_545) >> uint(2)));
+                float _549 = uintBitsToFloat(cp_s0_1._m0[int(_547)]);
+                int _551 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _553 = _493 - _551;
+                int _555 = max(_553, 0);
+                uint _557 = uint(int(uint(_555) >> uint(2)));
+                float _559 = uintBitsToFloat(cp_s0_1._m0[int(_557)]);
+                int _561 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _563 = _501 - _561;
+                int _565 = max(_563, 0);
+                uint _567 = uint(int(uint(_565) >> uint(2)));
+                float _569 = uintBitsToFloat(cp_s0_1._m0[int(_567)]);
+                int _571 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+                int _573 = _519 - _571;
+                int _575 = max(_573, 0);
+                uint _577 = uint(int(uint(_575) >> uint(2)));
+                float _579 = uintBitsToFloat(cp_s0_1._m0[int(_577)]);
+                precise float _4707 = _517 + _201;
+                float _581 = _4707;
+                precise float _4710 = _529 + _201;
+                float _583 = _4710;
+                precise float _4713 = _539 + _211;
+                float _585 = _4713;
+                precise float _4716 = _549 + _211;
+                float _587 = _4716;
+                float _589 = -_581;
+                precise float _4721 = _589 + _583;
+                float _591 = _4721;
+                precise float _4724 = _559 + _221;
+                float _593 = _4724;
+                precise float _4727 = _569 + _221;
+                float _595 = _4727;
+                float _597 = -_585;
+                precise float _4732 = _597 + _587;
+                float _599 = _4732;
+                float _601 = fma(_591, 0.5, _581);
+                float _603 = -_593;
+                precise float _4741 = _603 + _595;
+                float _605 = _4741;
+                float _607 = fma(_599, 0.5, _585);
+                precise float _4748 = _601 * cp_c5_1._m0[0].x;
+                float _609 = _4748;
+                precise float _4752 = _601 * cp_c5_1._m0[1].x;
+                float _611 = _4752;
+                float _613 = fma(_605, 0.5, _593);
+                float _615 = fma(_607, cp_c5_1._m0[0].y, _609);
+                float _617 = fma(_607, cp_c5_1._m0[1].y, _611);
+                float _619 = fma(_613, cp_c5_1._m0[0].z, _615);
+                float _621 = fma(_613, cp_c5_1._m0[1].z, _617);
+                precise float _4779 = _619 + cp_c5_1._m0[0].w;
+                float _623 = _4779;
+                precise float _4783 = _621 + cp_c5_1._m0[1].w;
+                float _625 = _4783;
+                float _627 = -_579;
+                bool _629 = _623 < _627;
+                float _631 = -_579;
+                bool _633 = _625 < _631;
+                bool _635 = _629 || _633;
+                bool _637 = (_635 ? (-1) : 0) != 0;
+                _131 = floatBitsToInt(_549);
+                bool _699;
+                if (!_637)
+                {
+                    precise float _4808 = _601 * cp_c5_1._m0[2].x;
+                    float _639 = _4808;
+                    precise float _4812 = _601 * cp_c5_1._m0[3].x;
+                    float _641 = _4812;
+                    float _643 = fma(_607, cp_c5_1._m0[2].y, _639);
+                    float _645 = fma(_607, cp_c5_1._m0[3].y, _641);
+                    float _647 = fma(_613, cp_c5_1._m0[2].z, _643);
+                    float _649 = fma(_613, cp_c5_1._m0[3].z, _645);
+                    precise float _4836 = _647 + cp_c5_1._m0[2].w;
+                    float _651 = _4836;
+                    precise float _4840 = _649 + cp_c5_1._m0[3].w;
+                    float _653 = _4840;
+                    float _655 = -_579;
+                    bool _657 = _651 < _655;
+                    float _659 = -_579;
+                    bool _661 = _653 < _659;
+                    bool _663 = _657 || _661;
+                    bool _665 = (_663 ? (-1) : 0) != 0;
+                    bool _667 = _665;
+                    if (!_665)
+                    {
+                        precise float _4864 = _601 * cp_c5_1._m0[4].x;
+                        float _669 = _4864;
+                        precise float _4868 = _601 * cp_c5_1._m0[5].x;
+                        float _671 = _4868;
+                        float _673 = fma(_607, cp_c5_1._m0[4].y, _669);
+                        float _675 = fma(_607, cp_c5_1._m0[5].y, _671);
+                        float _677 = fma(_613, cp_c5_1._m0[4].z, _673);
+                        float _679 = fma(_613, cp_c5_1._m0[5].z, _675);
+                        precise float _4892 = _677 + cp_c5_1._m0[4].w;
+                        float _681 = _4892;
+                        precise float _4896 = _679 + cp_c5_1._m0[5].w;
+                        float _683 = _4896;
+                        float _685 = -_579;
+                        bool _687 = _681 < _685;
+                        float _689 = -_579;
+                        bool _691 = _683 < _689;
+                        bool _693 = _687 || _691;
+                        bool _695 = (_693 ? (-1) : 0) != 0;
+                        if (!_695)
+                        {
+                            _667 = false;
+                        }
+                        bool _697 = _667;
+                        _699 = _697;
+                        _701 = !_695;
+                    }
+                }
+                if (!_701)
+                {
+                    _699 = true;
+                }
+                _701 = false;
+                bool _703 = _699;
+                if (_703)
+                {
+                    _465 = 0;
+                }
+                int _705 = _465;
+                bool _707 = _705 != 0;
+                _139 = _705;
+                _467 = !_707;
+                if (!_467)
+                {
+                    precise float _4944 = _581 * cp_c5_1._m0[9].x;
+                    float _709 = _4944;
+                    int _711 = _88 + 24;
+                    uint _713 = uint(int(uint(_711) >> uint(2)));
+                    _45[int(_713)] = floatBitsToUint(_221);
+                    precise float _4958 = _581 * cp_c5_1._m0[8].x;
+                    float _715 = _4958;
+                    precise float _4963 = _581 * cp_c5_1._m0[7].x;
+                    float _717 = _4963;
+                    int _719 = _88 + 20;
+                    uint _721 = uint(int(uint(_719) >> uint(2)));
+                    _45[int(_721)] = floatBitsToUint(_211);
+                    precise float _4977 = _581 * cp_c5_1._m0[6].x;
+                    float _723 = _4977;
+                    int _725 = _88 + 16;
+                    uint _727 = uint(int(uint(_725) >> uint(2)));
+                    _45[int(_727)] = floatBitsToUint(_201);
+                    precise float _4992 = _581 * cp_c3_1._m0[19].x;
+                    float _729 = _4992;
+                    int _731 = _88 + 12;
+                    uint _733 = uint(int(uint(_731) >> uint(2)));
+                    _45[int(_733)] = uint(_705);
+                    precise float _5008 = _581 * cp_c3_1._m0[18].x;
+                    float _735 = _5008;
+                    precise float _5013 = _581 * cp_c3_1._m0[17].x;
+                    float _737 = _5013;
+                    precise float _5017 = _581 * cp_c3_1._m0[16].x;
+                    float _739 = _5017;
+                    float _741 = fma(_585, cp_c5_1._m0[9].y, _709);
+                    precise float _5026 = _583 * cp_c5_1._m0[8].x;
+                    float _743 = _5026;
+                    float _745 = fma(_585, cp_c5_1._m0[8].y, _715);
+                    float _747 = fma(_585, cp_c5_1._m0[7].y, _717);
+                    float _749 = fma(_585, cp_c5_1._m0[6].y, _723);
+                    float _751 = fma(_587, cp_c5_1._m0[9].y, _709);
+                    float _753 = fma(_593, cp_c5_1._m0[9].z, _741);
+                    float _755 = fma(_585, cp_c3_1._m0[19].y, _729);
+                    float _757 = fma(_587, cp_c3_1._m0[19].y, _729);
+                    float _759 = fma(_585, cp_c3_1._m0[17].y, _737);
+                    float _761 = fma(_587, cp_c3_1._m0[17].y, _737);
+                    float _763 = fma(_585, cp_c3_1._m0[16].y, _739);
+                    float _765 = fma(_587, cp_c3_1._m0[16].y, _739);
+                    precise float _5085 = _753 + cp_c5_1._m0[9].w;
+                    float _767 = _5085;
+                    precise float _5089 = _583 * cp_c5_1._m0[9].x;
+                    float _769 = _5089;
+                    precise float _5093 = _583 * cp_c5_1._m0[7].x;
+                    float _771 = _5093;
+                    precise float _5097 = _583 * cp_c5_1._m0[6].x;
+                    float _773 = _5097;
+                    precise float _5101 = _583 * cp_c3_1._m0[19].x;
+                    float _775 = _5101;
+                    precise float _5105 = _583 * cp_c3_1._m0[18].x;
+                    float _777 = _5105;
+                    precise float _5109 = _583 * cp_c3_1._m0[17].x;
+                    float _779 = _5109;
+                    float _781 = fma(_585, cp_c5_1._m0[8].y, _743);
+                    float _783 = fma(_587, cp_c5_1._m0[8].y, _743);
+                    precise float _5121 = 1.0 / _767;
+                    float _785 = _5121;
+                    precise float _5125 = _583 * cp_c3_1._m0[16].x;
+                    float _787 = _5125;
+                    float _789 = fma(_593, cp_c5_1._m0[6].z, _749);
+                    float _791 = fma(_593, cp_c5_1._m0[7].z, _747);
+                    float _793 = fma(_593, cp_c5_1._m0[8].z, _745);
+                    float _795 = fma(_585, cp_c3_1._m0[18].y, _735);
+                    float _797 = fma(_585, cp_c5_1._m0[9].y, _769);
+                    float _799 = fma(_585, cp_c5_1._m0[7].y, _771);
+                    float _801 = fma(_585, cp_c5_1._m0[6].y, _773);
+                    float _803 = fma(_585, cp_c3_1._m0[19].y, _775);
+                    float _805 = fma(_585, cp_c3_1._m0[18].y, _777);
+                    float _807 = fma(_585, cp_c3_1._m0[17].y, _779);
+                    float _809 = fma(_585, cp_c3_1._m0[16].y, _787);
+                    float _811 = fma(_593, cp_c3_1._m0[19].z, _755);
+                    float _813 = fma(_593, cp_c5_1._m0[9].z, _751);
+                    precise float _5194 = _789 + cp_c5_1._m0[6].w;
+                    float _815 = _5194;
+                    precise float _5198 = _791 + cp_c5_1._m0[7].w;
+                    float _817 = _5198;
+                    precise float _5202 = _793 + cp_c5_1._m0[8].w;
+                    float _819 = _5202;
+                    float _821 = fma(_587, cp_c5_1._m0[7].y, _717);
+                    float _823 = fma(_587, cp_c5_1._m0[6].y, _723);
+                    float _825 = fma(_587, cp_c5_1._m0[8].y, _715);
+                    float _827 = fma(_587, cp_c3_1._m0[18].y, _735);
+                    precise float _5226 = _811 + cp_c3_1._m0[19].w;
+                    float _829 = _5226;
+                    precise float _5230 = _813 + cp_c5_1._m0[9].w;
+                    float _831 = _5230;
+                    float _833 = fma(_587, cp_c5_1._m0[9].y, _769);
+                    precise float _5237 = 1.0 / _831;
+                    float _835 = _5237;
+                    float _837 = fma(_587, cp_c5_1._m0[7].y, _771);
+                    float _839 = fma(_587, cp_c5_1._m0[6].y, _773);
+                    float _841 = fma(_587, cp_c3_1._m0[19].y, _775);
+                    float _843 = fma(_587, cp_c3_1._m0[18].y, _777);
+                    float _845 = fma(_587, cp_c3_1._m0[17].y, _779);
+                    precise float _5265 = _815 * _785;
+                    float _847 = _5265;
+                    precise float _5268 = _817 * _785;
+                    float _849 = _5268;
+                    int _851 = _88 + 32;
+                    uint _853 = uint(int(uint(_851) >> uint(2)));
+                    _45[int(_853)] = floatBitsToUint(_847);
+                    float _855 = fma(_819, _785, 0.0);
+                    precise float _5283 = 1.0 / _829;
+                    float _857 = _5283;
+                    float _859 = fma(_587, cp_c3_1._m0[16].y, _787);
+                    uint _861 = uint(int(uint(_88) >> uint(2)));
+                    _45[int(_861)] = floatBitsToUint(_849);
+                    float _863 = fma(_593, cp_c3_1._m0[17].z, _759);
+                    float _865 = fma(_593, cp_c5_1._m0[7].z, _821);
+                    float _867 = fma(_593, cp_c3_1._m0[18].z, _795);
+                    float _869 = fma(_593, cp_c5_1._m0[6].z, _823);
+                    float _871 = fma(_593, cp_c3_1._m0[16].z, _763);
+                    float _873 = fma(_593, cp_c5_1._m0[8].z, _825);
+                    float _875 = fma(_595, cp_c5_1._m0[9].z, _797);
+                    precise float _5335 = _863 + cp_c3_1._m0[17].w;
+                    float _877 = _5335;
+                    precise float _5339 = _865 + cp_c5_1._m0[7].w;
+                    float _879 = _5339;
+                    precise float _5343 = _867 + cp_c3_1._m0[18].w;
+                    float _881 = _5343;
+                    precise float _5347 = _869 + cp_c5_1._m0[6].w;
+                    float _883 = _5347;
+                    float _885 = fma(_593, cp_c3_1._m0[19].z, _757);
+                    precise float _5356 = _871 + cp_c3_1._m0[16].w;
+                    float _887 = _5356;
+                    precise float _5360 = _873 + cp_c5_1._m0[8].w;
+                    float _889 = _5360;
+                    precise float _5364 = _875 + cp_c5_1._m0[9].w;
+                    float _891 = _5364;
+                    precise float _5367 = _877 * _857;
+                    float _893 = _5367;
+                    precise float _5370 = _879 * _835;
+                    float _895 = _5370;
+                    precise float _5372 = 1.0 / _891;
+                    float _897 = _5372;
+                    float _899 = fma(_881, _857, 0.0);
+                    precise float _5378 = _883 * _835;
+                    float _901 = _5378;
+                    precise float _5382 = _885 + cp_c3_1._m0[19].w;
+                    float _903 = _5382;
+                    precise float _5385 = _887 * _857;
+                    float _905 = _5385;
+                    float _907 = fma(_889, _835, 0.0);
+                    precise float _5390 = 1.0 / _903;
+                    float _909 = _5390;
+                    float _911 = fma(_595, cp_c5_1._m0[6].z, _801);
+                    int _913 = _88 + 28;
+                    uint _915 = uint(int(uint(_913) >> uint(2)));
+                    _45[int(_915)] = floatBitsToUint(_905);
+                    float _917 = fma(_595, cp_c5_1._m0[7].z, _799);
+                    float _919 = fma(_595, cp_c5_1._m0[8].z, _781);
+                    float _921 = fma(_593, cp_c3_1._m0[18].z, _827);
+                    float _923 = fma(_593, cp_c3_1._m0[16].z, _765);
+                    float _925 = fma(_593, cp_c3_1._m0[17].z, _761);
+                    float _927 = fma(_595, cp_c3_1._m0[19].z, _803);
+                    precise float _5440 = _911 + cp_c5_1._m0[6].w;
+                    float _929 = _5440;
+                    precise float _5444 = _917 + cp_c5_1._m0[7].w;
+                    float _931 = _5444;
+                    precise float _5448 = _919 + cp_c5_1._m0[8].w;
+                    float _933 = _5448;
+                    precise float _5452 = _923 + cp_c3_1._m0[16].w;
+                    float _935 = _5452;
+                    precise float _5456 = _925 + cp_c3_1._m0[17].w;
+                    float _937 = _5456;
+                    precise float _5460 = _921 + cp_c3_1._m0[18].w;
+                    float _939 = _5460;
+                    precise float _5464 = _927 + cp_c3_1._m0[19].w;
+                    float _941 = _5464;
+                    precise float _5467 = _929 * _897;
+                    float _943 = _5467;
+                    precise float _5470 = _931 * _897;
+                    float _945 = _5470;
+                    float _947 = fma(_933, _897, 0.0);
+                    precise float _5475 = 1.0 / _941;
+                    float _949 = _5475;
+                    precise float _5478 = _935 * _909;
+                    float _951 = _5478;
+                    precise float _5481 = _937 * _909;
+                    float _953 = _5481;
+                    float _955 = fma(_939, _909, 0.0);
+                    float _957 = fma(_595, cp_c3_1._m0[16].z, _809);
+                    float _959 = fma(_595, cp_c3_1._m0[17].z, _807);
+                    float _961 = fma(_595, cp_c3_1._m0[18].z, _805);
+                    float _963 = -_855;
+                    precise float _5504 = _963 + _899;
+                    float _965 = _5504;
+                    float _967 = fma(_593, cp_c5_1._m0[9].z, _833);
+                    float _969 = fma(_593, cp_c3_1._m0[19].z, _841);
+                    precise float _5518 = _957 + cp_c3_1._m0[16].w;
+                    float _971 = _5518;
+                    precise float _5522 = _959 + cp_c3_1._m0[17].w;
+                    float _973 = _5522;
+                    precise float _5526 = _961 + cp_c3_1._m0[18].w;
+                    float _975 = _5526;
+                    float _977 = abs(_965);
+                    precise float _5531 = _977 + (-0.0);
+                    float _979 = _5531;
+                    precise float _5535 = _967 + cp_c5_1._m0[9].w;
+                    float _981 = _5535;
+                    precise float _5539 = _969 + cp_c3_1._m0[19].w;
+                    float _983 = _5539;
+                    precise float _5542 = _971 * _949;
+                    float _985 = _5542;
+                    precise float _5545 = _973 * _949;
+                    float _987 = _5545;
+                    float _989 = fma(_975, _949, 0.0);
+                    precise float _5550 = 1.0 / _981;
+                    float _991 = _5550;
+                    float _993 = fma(_979, 20.0, _855);
+                    float _995 = fma(_593, cp_c5_1._m0[6].z, _839);
+                    float _997 = fma(_593, cp_c5_1._m0[7].z, _837);
+                    float _999 = fma(_593, cp_c5_1._m0[8].z, _783);
+                    float _1001 = fma(_595, cp_c3_1._m0[19].z, _755);
+                    float _1003 = fma(_593, cp_c5_1._m0[9].z, _797);
+                    float _1005 = fma(_593, cp_c5_1._m0[8].z, _781);
+                    precise float _5588 = _995 + cp_c5_1._m0[6].w;
+                    float _1007 = _5588;
+                    precise float _5592 = _997 + cp_c5_1._m0[7].w;
+                    float _1009 = _5592;
+                    precise float _5596 = _999 + cp_c5_1._m0[8].w;
+                    float _1011 = _5596;
+                    float _1013 = fma(_593, cp_c5_1._m0[6].z, _801);
+                    float _1015 = fma(_593, cp_c5_1._m0[7].z, _799);
+                    float _1017 = fma(_593, cp_c3_1._m0[19].z, _803);
+                    precise float _5614 = _1007 * _991;
+                    float _1019 = _5614;
+                    precise float _5617 = _1009 * _991;
+                    float _1021 = _5617;
+                    float _1023 = fma(_1011, _991, 0.0);
+                    precise float _5622 = 1.0 / _983;
+                    float _1025 = _5622;
+                    float _1027 = fma(_593, cp_c3_1._m0[18].z, _805);
+                    float _1029 = fma(_593, cp_c3_1._m0[16].z, _809);
+                    float _1031 = fma(_593, cp_c3_1._m0[17].z, _807);
+                    float _1033 = fma(_593, cp_c3_1._m0[16].z, _859);
+                    float _1035 = fma(_593, cp_c3_1._m0[17].z, _845);
+                    float _1037 = fma(_593, cp_c3_1._m0[18].z, _843);
+                    float _1039 = fma(_595, cp_c5_1._m0[9].z, _741);
+                    float _1041 = fma(_595, cp_c5_1._m0[8].z, _745);
+                    float _1043 = fma(_595, cp_c5_1._m0[6].z, _749);
+                    float _1045 = fma(_595, cp_c5_1._m0[7].z, _747);
+                    float _1047 = fma(_595, cp_c3_1._m0[18].z, _795);
+                    float _1049 = fma(_595, cp_c3_1._m0[17].z, _759);
+                    float _1051 = fma(_595, cp_c3_1._m0[16].z, _763);
+                    float _1053 = fma(_595, cp_c5_1._m0[9].z, _751);
+                    float _1055 = fma(_595, cp_c5_1._m0[8].z, _825);
+                    float _1057 = fma(_595, cp_c5_1._m0[6].z, _823);
+                    float _1059 = fma(_595, cp_c5_1._m0[7].z, _821);
+                    float _1061 = fma(_595, cp_c3_1._m0[19].z, _757);
+                    float _1063 = fma(_595, cp_c3_1._m0[18].z, _827);
+                    float _1065 = fma(_595, cp_c3_1._m0[16].z, _765);
+                    float _1067 = fma(_595, cp_c3_1._m0[17].z, _761);
+                    float _1069 = fma(_595, cp_c5_1._m0[9].z, _833);
+                    float _1071 = fma(_595, cp_c5_1._m0[8].z, _783);
+                    float _1073 = fma(_595, cp_c5_1._m0[6].z, _839);
+                    float _1075 = fma(_595, cp_c5_1._m0[7].z, _837);
+                    float _1077 = fma(_595, cp_c3_1._m0[19].z, _841);
+                    float _1079 = fma(_595, cp_c3_1._m0[18].z, _843);
+                    float _1081 = fma(_595, cp_c3_1._m0[17].z, _845);
+                    float _1083 = fma(_595, cp_c3_1._m0[16].z, _859);
+                    precise float _5771 = _1001 + cp_c3_1._m0[19].w;
+                    float _1085 = _5771;
+                    precise float _5775 = _1033 + cp_c3_1._m0[16].w;
+                    float _1087 = _5775;
+                    precise float _5777 = 1.0 / _1085;
+                    float _1089 = _5777;
+                    precise float _5781 = _1035 + cp_c3_1._m0[17].w;
+                    float _1091 = _5781;
+                    precise float _5785 = _1037 + cp_c3_1._m0[18].w;
+                    float _1093 = _5785;
+                    precise float _5789 = _1047 + cp_c3_1._m0[18].w;
+                    float _1095 = _5789;
+                    float _1097 = -_767;
+                    precise float _5794 = _1097 + _829;
+                    float _1099 = _5794;
+                    precise float _5798 = _1061 + cp_c3_1._m0[19].w;
+                    float _1101 = _5798;
+                    precise float _5801 = _1087 * _1025;
+                    float _1103 = _5801;
+                    precise float _5804 = _1091 * _1025;
+                    float _1105 = _5804;
+                    float _1107 = fma(_1093, _1025, 0.0);
+                    precise float _5811 = _1039 + cp_c5_1._m0[9].w;
+                    float _1109 = _5811;
+                    precise float _5815 = _1051 + cp_c3_1._m0[16].w;
+                    float _1111 = _5815;
+                    precise float _5819 = _1049 + cp_c3_1._m0[17].w;
+                    float _1113 = _5819;
+                    precise float _5823 = _1065 + cp_c3_1._m0[16].w;
+                    float _1115 = _5823;
+                    float _1117 = fma(_1095, _1089, 0.0);
+                    float _1119 = abs(_1099);
+                    float _1121 = -_1119;
+                    precise float _5833 = _767 + _1121;
+                    float _1123 = _5833;
+                    float _1125 = -_1109;
+                    precise float _5838 = _1125 + _1085;
+                    float _1127 = _5838;
+                    precise float _5842 = _1067 + cp_c3_1._m0[17].w;
+                    float _1129 = _5842;
+                    precise float _5846 = _1063 + cp_c3_1._m0[18].w;
+                    float _1131 = _5846;
+                    float _1133 = -_831;
+                    precise float _5851 = _1133 + _903;
+                    float _1135 = _5851;
+                    precise float _5855 = _1053 + cp_c5_1._m0[9].w;
+                    float _1137 = _5855;
+                    float _1139 = min(_1123, cp_c1_1._m0[0].y);
+                    float _1141 = abs(_1127);
+                    float _1143 = -_1141;
+                    precise float _5866 = _1109 + _1143;
+                    float _1145 = _5866;
+                    precise float _5869 = _1111 * _1089;
+                    float _1147 = _5869;
+                    precise float _5872 = _1113 * _1089;
+                    float _1149 = _5872;
+                    int _1151 = _88 + 28;
+                    uint _1153 = uint(int(uint(_1151) >> uint(2)));
+                    float _1155 = uintBitsToFloat(_45[int(_1153)]);
+                    precise float _5886 = _1017 + cp_c3_1._m0[19].w;
+                    float _1157 = _5886;
+                    int _1159 = _88 + 8;
+                    uint _1161 = uint(int(uint(_1159) >> uint(2)));
+                    _45[int(_1161)] = floatBitsToUint(_1117);
+                    float _1163 = min(_1139, _1145);
+                    precise float _5901 = 1.0 / _1101;
+                    float _1165 = _5901;
+                    precise float _5905 = _1003 + cp_c5_1._m0[9].w;
+                    float _1167 = _5905;
+                    precise float _5909 = _1029 + cp_c3_1._m0[16].w;
+                    float _1169 = _5909;
+                    precise float _5913 = _1031 + cp_c3_1._m0[17].w;
+                    float _1171 = _5913;
+                    precise float _5917 = _1027 + cp_c3_1._m0[18].w;
+                    float _1173 = _5917;
+                    float _1175 = -_891;
+                    precise float _5922 = _1175 + _941;
+                    float _1177 = _5922;
+                    precise float _5926 = _1077 + cp_c3_1._m0[19].w;
+                    float _1179 = _5926;
+                    precise float _5930 = _1083 + cp_c3_1._m0[16].w;
+                    float _1181 = _5930;
+                    float _1183 = -_1137;
+                    precise float _5935 = _1183 + _1101;
+                    float _1185 = _5935;
+                    precise float _5939 = _1081 + cp_c3_1._m0[17].w;
+                    float _1187 = _5939;
+                    precise float _5943 = _1079 + cp_c3_1._m0[18].w;
+                    float _1189 = _5943;
+                    float _1191 = -_981;
+                    precise float _5948 = _1191 + _983;
+                    float _1193 = _5948;
+                    precise float _5952 = _1069 + cp_c5_1._m0[9].w;
+                    float _1195 = _5952;
+                    precise float _5955 = _1115 * _1165;
+                    float _1197 = _5955;
+                    precise float _5958 = _1129 * _1165;
+                    float _1199 = _5958;
+                    float _1201 = fma(_1131, _1165, 0.0);
+                    uint _1203 = uint(int(uint(_88) >> uint(2)));
+                    float _1205 = uintBitsToFloat(_45[int(_1203)]);
+                    float _1207 = abs(_1135);
+                    float _1209 = -_1207;
+                    precise float _5976 = _831 + _1209;
+                    float _1211 = _5976;
+                    precise float _5980 = _1043 + cp_c5_1._m0[6].w;
+                    float _1213 = _5980;
+                    precise float _5984 = _1045 + cp_c5_1._m0[7].w;
+                    float _1215 = _5984;
+                    precise float _5988 = _1041 + cp_c5_1._m0[8].w;
+                    float _1217 = _5988;
+                    precise float _5992 = _1057 + cp_c5_1._m0[6].w;
+                    float _1219 = _5992;
+                    precise float _5996 = _1059 + cp_c5_1._m0[7].w;
+                    float _1221 = _5996;
+                    float _1223 = min(_1163, _1211);
+                    float _1225 = abs(_1185);
+                    float _1227 = -_1225;
+                    precise float _6006 = _1137 + _1227;
+                    float _1229 = _6006;
+                    precise float _6010 = _1055 + cp_c5_1._m0[8].w;
+                    float _1231 = _6010;
+                    precise float _6014 = _1013 + cp_c5_1._m0[6].w;
+                    float _1233 = _6014;
+                    precise float _6018 = _1015 + cp_c5_1._m0[7].w;
+                    float _1235 = _6018;
+                    precise float _6022 = _1005 + cp_c5_1._m0[8].w;
+                    float _1237 = _6022;
+                    precise float _6026 = _1073 + cp_c5_1._m0[6].w;
+                    float _1239 = _6026;
+                    precise float _6030 = _1075 + cp_c5_1._m0[7].w;
+                    float _1241 = _6030;
+                    float _1243 = min(_1223, _1229);
+                    precise float _6035 = 1.0 / _1157;
+                    float _1245 = _6035;
+                    precise float _6039 = _1071 + cp_c5_1._m0[8].w;
+                    float _1247 = _6039;
+                    float _1249 = abs(_1099);
+                    precise float _6044 = _767 + _1249;
+                    float _1251 = _6044;
+                    float _1253 = abs(_1127);
+                    precise float _6049 = _1109 + _1253;
+                    float _1255 = _6049;
+                    float _1257 = abs(_1135);
+                    precise float _6054 = _831 + _1257;
+                    float _1259 = _6054;
+                    float _1261 = abs(_1185);
+                    precise float _6059 = _1137 + _1261;
+                    float _1263 = _6059;
+                    float _1265 = -_1023;
+                    precise float _6064 = _1265 + _1107;
+                    float _1267 = _6064;
+                    float _1269 = -_1167;
+                    precise float _6069 = _1269 + _1157;
+                    float _1271 = _6069;
+                    float _1273 = max(_1251, cp_c1_1._m0[0].z);
+                    float _1275 = abs(_1267);
+                    precise float _6077 = _1275 + (-0.0);
+                    float _1277 = _6077;
+                    precise float _6080 = _1169 * _1245;
+                    float _1279 = _6080;
+                    precise float _6083 = _1171 * _1245;
+                    float _1281 = _6083;
+                    float _1283 = fma(_1173, _1245, 0.0);
+                    float _1285 = abs(_1271);
+                    float _1287 = -_1285;
+                    precise float _6093 = _1167 + _1287;
+                    float _1289 = _6093;
+                    float _1291 = max(_1255, _1273);
+                    float _1293 = abs(_1271);
+                    precise float _6101 = _1167 + _1293;
+                    float _1295 = _6101;
+                    float _1297 = fma(_1277, 20.0, _1023);
+                    float _1299 = min(_1243, _1289);
+                    float _1301 = abs(_1177);
+                    float _1303 = -_1301;
+                    precise float _6114 = _891 + _1303;
+                    float _1305 = _6114;
+                    float _1307 = max(_1291, _1259);
+                    float _1309 = abs(_1177);
+                    precise float _6122 = _891 + _1309;
+                    float _1311 = _6122;
+                    float _1313 = min(_1299, _1305);
+                    precise float _6127 = 1.0 / _1179;
+                    float _1315 = _6127;
+                    float _1317 = max(_1307, _1263);
+                    float _1319 = -_1195;
+                    precise float _6135 = _1319 + _1179;
+                    float _1321 = _6135;
+                    precise float _6138 = _1181 * _1315;
+                    float _1323 = _6138;
+                    precise float _6141 = _1187 * _1315;
+                    float _1325 = _6141;
+                    float _1327 = fma(_1189, _1315, 0.0);
+                    float _1329 = abs(_1193);
+                    float _1331 = -_1329;
+                    precise float _6151 = _981 + _1331;
+                    float _1333 = _6151;
+                    float _1335 = abs(_1193);
+                    precise float _6156 = _981 + _1335;
+                    float _1337 = _6156;
+                    float _1339 = min(_1313, _1333);
+                    float _1341 = abs(_1321);
+                    float _1343 = -_1341;
+                    precise float _6166 = _1195 + _1343;
+                    float _1345 = _6166;
+                    float _1347 = abs(_1321);
+                    precise float _6171 = _1195 + _1347;
+                    float _1349 = _6171;
+                    float _1351 = min(_1345, _1339);
+                    int _1353 = _88 + 32;
+                    uint _1355 = uint(int(uint(_1353) >> uint(2)));
+                    float _1357 = uintBitsToFloat(_45[int(_1355)]);
+                    bool _1359 = _1351 < 0.0;
+                    precise float _6188 = 1.0 / _1109;
+                    float _1361 = _6188;
+                    precise float _6191 = _1213 * _1361;
+                    float _1363 = _6191;
+                    precise float _6194 = _1215 * _1361;
+                    float _1365 = _6194;
+                    float _1367 = fma(_1217, _1361, 0.0);
+                    precise float _6199 = 1.0 / _1137;
+                    float _1369 = _6199;
+                    float _1371 = -_907;
+                    precise float _6204 = _1371 + _955;
+                    float _1373 = _6204;
+                    precise float _6207 = _1219 * _1369;
+                    float _1375 = _6207;
+                    precise float _6210 = _1221 * _1369;
+                    float _1377 = _6210;
+                    float _1379 = fma(_1231, _1369, 0.0);
+                    precise float _6215 = 1.0 / _1167;
+                    float _1381 = _6215;
+                    float _1383 = abs(_1373);
+                    precise float _6219 = _1383 + (-0.0);
+                    float _1385 = _6219;
+                    float _1387 = fma(_1385, 20.0, _907);
+                    precise float _6225 = _1233 * _1381;
+                    float _1389 = _6225;
+                    precise float _6228 = _1235 * _1381;
+                    float _1391 = _6228;
+                    float _1393 = fma(_1237, _1381, 0.0);
+                    precise float _6233 = 1.0 / _1195;
+                    float _1395 = _6233;
+                    float _1397 = -_1393;
+                    precise float _6238 = _1397 + _1283;
+                    float _1399 = _6238;
+                    float _1401 = abs(_1399);
+                    precise float _6242 = _1401 + (-0.0);
+                    float _1403 = _6242;
+                    precise float _6245 = _1239 * _1395;
+                    float _1405 = _6245;
+                    precise float _6248 = _1241 * _1395;
+                    float _1407 = _6248;
+                    float _1409 = fma(_1247, _1395, 0.0);
+                    float _1411 = -_1409;
+                    precise float _6256 = _1411 + _1327;
+                    float _1413 = _6256;
+                    float _1415 = fma(_1205, -0.5, 0.5);
+                    float _1417 = fma(_893, -0.5, 0.5);
+                    float _1419 = fma(_1365, -0.5, 0.5);
+                    float _1421 = fma(_1149, -0.5, 0.5);
+                    float _1423 = fma(_1357, 0.5, 0.5);
+                    float _1425 = fma(_1155, 0.5, 0.5);
+                    float _1427 = fma(_1363, 0.5, 0.5);
+                    float _1429 = -_1415;
+                    precise float _6276 = _1429 + _1417;
+                    float _1431 = _6276;
+                    float _1433 = fma(_1147, 0.5, 0.5);
+                    float _1435 = fma(_901, 0.5, 0.5);
+                    float _1437 = fma(_895, -0.5, 0.5);
+                    float _1439 = fma(_951, 0.5, 0.5);
+                    float _1441 = fma(_953, -0.5, 0.5);
+                    float _1443 = fma(_1375, 0.5, 0.5);
+                    float _1445 = fma(_1377, -0.5, 0.5);
+                    float _1447 = fma(_1197, 0.5, 0.5);
+                    float _1449 = fma(_1199, -0.5, 0.5);
+                    float _1451 = fma(_943, 0.5, 0.5);
+                    float _1453 = fma(_945, -0.5, 0.5);
+                    float _1455 = fma(_985, 0.5, 0.5);
+                    float _1457 = fma(_987, -0.5, 0.5);
+                    float _1459 = fma(_1389, 0.5, 0.5);
+                    float _1461 = fma(_1391, -0.5, 0.5);
+                    float _1463 = fma(_1279, 0.5, 0.5);
+                    float _1465 = fma(_1281, -0.5, 0.5);
+                    float _1467 = fma(_1019, 0.5, 0.5);
+                    float _1469 = fma(_1021, -0.5, 0.5);
+                    float _1471 = fma(_1103, 0.5, 0.5);
+                    float _1473 = fma(_1105, -0.5, 0.5);
+                    float _1475 = fma(_1405, 0.5, 0.5);
+                    float _1477 = fma(_1407, -0.5, 0.5);
+                    float _1479 = fma(_1323, 0.5, 0.5);
+                    float _1481 = fma(_1325, -0.5, 0.5);
+                    float _1483 = -_1419;
+                    precise float _6331 = _1483 + _1421;
+                    float _1485 = _6331;
+                    float _1487 = abs(_1431);
+                    precise float _6335 = _1487 + (-0.0);
+                    float _1489 = _6335;
+                    float _1491 = -_1437;
+                    precise float _6340 = _1491 + _1441;
+                    float _1493 = _6340;
+                    float _1495 = -_1445;
+                    precise float _6345 = _1495 + _1449;
+                    float _1497 = _6345;
+                    float _1499 = -_1461;
+                    precise float _6350 = _1499 + _1465;
+                    float _1501 = _6350;
+                    float _1503 = -_1453;
+                    precise float _6355 = _1503 + _1457;
+                    float _1505 = _6355;
+                    float _1507 = abs(_1485);
+                    precise float _6359 = _1507 + (-0.0);
+                    float _1509 = _6359;
+                    float _1511 = fma(_1489, -20.0, _1415);
+                    float _1513 = abs(_1493);
+                    precise float _6367 = _1513 + (-0.0);
+                    float _1515 = _6367;
+                    float _1517 = abs(_1497);
+                    precise float _6371 = _1517 + (-0.0);
+                    float _1519 = _6371;
+                    float _1521 = abs(_1501);
+                    precise float _6375 = _1521 + (-0.0);
+                    float _1523 = _6375;
+                    float _1525 = abs(_1505);
+                    precise float _6379 = _1525 + (-0.0);
+                    float _1527 = _6379;
+                    float _1529 = fma(_1509, -20.0, _1419);
+                    float _1531 = min(_1511, cp_c1_1._m0[0].y);
+                    float _1533 = -_1469;
+                    precise float _6391 = _1533 + _1473;
+                    float _1535 = _6391;
+                    float _1537 = -_1477;
+                    precise float _6396 = _1537 + _1481;
+                    float _1539 = _6396;
+                    float _1541 = fma(_1489, 20.0, _1415);
+                    float _1543 = -_1423;
+                    precise float _6404 = _1543 + _1425;
+                    float _1545 = _6404;
+                    float _1547 = fma(_1509, 20.0, _1419);
+                    float _1549 = min(_1531, _1529);
+                    float _1551 = fma(_1515, -20.0, _1437);
+                    float _1553 = abs(_1535);
+                    precise float _6417 = _1553 + (-0.0);
+                    float _1555 = _6417;
+                    float _1557 = abs(_1539);
+                    precise float _6421 = _1557 + (-0.0);
+                    float _1559 = _6421;
+                    float _1561 = max(_1541, cp_c1_1._m0[0].z);
+                    float _1563 = abs(_1545);
+                    precise float _6429 = _1563 + (-0.0);
+                    float _1565 = _6429;
+                    float _1567 = max(_1317, _1295);
+                    float _1569 = -_1427;
+                    precise float _6437 = _1569 + _1433;
+                    float _1571 = _6437;
+                    float _1573 = min(_1549, _1551);
+                    float _1575 = fma(_1519, -20.0, _1445);
+                    float _1577 = max(_1547, _1561);
+                    float _1579 = -_1379;
+                    precise float _6451 = _1579 + _1201;
+                    float _1581 = _6451;
+                    float _1583 = fma(_1565, 20.0, _1423);
+                    float _1585 = abs(_1571);
+                    precise float _6458 = _1585 + (-0.0);
+                    float _1587 = _6458;
+                    float _1589 = fma(_1565, -20.0, _1423);
+                    float _1591 = -_1435;
+                    precise float _6466 = _1591 + _1439;
+                    float _1593 = _6466;
+                    float _1595 = min(_1573, _1575);
+                    float _1597 = fma(_1523, -20.0, _1461);
+                    float _1599 = max(_1567, _1311);
+                    float _1601 = fma(_1587, -20.0, _1427);
+                    float _1603 = fma(_1587, 20.0, _1427);
+                    float _1605 = -_1443;
+                    precise float _6486 = _1605 + _1447;
+                    float _1607 = _6486;
+                    float _1609 = min(_1589, cp_c1_1._m0[0].y);
+                    float _1611 = fma(_1515, 20.0, _1437);
+                    float _1613 = min(_1595, _1597);
+                    float _1615 = fma(_1527, -20.0, _1453);
+                    float _1617 = max(_1599, _1337);
+                    float _1619 = fma(_1519, 20.0, _1445);
+                    float _1621 = min(_1609, _1601);
+                    float _1623 = -_1459;
+                    precise float _6513 = _1623 + _1463;
+                    float _1625 = _6513;
+                    float _1627 = max(_1577, _1611);
+                    float _1629 = -_1451;
+                    precise float _6521 = _1629 + _1455;
+                    float _1631 = _6521;
+                    float _1633 = min(_1613, _1615);
+                    float _1635 = fma(_1555, -20.0, _1469);
+                    float _1637 = max(_1349, _1617);
+                    float _1639 = abs(_1625);
+                    precise float _6534 = _1639 + (-0.0);
+                    float _1641 = _6534;
+                    float _1643 = max(_1627, _1619);
+                    float _1645 = abs(_1631);
+                    precise float _6541 = _1645 + (-0.0);
+                    float _1647 = _6541;
+                    float _1649 = -_1467;
+                    precise float _6546 = _1649 + _1471;
+                    float _1651 = _6546;
+                    float _1653 = fma(_1523, 20.0, _1461);
+                    float _1655 = min(_1633, _1635);
+                    float _1657 = fma(_1559, -20.0, _1477);
+                    float _1659 = fma(_1555, 20.0, _1469);
+                    float _1661 = fma(_1647, -20.0, _1451);
+                    float _1663 = abs(_1651);
+                    precise float _6565 = _1663 + (-0.0);
+                    float _1665 = _6565;
+                    float _1667 = -_1475;
+                    precise float _6570 = _1667 + _1479;
+                    float _1669 = _6570;
+                    float _1671 = max(_1643, _1653);
+                    float _1673 = fma(_1527, 20.0, _1453);
+                    float _1675 = min(_1657, _1655);
+                    int _1677 = _88 + 8;
+                    uint _1679 = uint(int(uint(_1677) >> uint(2)));
+                    float _1681 = uintBitsToFloat(_45[int(_1679)]);
+                    float _1683 = fma(_1647, 20.0, _1451);
+                    int _1685 = _88 + 24;
+                    uint _1687 = uint(int(uint(_1685) >> uint(2)));
+                    float _1689 = uintBitsToFloat(_45[int(_1687)]);
+                    bool _1691 = _1637 < 0.0;
+                    bool _1693 = _1691 || _1359;
+                    float _1695 = fma(_1665, -20.0, _1467);
+                    float _1697 = abs(_1669);
+                    precise float _6614 = _1697 + (-0.0);
+                    float _1699 = _6614;
+                    float _1701 = abs(_1413);
+                    precise float _6618 = _1701 + (-0.0);
+                    float _1703 = _6618;
+                    float _1705 = max(_1671, _1673);
+                    float _1707 = fma(_1665, 20.0, _1467);
+                    float _1709 = fma(_1559, 20.0, _1477);
+                    float _1711 = fma(_1699, -20.0, _1475);
+                    float _1713 = fma(_1699, 20.0, _1475);
+                    float _1715 = max(_1705, _1659);
+                    float _1717 = -_1367;
+                    precise float _6641 = _1717 + _1681;
+                    float _1719 = _6641;
+                    float _1721 = abs(_1719);
+                    precise float _6645 = _1721 + (-0.0);
+                    float _1723 = _6645;
+                    float _1725 = fma(_1723, 20.0, _1367);
+                    float _1727 = max(_993, cp_c1_1._m0[0].z);
+                    int _1729 = _88 + 20;
+                    uint _1731 = uint(int(uint(_1729) >> uint(2)));
+                    float _1733 = uintBitsToFloat(_45[int(_1731)]);
+                    float _1735 = max(_1725, _1727);
+                    int _1737 = _88 + 16;
+                    uint _1739 = uint(int(uint(_1737) >> uint(2)));
+                    float _1741 = uintBitsToFloat(_45[int(_1739)]);
+                    float _1743 = max(_1735, _1387);
+                    float _1745 = abs(_1581);
+                    precise float _6682 = _1745 + (-0.0);
+                    float _1747 = _6682;
+                    float _1749 = max(_1583, cp_c1_1._m0[0].z);
+                    float _1751 = abs(_1593);
+                    precise float _6690 = _1751 + (-0.0);
+                    float _1753 = _6690;
+                    float _1755 = fma(_1747, 20.0, _1379);
+                    float _1757 = max(_1603, _1749);
+                    float _1759 = fma(_1753, -20.0, _1435);
+                    float _1761 = fma(_1753, 20.0, _1435);
+                    float _1763 = max(_1743, _1755);
+                    float _1765 = min(_1621, _1759);
+                    float _1767 = fma(_1403, 20.0, _1393);
+                    float _1769 = abs(_1607);
+                    precise float _6715 = _1769 + (-0.0);
+                    float _1771 = _6715;
+                    float _1773 = -_947;
+                    precise float _6720 = _1773 + _989;
+                    float _1775 = _6720;
+                    int _1777 = _88 + 12;
+                    uint _1779 = uint(int(uint(_1777) >> uint(2)));
+                    float _1781 = uintBitsToFloat(_45[int(_1779)]);
+                    float _1783 = max(_1757, _1761);
+                    float _1785 = max(_1763, _1767);
+                    float _1787 = fma(_1771, -20.0, _1443);
+                    float _1789 = abs(_1775);
+                    precise float _6743 = _1789 + (-0.0);
+                    float _1791 = _6743;
+                    float _1793 = fma(_1771, 20.0, _1443);
+                    float _1795 = min(_1765, _1787);
+                    float _1797 = fma(_1791, 20.0, _947);
+                    float _1799 = fma(_1641, -20.0, _1459);
+                    float _1801 = fma(_1641, 20.0, _1459);
+                    float _1803 = max(_1783, _1793);
+                    float _1805 = max(_1709, _1715);
+                    float _1807 = min(_1795, _1799);
+                    float _1809 = max(_1803, _1801);
+                    float _1811 = max(_1785, _1797);
+                    float _1813 = min(_1807, _1661);
+                    float _1815 = fma(_1703, 20.0, _1409);
+                    float _1817 = max(_1809, _1683);
+                    float _1819 = max(_1811, _1297);
+                    float _1821 = min(_1813, _1695);
+                    float _1823 = max(_1817, _1707);
+                    float _1825 = max(_1815, _1819);
+                    float _1827 = min(_1711, _1821);
+                    float _1829 = max(_1713, _1823);
+                    _139 = floatBitsToInt(_1781);
+                    _255 = floatBitsToInt(_1689);
+                    _203 = floatBitsToInt(_1741);
+                    _131 = floatBitsToInt(_1805);
+                    _213 = _1733;
+                    bool _1985;
+                    if (!_1693)
+                    {
+                        float _1831 = float(floatBitsToInt(cp_c5_1._m0[12].x));
+                        float _1833 = float(floatBitsToInt(cp_c5_1._m0[12].y));
+                        precise float _6823 = _1827 * _1831;
+                        float _1835 = _6823;
+                        precise float _6826 = _1675 * _1833;
+                        float _1837 = _6826;
+                        float _1839 = -_1835;
+                        float _1841 = fma(_1829, _1831, _1839);
+                        float _1843 = -_1837;
+                        float _1845 = fma(_1805, _1833, _1843);
+                        float _1847 = max(_1841, _1845);
+                        precise float _6843 = _1847 * 0.5;
+                        float _1849 = _6843;
+                        float _1851 = max(_1849, 1.0);
+                        float _1853 = log2(_1851);
+                        float _1855 = ceil(_1853);
+                        int _1857 = int(_1855);
+                        int _1859 = max(0, _1857);
+                        int _1861 = min(_1859, floatBitsToInt(cp_c5_1._m0[12].z));
+                        int _1863 = _1861 & 31;
+                        int _1865 = floatBitsToInt(cp_c5_1._m0[12].x) >> _1863;
+                        float _1867 = float(_1865);
+                        int _1869 = _1865 + (-1);
+                        float _1871 = float(_1869);
+                        int _1873 = _1861 & 31;
+                        int _1875 = floatBitsToInt(cp_c5_1._m0[12].y) >> _1873;
+                        float _1877 = float(_1875);
+                        precise float _6884 = _1827 * _1867;
+                        float _1879 = _6884;
+                        precise float _6887 = _1829 * _1867;
+                        float _1881 = _6887;
+                        float _1883 = floor(_1879);
+                        int _1885 = _1875 + (-1);
+                        float _1887 = floor(_1881);
+                        precise float _6896 = _1675 * _1877;
+                        float _1889 = _6896;
+                        float _1891 = float(_1885);
+                        precise float _6901 = _1805 * _1877;
+                        float _1893 = _6901;
+                        float _1895 = floor(_1889);
+                        float _1897 = max(0.0, _1883);
+                        float _1899 = floor(_1893);
+                        float _1901 = max(0.0, _1887);
+                        float _1903 = min(_1897, _1871);
+                        float _1905 = trunc(_1903);
+                        int _1907 = int(_1905);
+                        float _1909 = min(_1901, _1871);
+                        float _1911 = max(0.0, _1895);
+                        float _1913 = max(0.0, _1899);
+                        float _1915 = float(_1907);
+                        float _1917 = min(_1911, _1891);
+                        float _1919 = min(_1913, _1891);
+                        bool _1921 = _1909 < _1915;
+                        int _1923 = _1907;
+                        int _1925 = 0;
+                        if (!_1921)
+                        {
+                            float _1927 = trunc(_1917);
+                            int _1929 = int(_1927);
+                            bool _1931;
+                            bool _1943;
+                            do
+                            {
+                                int _1933 = _1923;
+                                float _1935 = float(_1929);
+                                bool _1937 = _1919 < _1935;
+                                int _1939 = 0;
+                                if (!_1937)
+                                {
+                                    int _1941 = _1929;
+                                    do
+                                    {
+                                        int _1945 = _1941;
+                                        int _1947 = _1933;
+                                        int _1949 = 0;
+                                        int _1951 = _69(_1947, _1949);
+                                        int _1953 = _1945;
+                                        int _1955 = 0;
+                                        int _1957 = _69(_1953, _1955);
+                                        float _1959 = texelFetch(cp_t_tcb_66, ivec2(_1951, _1957), _1861).x;
+                                        bool _1961 = _1825 >= _1959;
+                                        _1963 = _1961;
+                                        if (_1963)
+                                        {
+                                            break;
+                                        }
+                                        int _1965 = _1945 + 1;
+                                        float _1967 = float(_1965);
+                                        _1943 = _1919 < _1967;
+                                        _1941 = _1965;
+                                    } while (!_1943);
+                                    if (!_1963)
+                                    {
+                                        _1939 = 0;
+                                    }
+                                    if (false || _1963)
+                                    {
+                                        _1963 = false;
+                                        _1939 = -1;
+                                    }
+                                }
+                                int _1969 = _1939;
+                                bool _1971 = _1969 != 0;
+                                _1925 = _1969;
+                                _1973 = _1971;
+                                if (_1973)
+                                {
+                                    break;
+                                }
+                                int _1975 = _1933 + 1;
+                                float _1977 = float(_1975);
+                                _1931 = _1909 < _1977;
+                                _1923 = _1975;
+                            } while (!_1931);
+                            if (!_1973)
+                            {
+                                _1925 = 0;
+                            }
+                        }
+                        _1973 = false;
+                        int _1979 = _1925;
+                        int _1981 = ~_1979;
+                        bool _1983 = _1981 != 0;
+                        _1985 = _1983;
+                        _1987 = true;
+                    }
+                    else
+                    {
+                        _1985 = false;
+                    }
+                    _1987 = false;
+                    bool _1989 = _1985;
+                    _467 = !_1989;
+                    if (!_467)
+                    {
+                        _139 = 0;
+                        _467 = true;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        int _1991 = _88 + 4;
+        uint _1993 = uint(int(uint(_1991) >> uint(2)));
+        _45[int(_1993)] = 1065353216u;
+    }
+    _467 = false;
+    int _1995 = _139;
+    int _1997 = _255;
+    int _1999 = _203;
+    int _2001 = _131;
+    float _2003 = _213;
+    bool _2005 = _1995 != 0;
+    int _2007 = _2001;
+    if (!_2005)
+    {
+        return;
+    }
+    float _2009 = uintBitsToFloat(gl_WorkGroupID.x);
+    float _2011 = uintBitsToFloat(gl_LocalInvocationID.x);
+    int _2013 = floatBitsToInt(_2009) << 10;
+    int _2015 = _2013 + floatBitsToInt(_2011);
+    int _2017 = _2015 << 7;
+    int _2019 = _2017 + 96;
+    int _2021 = _2019 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2023 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2025 = _2021 - _2023;
+    int _2027 = max(_2025, 0);
+    uint _2029 = uint(int(uint(_2027) >> uint(2)));
+    float _2031 = uintBitsToFloat(cp_s1_1._m0[int(_2029)]);
+    int _2033 = _2015 * 80;
+    bool _2035 = _2031 > (-1.0);
+    int _2237;
+    if (_2035)
+    {
+        int _2037 = _2033 + 16;
+        int _2039 = _2033 + 20;
+        int _2041 = _2033 + 24;
+        int _2043 = _2037 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2045 = _2039 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2047 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2049 = _2043 - _2047;
+        int _2051 = max(_2049, 0);
+        uint _2053 = uint(int(uint(_2051) >> uint(2)));
+        float _2055 = uintBitsToFloat(cp_s0_1._m0[int(_2053)]);
+        int _2057 = _2033 + 32;
+        int _2059 = _2041 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2061 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2063 = _2045 - _2061;
+        int _2065 = max(_2063, 0);
+        uint _2067 = uint(int(uint(_2065) >> uint(2)));
+        float _2069 = uintBitsToFloat(cp_s0_1._m0[int(_2067)]);
+        int _2071 = _2033 + 36;
+        int _2073 = _2057 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2075 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2077 = _2059 - _2075;
+        int _2079 = max(_2077, 0);
+        uint _2081 = uint(int(uint(_2079) >> uint(2)));
+        float _2083 = uintBitsToFloat(cp_s0_1._m0[int(_2081)]);
+        int _2085 = _2033 + 40;
+        int _2087 = _2071 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2089 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2091 = _2073 - _2089;
+        int _2093 = max(_2091, 0);
+        uint _2095 = uint(int(uint(_2093) >> uint(2)));
+        float _2097 = uintBitsToFloat(cp_s0_1._m0[int(_2095)]);
+        int _2099 = _2085 + floatBitsToInt(cp_c0_1._m0[51].x);
+        int _2101 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2103 = _2087 - _2101;
+        int _2105 = max(_2103, 0);
+        uint _2107 = uint(int(uint(_2105) >> uint(2)));
+        float _2109 = uintBitsToFloat(cp_s0_1._m0[int(_2107)]);
+        int _2111 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+        int _2113 = _2099 - _2111;
+        int _2115 = max(_2113, 0);
+        uint _2117 = uint(int(uint(_2115) >> uint(2)));
+        float _2119 = uintBitsToFloat(cp_s0_1._m0[int(_2117)]);
+        int _2121 = _2015 << 7;
+        int _2123 = _2121 + 96;
+        int _2125 = _2121 + 100;
+        int _2127 = _2123 + floatBitsToInt(cp_c0_1._m0[53].x);
+        int _2129 = _2125 + floatBitsToInt(cp_c0_1._m0[53].x);
+        int _2131 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+        int _2133 = _2127 - _2131;
+        int _2135 = max(_2133, 0);
+        uint _2137 = uint(int(uint(_2135) >> uint(2)));
+        float _2139 = uintBitsToFloat(cp_s1_1._m0[int(_2137)]);
+        int _2141 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+        int _2143 = _2129 - _2141;
+        int _2145 = max(_2143, 0);
+        uint _2147 = uint(int(uint(_2145) >> uint(2)));
+        float _2149 = uintBitsToFloat(cp_s1_1._m0[int(_2147)]);
+        bool _2151 = _2055 > cp_c3_1._m0[4].w;
+        float _2153 = -_2055;
+        precise float _7316 = _2153 + cp_c3_1._m0[4].w;
+        float _2155 = _7316;
+        bool _2157 = _2069 > cp_c3_1._m0[5].w;
+        precise float _7323 = _2155 * _2155;
+        float _2159 = _7323;
+        float _2161 = -_2069;
+        precise float _7329 = _2161 + cp_c3_1._m0[5].w;
+        float _2163 = _7329;
+        float _2165 = _2159;
+        if (!_2151)
+        {
+            _2165 = 0.0;
+        }
+        float _2167 = _2165;
+        bool _2169 = _2083 > cp_c3_1._m0[6].w;
+        float _2171 = -_2083;
+        precise float _7345 = _2171 + cp_c3_1._m0[6].w;
+        float _2173 = _7345;
+        float _2175 = _2167;
+        if (_2157)
+        {
+            float _2177 = fma(_2163, _2163, _2167);
+            _2175 = _2177;
+        }
+        float _2179 = _2175;
+        bool _2181 = _2097 < cp_c3_1._m0[4].w;
+        float _2183 = -_2097;
+        precise float _7365 = _2183 + cp_c3_1._m0[4].w;
+        float _2185 = _7365;
+        float _2187 = _2179;
+        _2007 = floatBitsToInt(_2185);
+        if (_2169)
+        {
+            float _2189 = fma(_2173, _2173, _2179);
+            _2187 = _2189;
+        }
+        float _2191 = _2187;
+        bool _2193 = _2109 < cp_c3_1._m0[5].w;
+        float _2195 = -_2109;
+        precise float _7387 = _2195 + cp_c3_1._m0[5].w;
+        float _2197 = _7387;
+        float _2199 = _2191;
+        if (_2181)
+        {
+            float _2201 = fma(_2185, _2185, _2191);
+            _2199 = _2201;
+        }
+        float _2203 = _2199;
+        bool _2205 = _2119 < cp_c3_1._m0[6].w;
+        float _2207 = -_2119;
+        precise float _7407 = _2207 + cp_c3_1._m0[6].w;
+        float _2209 = _7407;
+        float _2211 = _2203;
+        float _2213 = _2209;
+        if (_2193)
+        {
+            float _2215 = fma(_2197, _2197, _2203);
+            _2211 = _2215;
+        }
+        float _2217 = _2211;
+        if (_2205)
+        {
+            float _2219 = fma(_2209, _2209, _2217);
+            _2213 = _2219;
+        }
+        float _2221 = _2213;
+        float _2223 = _2221;
+        if (!_2205)
+        {
+            _2223 = _2217;
+        }
+        float _2225 = _2223;
+        float _2227 = sqrt(_2225);
+        float _2229 = -_2139;
+        precise float _7441 = _2229 + _2227;
+        float _2231 = _7441;
+        precise float _7444 = _2149 * _2231;
+        float _2233 = _7444;
+        bool _2235 = _2233 < 1.0;
+        _2237 = _2235 ? (-1) : 0;
+        _2239 = true;
+    }
+    else
+    {
+        _2237 = 0;
+    }
+    _2239 = false;
+    int _2241 = _2237;
+    int _2243 = _2007;
+    int _2245 = _88 + 4;
+    uint _2247 = uint(int(uint(_2245) >> uint(2)));
+    float _2249 = uintBitsToFloat(_45[int(_2247)]);
+    int _2251 = _2033 + 8;
+    int _2253 = _2251 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _2255 = _2015 * 80;
+    int _2257 = _2255 + 8;
+    int _2259 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _2261 = _2253 - _2259;
+    int _2263 = max(_2261, 0);
+    uint _2265 = uint(int(uint(_2263) >> uint(2)));
+    float _2267 = uintBitsToFloat(cp_s0_1._m0[int(_2265)]);
+    int _2269 = _2257 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _2271 = uint(_2269) < uint(_2257);
+    int _2273 = (_2271 ? (-1) : 0) & 1;
+    int _2275 = floatBitsToInt(cp_c0_1._m0[51].y) + _2273;
+    int _2277 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _2279 = _2269 - _2277;
+    int _2281 = max(_2279, 0);
+    uint _2283 = uint(int(uint(_2281) >> uint(2)));
+    float _2285 = uintBitsToFloat(cp_s0_1._m0[int(_2283)]);
+    int _2287 = _2033 + 4;
+    int _2289 = _2287 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _2291 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _2293 = _2289 - _2291;
+    int _2295 = max(_2293, 0);
+    uint _2297 = uint(int(uint(_2295) >> uint(2)));
+    float _2299 = uintBitsToFloat(cp_s0_1._m0[int(_2297)]);
+    bool _2301 = _2249 < 1.0;
+    uint _2303 = subgroupBallot(true).x;
+    int _2305 = int(uint(findMSB(_2303)));
+    int _2307 = _2015 * 80;
+    int _2309 = _2307 + 28;
+    int _2311 = floatBitsToInt(_2267) & 256;
+    bool _2313 = _2311 != 0;
+    int _2315 = floatBitsToInt(_2285) & 512;
+    bool _2317 = _2315 != 0;
+    int _2319 = _2301 ? (-1) : 0;
+    int _2321 = _2241;
+    int _2323 = _2243;
+    if (_2313)
+    {
+        int _2325 = _2241 | (_2301 ? (-1) : 0);
+        _2319 = _2325;
+    }
+    int _2327 = _2319;
+    int _2329 = _2327;
+    if (!_2313)
+    {
+        _2329 = 0;
+    }
+    int _2331 = _2329;
+    if (_2317)
+    {
+        _2321 = -1;
+    }
+    int _2333 = _2321;
+    int _2335 = _2333;
+    if (!_2317)
+    {
+        _2335 = 0;
+    }
+    int _2337 = _2335;
+    int _2339 = _2337 | _2331;
+    int _2341 = 1 & _2339;
+    int _2343 = floatBitsToInt(_2299) + _2341;
+    int _2345 = _2343 * 20;
+    int _2347 = _2345 + 4;
+    int _2349 = _2347 >> 2;
+    int _2351 = _2349 << 2;
+    int _2353 = _2351 + floatBitsToInt(cp_c0_1._m0[50].x);
+    bool _2355 = uint(_2353) < uint(_2351);
+    int _2357 = _2353;
+    int _2359 = _2305;
+    int _2361 = 31;
+    int _2363;
+    int _7633 = _71(_2357, _2359, _2361, _2363);
+    int _2365 = _7633;
+    int _2367 = (_2355 ? (-1) : 0) & 1;
+    int _2369 = floatBitsToInt(cp_c0_1._m0[50].y) + _2367;
+    int _2371 = _2369;
+    int _2373 = _2305;
+    int _2375 = 31;
+    int _2377;
+    int _7644 = _71(_2371, _2373, _2375, _2377);
+    int _2379 = _7644;
+    int _2381 = -_2365;
+    int _2383 = _2381 + _2353;
+    bool _2385 = _2383 == 0;
+    bool _2387 = _2369 == _2379;
+    bool _2389 = _2387 && _2385;
+    int _2391 = _2033 + floatBitsToInt(cp_c0_1._m0[51].x);
+    bool _2393 = subgroupAll(_2389);
+    int _2395 = _2309 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _2397 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _2399 = _2391 - _2397;
+    int _2401 = max(_2399, 0);
+    uint _2403 = uint(int(uint(_2401) >> uint(2)));
+    float _2405 = uintBitsToFloat(cp_s0_1._m0[int(_2403)]);
+    if (!_2393)
+    {
+        int _2407 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+        int _2409 = _2353 - _2407;
+        int _2411 = max(_2409, 0);
+        uint _2413 = uint(int(uint(_2411) >> uint(2)));
+        uint _7708 = atomicAdd(cp_s2_1._m0[int(_2413)], 1u);
+        uint _2415 = _7708;
+        _2323 = int(_2415);
+    }
+    int _2417 = _2323;
+    int _2419 = _2417;
+    if (_2393)
+    {
+        float _2421 = uintBitsToFloat(gl_SubgroupInvocationID);
+        int _2423 = bitCount(int(_2303));
+        bool _2425 = _2305 == floatBitsToInt(_2421);
+        float _2427 = uintBitsToFloat(gl_SubgroupLtMask.x);
+        int _2429 = _2423;
+        if (_2425)
+        {
+            int _2431 = floatBitsToInt(cp_c0_1._m0[50].x) & (-64);
+            int _2433 = _2353 - _2431;
+            int _2435 = max(_2433, 0);
+            uint _2437 = uint(int(uint(_2435) >> uint(2)));
+            uint _7748 = atomicAdd(cp_s2_1._m0[int(_2437)], uint(_2423));
+            uint _2439 = _7748;
+            _2429 = int(_2439);
+        }
+        int _2441 = _2429;
+        int _2443 = floatBitsToInt(_2427) & int(_2303);
+        int _2445 = bitCount(_2443);
+        int _2447 = _2441;
+        int _2449 = _2305;
+        int _2451 = 31;
+        int _2453;
+        int _7762 = _71(_2447, _2449, _2451, _2453);
+        int _2455 = _7762;
+        int _2457 = _2455 + _2445;
+        _2419 = _2457;
+    }
+    int _2459 = _2419;
+    int _2461 = _2015 << 7;
+    int _2463 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _2465 = _2395 - _2463;
+    int _2467 = max(_2465, 0);
+    uint _2469 = uint(int(uint(_2467) >> uint(2)));
+    float _2471 = uintBitsToFloat(cp_s0_1._m0[int(_2469)]);
+    int _2473 = _2461 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2475 = _88 + 40;
+    uint _2477 = uint(int(uint(_2475) >> uint(2)));
+    _45[int(_2477)] = uint(_1997);
+    int _2479 = _2461 + 28;
+    int _2481 = _88 + 24;
+    uint _2483 = uint(int(uint(_2481) >> uint(2)));
+    _45[int(_2483)] = uint(_1999);
+    int _2485 = _88 + 20;
+    uint _2487 = uint(int(uint(_2485) >> uint(2)));
+    _45[int(_2487)] = uint(_2269);
+    int _2489 = _2461 + 44;
+    int _2491 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2493 = _2473 - _2491;
+    int _2495 = max(_2493, 0);
+    uint _2497 = uint(int(uint(_2495) >> uint(2)));
+    float _2499 = uintBitsToFloat(cp_s1_1._m0[int(_2497)]);
+    int _2501 = _2479 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2503 = _88 + 16;
+    uint _2505 = uint(int(uint(_2503) >> uint(2)));
+    _45[int(_2505)] = uint(_2275);
+    int _2507 = _2461 + 12;
+    int _2509 = _88 + 12;
+    uint _2511 = uint(int(uint(_2509) >> uint(2)));
+    _45[int(_2511)] = uint(_2257);
+    int _2513 = _2489 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2515 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2517 = _2501 - _2515;
+    int _2519 = max(_2517, 0);
+    uint _2521 = uint(int(uint(_2519) >> uint(2)));
+    float _2523 = uintBitsToFloat(cp_s1_1._m0[int(_2521)]);
+    int _2525 = _2461 + 76;
+    int _2527 = _2507 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2529 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2531 = _2513 - _2529;
+    int _2533 = max(_2531, 0);
+    uint _2535 = uint(int(uint(_2533) >> uint(2)));
+    float _2537 = uintBitsToFloat(cp_s1_1._m0[int(_2535)]);
+    int _2539 = _2461 + 4;
+    int _2541 = _2525 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2543 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2545 = _2527 - _2543;
+    int _2547 = max(_2545, 0);
+    uint _2549 = uint(int(uint(_2547) >> uint(2)));
+    float _2551 = uintBitsToFloat(cp_s1_1._m0[int(_2549)]);
+    int _2553 = _2461 + 8;
+    int _2555 = _2539 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2557 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2559 = _2541 - _2557;
+    int _2561 = max(_2559, 0);
+    uint _2563 = uint(int(uint(_2561) >> uint(2)));
+    float _2565 = uintBitsToFloat(cp_s1_1._m0[int(_2563)]);
+    int _2567 = _2461 + 16;
+    int _2569 = _2553 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2571 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2573 = _2555 - _2571;
+    int _2575 = max(_2573, 0);
+    uint _2577 = uint(int(uint(_2575) >> uint(2)));
+    float _2579 = uintBitsToFloat(cp_s1_1._m0[int(_2577)]);
+    int _2581 = _2461 + 20;
+    int _2583 = _2567 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2585 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2587 = _2569 - _2585;
+    int _2589 = max(_2587, 0);
+    uint _2591 = uint(int(uint(_2589) >> uint(2)));
+    float _2593 = uintBitsToFloat(cp_s1_1._m0[int(_2591)]);
+    int _2595 = _2461 + 24;
+    int _2597 = _2581 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2599 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2601 = _2583 - _2599;
+    int _2603 = max(_2601, 0);
+    uint _2605 = uint(int(uint(_2603) >> uint(2)));
+    float _2607 = uintBitsToFloat(cp_s1_1._m0[int(_2605)]);
+    int _2609 = _2461 + 32;
+    int _2611 = _2595 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2613 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2615 = _2597 - _2613;
+    int _2617 = max(_2615, 0);
+    uint _2619 = uint(int(uint(_2617) >> uint(2)));
+    float _2621 = uintBitsToFloat(cp_s1_1._m0[int(_2619)]);
+    int _2623 = _2461 + 36;
+    int _2625 = _2609 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2627 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2629 = _2611 - _2627;
+    int _2631 = max(_2629, 0);
+    uint _2633 = uint(int(uint(_2631) >> uint(2)));
+    float _2635 = uintBitsToFloat(cp_s1_1._m0[int(_2633)]);
+    int _2637 = _2461 + 40;
+    int _2639 = _2623 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2641 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2643 = _2625 - _2641;
+    int _2645 = max(_2643, 0);
+    uint _2647 = uint(int(uint(_2645) >> uint(2)));
+    float _2649 = uintBitsToFloat(cp_s1_1._m0[int(_2647)]);
+    int _2651 = _2461 + 48;
+    int _2653 = _2637 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2655 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2657 = _2639 - _2655;
+    int _2659 = max(_2657, 0);
+    uint _2661 = uint(int(uint(_2659) >> uint(2)));
+    float _2663 = uintBitsToFloat(cp_s1_1._m0[int(_2661)]);
+    int _2665 = _2461 + 52;
+    int _2667 = _2651 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2669 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2671 = _2653 - _2669;
+    int _2673 = max(_2671, 0);
+    uint _2675 = uint(int(uint(_2673) >> uint(2)));
+    float _2677 = uintBitsToFloat(cp_s1_1._m0[int(_2675)]);
+    int _2679 = _2665 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2681 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2683 = _2667 - _2681;
+    int _2685 = max(_2683, 0);
+    uint _2687 = uint(int(uint(_2685) >> uint(2)));
+    float _2689 = uintBitsToFloat(cp_s1_1._m0[int(_2687)]);
+    int _2691 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2693 = _2679 - _2691;
+    int _2695 = max(_2693, 0);
+    uint _2697 = uint(int(uint(_2695) >> uint(2)));
+    float _2699 = uintBitsToFloat(cp_s1_1._m0[int(_2697)]);
+    int _2701 = _2461 + 56;
+    int _2703 = _2461 + 60;
+    int _2705 = _2701 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2707 = _2461 + 64;
+    int _2709 = _2703 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2711 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2713 = _2705 - _2711;
+    int _2715 = max(_2713, 0);
+    uint _2717 = uint(int(uint(_2715) >> uint(2)));
+    float _2719 = uintBitsToFloat(cp_s1_1._m0[int(_2717)]);
+    int _2721 = _2461 + 68;
+    int _2723 = _2707 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2725 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2727 = _2709 - _2725;
+    int _2729 = max(_2727, 0);
+    uint _2731 = uint(int(uint(_2729) >> uint(2)));
+    float _2733 = uintBitsToFloat(cp_s1_1._m0[int(_2731)]);
+    int _2735 = _2461 + 72;
+    int _2737 = _2721 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2739 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2741 = _2723 - _2739;
+    int _2743 = max(_2741, 0);
+    uint _2745 = uint(int(uint(_2743) >> uint(2)));
+    float _2747 = uintBitsToFloat(cp_s1_1._m0[int(_2745)]);
+    int _2749 = _2461 + 80;
+    int _2751 = _2735 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2753 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2755 = _2737 - _2753;
+    int _2757 = max(_2755, 0);
+    uint _2759 = uint(int(uint(_2757) >> uint(2)));
+    float _2761 = uintBitsToFloat(cp_s1_1._m0[int(_2759)]);
+    int _2763 = _2461 + 84;
+    int _2765 = _2749 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2767 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2769 = _2751 - _2767;
+    int _2771 = max(_2769, 0);
+    uint _2773 = uint(int(uint(_2771) >> uint(2)));
+    float _2775 = uintBitsToFloat(cp_s1_1._m0[int(_2773)]);
+    int _2777 = _2461 + 88;
+    int _2779 = _2763 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2781 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2783 = _2765 - _2781;
+    int _2785 = max(_2783, 0);
+    uint _2787 = uint(int(uint(_2785) >> uint(2)));
+    float _2789 = uintBitsToFloat(cp_s1_1._m0[int(_2787)]);
+    int _2791 = _2461 + 92;
+    int _2793 = _2777 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2795 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2797 = _2779 - _2795;
+    int _2799 = max(_2797, 0);
+    uint _2801 = uint(int(uint(_2799) >> uint(2)));
+    float _2803 = uintBitsToFloat(cp_s1_1._m0[int(_2801)]);
+    int _2805 = _2791 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2807 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2809 = _2793 - _2807;
+    int _2811 = max(_2809, 0);
+    uint _2813 = uint(int(uint(_2811) >> uint(2)));
+    float _2815 = uintBitsToFloat(cp_s1_1._m0[int(_2813)]);
+    int _2817 = _2461 + 96;
+    int _2819 = _2817 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2821 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2823 = _2805 - _2821;
+    int _2825 = max(_2823, 0);
+    uint _2827 = uint(int(uint(_2825) >> uint(2)));
+    float _2829 = uintBitsToFloat(cp_s1_1._m0[int(_2827)]);
+    int _2831 = _2461 + 100;
+    int _2833 = _2831 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2835 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2837 = _2819 - _2835;
+    int _2839 = max(_2837, 0);
+    uint _2841 = uint(int(uint(_2839) >> uint(2)));
+    float _2843 = uintBitsToFloat(cp_s1_1._m0[int(_2841)]);
+    int _2845 = _2461 + 104;
+    int _2847 = _2845 + floatBitsToInt(cp_c0_1._m0[53].x);
+    bool _2849 = uint(_2847) < uint(_2845);
+    int _2851 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2853 = _2833 - _2851;
+    int _2855 = max(_2853, 0);
+    uint _2857 = uint(int(uint(_2855) >> uint(2)));
+    float _2859 = uintBitsToFloat(cp_s1_1._m0[int(_2857)]);
+    int _2861 = _2461 + 108;
+    int _2863 = (_2849 ? (-1) : 0) & 1;
+    int _2865 = floatBitsToInt(cp_c0_1._m0[53].y) + _2863;
+    int _2867 = _2861 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2869 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2871 = _2847 - _2869;
+    int _2873 = max(_2871, 0);
+    uint _2875 = uint(int(uint(_2873) >> uint(2)));
+    float _2877 = uintBitsToFloat(cp_s1_1._m0[int(_2875)]);
+    int _2879 = _2461 + 112;
+    int _2881 = _2879 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2883 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2885 = _2867 - _2883;
+    int _2887 = max(_2885, 0);
+    uint _2889 = uint(int(uint(_2887) >> uint(2)));
+    float _2891 = uintBitsToFloat(cp_s1_1._m0[int(_2889)]);
+    int _2893 = _2461 + 116;
+    int _2895 = _2893 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2897 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2899 = _2881 - _2897;
+    int _2901 = max(_2899, 0);
+    uint _2903 = uint(int(uint(_2901) >> uint(2)));
+    float _2905 = uintBitsToFloat(cp_s1_1._m0[int(_2903)]);
+    int _2907 = _2461 + 124;
+    int _2909 = _2461 + 120;
+    int _2911 = _2907 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2913 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2915 = _2895 - _2913;
+    int _2917 = max(_2915, 0);
+    uint _2919 = uint(int(uint(_2917) >> uint(2)));
+    float _2921 = uintBitsToFloat(cp_s1_1._m0[int(_2919)]);
+    int _2923 = _2909 + floatBitsToInt(cp_c0_1._m0[53].x);
+    int _2925 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2927 = _2911 - _2925;
+    int _2929 = max(_2927, 0);
+    uint _2931 = uint(int(uint(_2929) >> uint(2)));
+    float _2933 = uintBitsToFloat(cp_s1_1._m0[int(_2931)]);
+    int _2935 = floatBitsToInt(cp_c0_1._m0[53].x) & (-64);
+    int _2937 = _2923 - _2935;
+    int _2939 = max(_2937, 0);
+    uint _2941 = uint(int(uint(_2939) >> uint(2)));
+    float _2943 = uintBitsToFloat(cp_s1_1._m0[int(_2941)]);
+    int _2945 = _2341 * floatBitsToInt(_2471);
+    int _2947 = _2945 + floatBitsToInt(_2405);
+    int _2949 = _2459 + _2947;
+    int _2951 = _2949 << 7;
+    int _2953 = _2951 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _2955 = _2951 + 4;
+    int _2957 = _2951 + 8;
+    int _2959 = _2955 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _2961 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _2963 = _2953 - _2961;
+    int _2965 = max(_2963, 0);
+    uint _2967 = uint(int(uint(_2965) >> uint(2)));
+    cp_s3_1._m0[int(_2967)] = floatBitsToUint(_2499);
+    int _2969 = _2951 + 16;
+    int _2971 = _2957 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _2973 = _2951 + 20;
+    int _2975 = _2969 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _2977 = _2951 + 24;
+    int _2979 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _2981 = _2959 - _2979;
+    int _2983 = max(_2981, 0);
+    uint _2985 = uint(int(uint(_2983) >> uint(2)));
+    cp_s3_1._m0[int(_2985)] = floatBitsToUint(_2579);
+    int _2987 = _2973 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _2989 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _2991 = _2971 - _2989;
+    int _2993 = max(_2991, 0);
+    uint _2995 = uint(int(uint(_2993) >> uint(2)));
+    cp_s3_1._m0[int(_2995)] = floatBitsToUint(_2593);
+    int _2997 = _2951 + 32;
+    int _2999 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3001 = _2975 - _2999;
+    int _3003 = max(_3001, 0);
+    uint _3005 = uint(int(uint(_3003) >> uint(2)));
+    cp_s3_1._m0[int(_3005)] = floatBitsToUint(_2607);
+    int _3007 = _2977 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3009 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3011 = _2987 - _3009;
+    int _3013 = max(_3011, 0);
+    uint _3015 = uint(int(uint(_3013) >> uint(2)));
+    cp_s3_1._m0[int(_3015)] = floatBitsToUint(_2621);
+    int _3017 = _2951 + 36;
+    int _3019 = _2997 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3021 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3023 = _3007 - _3021;
+    int _3025 = max(_3023, 0);
+    uint _3027 = uint(int(uint(_3025) >> uint(2)));
+    cp_s3_1._m0[int(_3027)] = floatBitsToUint(_2635);
+    int _3029 = _2951 + 40;
+    int _3031 = _3017 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3033 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3035 = _3019 - _3033;
+    int _3037 = max(_3035, 0);
+    uint _3039 = uint(int(uint(_3037) >> uint(2)));
+    cp_s3_1._m0[int(_3039)] = floatBitsToUint(_2649);
+    int _3041 = _2951 + 48;
+    int _3043 = _3029 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3045 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3047 = _3031 - _3045;
+    int _3049 = max(_3047, 0);
+    uint _3051 = uint(int(uint(_3049) >> uint(2)));
+    cp_s3_1._m0[int(_3051)] = floatBitsToUint(_2663);
+    uint _3053 = uint(int(uint(_88) >> uint(2)));
+    _45[int(_3053)] = floatBitsToUint(_2699);
+    uint _3055 = uint(int(uint(_88) >> uint(2)));
+    float _3057 = uintBitsToFloat(_45[int(_3055)]);
+    int _3059 = _88 + 36;
+    uint _3061 = uint(int(uint(_3059) >> uint(2)));
+    _45[int(_3061)] = floatBitsToUint(_2537);
+    int _3063 = _88 + 36;
+    uint _3065 = uint(int(uint(_3063) >> uint(2)));
+    float _3067 = uintBitsToFloat(_45[int(_3065)]);
+    int _3069 = _88 + 8;
+    uint _3071 = uint(int(uint(_3069) >> uint(2)));
+    _45[int(_3071)] = floatBitsToUint(_2523);
+    int _3073 = _3041 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3075 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3077 = _3043 - _3075;
+    int _3079 = max(_3077, 0);
+    uint _3081 = uint(int(uint(_3079) >> uint(2)));
+    cp_s3_1._m0[int(_3081)] = floatBitsToUint(_2677);
+    int _3083 = _2951 + 52;
+    int _3085 = _88 + 8;
+    uint _3087 = uint(int(uint(_3085) >> uint(2)));
+    float _3089 = uintBitsToFloat(_45[int(_3087)]);
+    int _3091 = _3083 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3093 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3095 = _3073 - _3093;
+    int _3097 = max(_3095, 0);
+    uint _3099 = uint(int(uint(_3097) >> uint(2)));
+    cp_s3_1._m0[int(_3099)] = floatBitsToUint(_2689);
+    int _3101 = _2951 + 56;
+    int _3103 = _3101 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3105 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3107 = _3091 - _3105;
+    int _3109 = max(_3107, 0);
+    uint _3111 = uint(int(uint(_3109) >> uint(2)));
+    cp_s3_1._m0[int(_3111)] = floatBitsToUint(_3057);
+    int _3113 = _2951 + 60;
+    int _3115 = _2951 + 64;
+    int _3117 = _3113 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3119 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3121 = _3103 - _3119;
+    int _3123 = max(_3121, 0);
+    uint _3125 = uint(int(uint(_3123) >> uint(2)));
+    cp_s3_1._m0[int(_3125)] = floatBitsToUint(_2719);
+    int _3127 = _2951 + 68;
+    int _3129 = _88 + 4;
+    uint _3131 = uint(int(uint(_3129) >> uint(2)));
+    float _3133 = uintBitsToFloat(_45[int(_3131)]);
+    int _3135 = _3115 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3137 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3139 = _3117 - _3137;
+    int _3141 = max(_3139, 0);
+    uint _3143 = uint(int(uint(_3141) >> uint(2)));
+    cp_s3_1._m0[int(_3143)] = floatBitsToUint(_2733);
+    int _3145 = _3127 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3147 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3149 = _3135 - _3147;
+    int _3151 = max(_3149, 0);
+    uint _3153 = uint(int(uint(_3151) >> uint(2)));
+    cp_s3_1._m0[int(_3153)] = floatBitsToUint(_2747);
+    int _3155 = _2951 + 72;
+    int _3157 = _88 + 40;
+    uint _3159 = uint(int(uint(_3157) >> uint(2)));
+    float _3161 = uintBitsToFloat(_45[int(_3159)]);
+    int _3163 = _88 + 24;
+    uint _3165 = uint(int(uint(_3163) >> uint(2)));
+    float _3167 = uintBitsToFloat(_45[int(_3165)]);
+    int _3169 = _3155 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3171 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3173 = _3145 - _3171;
+    int _3175 = max(_3173, 0);
+    uint _3177 = uint(int(uint(_3175) >> uint(2)));
+    cp_s3_1._m0[int(_3177)] = floatBitsToUint(_2761);
+    int _3179 = _2951 + 80;
+    int _3181 = _2951 + 84;
+    int _3183 = _3179 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3185 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3187 = _3169 - _3185;
+    int _3189 = max(_3187, 0);
+    uint _3191 = uint(int(uint(_3189) >> uint(2)));
+    cp_s3_1._m0[int(_3191)] = floatBitsToUint(_2775);
+    int _3193 = _2951 + 88;
+    int _3195 = _3181 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3197 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3199 = _3183 - _3197;
+    int _3201 = max(_3199, 0);
+    uint _3203 = uint(int(uint(_3201) >> uint(2)));
+    cp_s3_1._m0[int(_3203)] = floatBitsToUint(_2789);
+    int _3205 = _3193 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3207 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3209 = _3195 - _3207;
+    int _3211 = max(_3209, 0);
+    uint _3213 = uint(int(uint(_3211) >> uint(2)));
+    cp_s3_1._m0[int(_3213)] = floatBitsToUint(_2803);
+    int _3215 = _2951 + 92;
+    int _3217 = _3215 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3219 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3221 = _3205 - _3219;
+    int _3223 = max(_3221, 0);
+    uint _3225 = uint(int(uint(_3223) >> uint(2)));
+    cp_s3_1._m0[int(_3225)] = floatBitsToUint(_2815);
+    int _3227 = _2951 + 96;
+    int _3229 = _3227 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3231 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3233 = _3217 - _3231;
+    int _3235 = max(_3233, 0);
+    uint _3237 = uint(int(uint(_3235) >> uint(2)));
+    cp_s3_1._m0[int(_3237)] = floatBitsToUint(_2829);
+    int _3239 = _2951 + 100;
+    int _3241 = _3239 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3243 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3245 = _3229 - _3243;
+    int _3247 = max(_3245, 0);
+    uint _3249 = uint(int(uint(_3247) >> uint(2)));
+    cp_s3_1._m0[int(_3249)] = floatBitsToUint(_2843);
+    int _3251 = _2951 + 104;
+    int _3253 = _3251 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3255 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3257 = _3241 - _3255;
+    int _3259 = max(_3257, 0);
+    uint _3261 = uint(int(uint(_3259) >> uint(2)));
+    cp_s3_1._m0[int(_3261)] = floatBitsToUint(_2859);
+    int _3263 = _2951 + 108;
+    int _3265 = _3263 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3267 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3269 = _3253 - _3267;
+    int _3271 = max(_3269, 0);
+    uint _3273 = uint(int(uint(_3271) >> uint(2)));
+    cp_s3_1._m0[int(_3273)] = floatBitsToUint(_2877);
+    int _3275 = _2951 + 112;
+    int _3277 = _2951 + 116;
+    int _3279 = _3275 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3281 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3283 = _3265 - _3281;
+    int _3285 = max(_3283, 0);
+    uint _3287 = uint(int(uint(_3285) >> uint(2)));
+    cp_s3_1._m0[int(_3287)] = floatBitsToUint(_2891);
+    int _3289 = _2951 + 120;
+    int _3291 = _3277 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3293 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3295 = _3279 - _3293;
+    int _3297 = max(_3295, 0);
+    uint _3299 = uint(int(uint(_3297) >> uint(2)));
+    cp_s3_1._m0[int(_3299)] = floatBitsToUint(_2905);
+    int _3301 = _3289 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3303 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3305 = _3291 - _3303;
+    int _3307 = max(_3305, 0);
+    uint _3309 = uint(int(uint(_3307) >> uint(2)));
+    cp_s3_1._m0[int(_3309)] = floatBitsToUint(_2921);
+    int _3311 = _2951 + 124;
+    int _3313 = _2951 + 76;
+    int _3315 = _3311 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3317 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3319 = _3301 - _3317;
+    int _3321 = max(_3319, 0);
+    uint _3323 = uint(int(uint(_3321) >> uint(2)));
+    cp_s3_1._m0[int(_3323)] = floatBitsToUint(_2943);
+    int _3325 = _2951 + 12;
+    int _3327 = _3313 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3329 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3331 = _3315 - _3329;
+    int _3333 = max(_3331, 0);
+    uint _3335 = uint(int(uint(_3333) >> uint(2)));
+    cp_s3_1._m0[int(_3335)] = floatBitsToUint(_2933);
+    int _3337 = floatBitsToInt(_2285) & 4096;
+    bool _3339 = _3337 != 0;
+    precise float _9414 = _2551 + _3167;
+    float _3341 = _9414;
+    int _3343 = _88 + 20;
+    uint _3345 = uint(int(uint(_3343) >> uint(2)));
+    float _3347 = uintBitsToFloat(_45[int(_3345)]);
+    precise float _9427 = _2565 * _3133;
+    float _3349 = _9427;
+    int _3351 = _88 + 12;
+    uint _3353 = uint(int(uint(_3351) >> uint(2)));
+    float _3355 = uintBitsToFloat(_45[int(_3353)]);
+    int _3357 = _3325 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3359 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3361 = _3327 - _3359;
+    int _3363 = max(_3361, 0);
+    uint _3365 = uint(int(uint(_3363) >> uint(2)));
+    cp_s3_1._m0[int(_3365)] = floatBitsToUint(_3349);
+    int _3367 = _2951 + 28;
+    precise float _9464 = _3067 + _3161;
+    float _3369 = _9464;
+    precise float _9467 = _3089 + _2003;
+    float _3371 = _9467;
+    int _3373 = _2951 + 44;
+    int _3375 = _3367 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3377 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3379 = _3357 - _3377;
+    int _3381 = max(_3379, 0);
+    uint _3383 = uint(int(uint(_3381) >> uint(2)));
+    cp_s3_1._m0[int(_3383)] = floatBitsToUint(_3341);
+    int _3385 = _3373 + floatBitsToInt(cp_c0_1._m0[49].x);
+    int _3387 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3389 = _3375 - _3387;
+    int _3391 = max(_3389, 0);
+    uint _3393 = uint(int(uint(_3391) >> uint(2)));
+    cp_s3_1._m0[int(_3393)] = floatBitsToUint(_3371);
+    int _3395 = _2865;
+    int _3397 = floatBitsToInt(_3089);
+    int _3399 = floatBitsToInt(_2859);
+    if (_3339)
+    {
+        _3395 = floatBitsToInt(cp_c3_1._m0[46].x);
+    }
+    int _3401 = _3395;
+    if (_3339)
+    {
+        _3397 = floatBitsToInt(cp_c3_1._m0[46].y);
+    }
+    int _3403 = _3397;
+    if (_3339)
+    {
+        _3399 = floatBitsToInt(cp_c3_1._m0[46].z);
+    }
+    int _3405 = _3399;
+    int _3407 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+    int _3409 = _3385 - _3407;
+    int _3411 = max(_3409, 0);
+    uint _3413 = uint(int(uint(_3411) >> uint(2)));
+    cp_s3_1._m0[int(_3413)] = floatBitsToUint(_3369);
+    if (_3339)
+    {
+        int _3415 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _3417 = _3183 - _3415;
+        int _3419 = max(_3417, 0);
+        uint _3421 = uint(int(uint(_3419) >> uint(2)));
+        cp_s3_1._m0[int(_3421)] = uint(_3401);
+    }
+    if (_3339)
+    {
+        int _3423 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _3425 = _3195 - _3423;
+        int _3427 = max(_3425, 0);
+        uint _3429 = uint(int(uint(_3427) >> uint(2)));
+        cp_s3_1._m0[int(_3429)] = uint(_3403);
+    }
+    if (_3339)
+    {
+        int _3431 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+        int _3433 = _3205 - _3431;
+        int _3435 = max(_3433, 0);
+        uint _3437 = uint(int(uint(_3435) >> uint(2)));
+        cp_s3_1._m0[int(_3437)] = uint(_3405);
+    }
+    int _3439 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _3441 = floatBitsToInt(_3347) - _3439;
+    int _3443 = max(_3441, 0);
+    uint _3445 = uint(int(uint(_3443) >> uint(2)));
+    float _3447 = uintBitsToFloat(cp_s0_1._m0[int(_3445)]);
+    int _3449 = floatBitsToInt(_3447) & 2;
+    bool _3451 = _3449 != 0;
+    if (!_3451)
+    {
+        return;
+    }
+    int _3453 = floatBitsToInt(_3355) + 4;
+    bool _3455 = 0u >= floatBitsToUint(cp_c5_1._m0[12].w);
+    int _3457 = floatBitsToInt(_3355) + 68;
+    int _3459 = _3453 + floatBitsToInt(cp_c0_1._m0[51].x);
+    int _3461 = _3457 + floatBitsToInt(cp_c0_1._m0[51].x);
+    if (_3455)
+    {
+        return;
+    }
+    int _3463 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _3465 = _3459 - _3463;
+    int _3467 = max(_3465, 0);
+    uint _3469 = uint(int(uint(_3467) >> uint(2)));
+    float _3471 = uintBitsToFloat(cp_s0_1._m0[int(_3469)]);
+    int _3473 = floatBitsToInt(cp_c0_1._m0[51].x) & (-64);
+    int _3475 = _3461 - _3473;
+    int _3477 = max(_3475, 0);
+    uint _3479 = uint(int(uint(_3477) >> uint(2)));
+    float _3481 = uintBitsToFloat(cp_s0_1._m0[int(_3479)]);
+    int _3483 = 0;
+    bool _3485;
+    int _3599;
+    int _3613;
+    int _3627;
+    int _3639;
+    int _3651;
+    do
+    {
+        int _3487 = _3483;
+        int _3489 = _3487 << 5;
+        int _3491 = _3489 + floatBitsToInt(cp_c0_1._m0[54].x);
+        int _3493 = _3489 + 4;
+        int _3495 = _3489 + 8;
+        int _3497 = _3493 + floatBitsToInt(cp_c0_1._m0[54].x);
+        int _3499 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+        int _3501 = _3491 - _3499;
+        int _3503 = max(_3501, 0);
+        uint _3505 = uint(int(uint(_3503) >> uint(2)));
+        float _3507 = uintBitsToFloat(cp_s4_1._m0[int(_3505)]);
+        int _3509 = _3495 + floatBitsToInt(cp_c0_1._m0[54].x);
+        int _3511 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+        int _3513 = _3497 - _3511;
+        int _3515 = max(_3513, 0);
+        uint _3517 = uint(int(uint(_3515) >> uint(2)));
+        float _3519 = uintBitsToFloat(cp_s4_1._m0[int(_3517)]);
+        int _3521 = _3489 + 12;
+        int _3523 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+        int _3525 = _3509 - _3523;
+        int _3527 = max(_3525, 0);
+        uint _3529 = uint(int(uint(_3527) >> uint(2)));
+        float _3531 = uintBitsToFloat(cp_s4_1._m0[int(_3529)]);
+        int _3533 = _3521 + floatBitsToInt(cp_c0_1._m0[54].x);
+        int _3535 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+        int _3537 = _3533 - _3535;
+        int _3539 = max(_3537, 0);
+        uint _3541 = uint(int(uint(_3539) >> uint(2)));
+        float _3543 = uintBitsToFloat(cp_s4_1._m0[int(_3541)]);
+        float _3545 = -_3507;
+        precise float _9807 = _3341 + _3545;
+        float _3547 = _9807;
+        precise float _9810 = _3547 * _3547;
+        float _3549 = _9810;
+        float _3551 = -_3519;
+        precise float _9815 = _3371 + _3551;
+        float _3553 = _9815;
+        float _3555 = fma(_3553, _3553, _3549);
+        float _3557 = -_3531;
+        precise float _9824 = _3369 + _3557;
+        float _3559 = _9824;
+        float _3561 = fma(_3559, _3559, _3555);
+        float _3563 = sqrt(_3561);
+        precise float _9833 = _3481 + _3543;
+        float _3565 = _9833;
+        bool _3567 = _3563 < _3565;
+        if (_3567)
+        {
+            int _3569 = _3487 << 2;
+            uint _3571 = subgroupBallot(true).x;
+            int _3573 = _3569 >> 2;
+            bool _3575 = int(_3571) == (-1);
+            bool _3577 = _3563 > 0.0;
+            int _3579 = _3573 << 2;
+            int _3581 = _3579 + floatBitsToInt(cp_c0_1._m0[52].x);
+            if (!_3575)
+            {
+                int _3583 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+                int _3585 = _3581 - _3583;
+                int _3587 = max(_3585, 0);
+                uint _3589 = uint(int(uint(_3587) >> uint(2)));
+                uint _9877 = atomicOr(cp_s5_1._m0[int(_3589)], floatBitsToUint(_3447));
+                uint _3591 = _9877;
+            }
+            if (_3575)
+            {
+                int _3593 = floatBitsToInt(_3447);
+                int _3595 = 1;
+                int _3597 = 31;
+                int _9883 = _72(_3593, _3595, _3597, _3599);
+                int _3601 = _9883;
+                float _3603 = uintBitsToFloat(gl_SubgroupInvocationID);
+                int _3605 = floatBitsToInt(_3447) | _3601;
+                int _3607 = _3605;
+                int _3609 = 2;
+                int _3611 = 31;
+                int _9891 = _72(_3607, _3609, _3611, _3613);
+                int _3615 = _9891;
+                bool _3617 = floatBitsToInt(_3603) == 0;
+                int _3619 = _3605 | _3615;
+                int _3621 = _3619;
+                int _3623 = 4;
+                int _3625 = 31;
+                int _9899 = _72(_3621, _3623, _3625, _3627);
+                int _3629 = _9899;
+                int _3631 = _3619 | _3629;
+                int _3633 = _3631;
+                int _3635 = 8;
+                int _3637 = 31;
+                int _9904 = _72(_3633, _3635, _3637, _3639);
+                int _3641 = _9904;
+                int _3643 = _3631 | _3641;
+                int _3645 = _3643;
+                int _3647 = 16;
+                int _3649 = 31;
+                int _9909 = _72(_3645, _3647, _3649, _3651);
+                int _3653 = _9909;
+                int _3655 = _3643 | _3653;
+                if (_3617)
+                {
+                    int _3657 = floatBitsToInt(cp_c0_1._m0[52].x) & (-64);
+                    int _3659 = _3581 - _3657;
+                    int _3661 = max(_3659, 0);
+                    uint _3663 = uint(int(uint(_3661) >> uint(2)));
+                    uint _9932 = atomicOr(cp_s5_1._m0[int(_3663)], uint(_3655));
+                    uint _3665 = _9932;
+                }
+            }
+            if (_3577)
+            {
+                int _3667 = _3489 + 20;
+                float _3669 = inversesqrt(_3561);
+                int _3671 = _3667 + floatBitsToInt(cp_c0_1._m0[54].x);
+                int _3673 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+                int _3675 = _3671 - _3673;
+                int _3677 = max(_3675, 0);
+                uint _3679 = uint(int(uint(_3677) >> uint(2)));
+                float _3681 = uintBitsToFloat(cp_s4_1._m0[int(_3679)]);
+                int _3683 = _3489 + 16;
+                int _3685 = _2951 + 116;
+                int _3687 = _2951 + 120;
+                int _3689 = _2951 + 124;
+                int _3691 = _3683 + floatBitsToInt(cp_c0_1._m0[54].x);
+                int _3693 = _3685 + floatBitsToInt(cp_c0_1._m0[49].x);
+                int _3695 = floatBitsToInt(cp_c0_1._m0[54].x) & (-64);
+                int _3697 = _3691 - _3695;
+                int _3699 = max(_3697, 0);
+                uint _3701 = uint(int(uint(_3699) >> uint(2)));
+                float _3703 = uintBitsToFloat(cp_s4_1._m0[int(_3701)]);
+                int _3705 = _3687 + floatBitsToInt(cp_c0_1._m0[49].x);
+                int _3707 = _3689 + floatBitsToInt(cp_c0_1._m0[49].x);
+                int _3709 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3711 = _3693 - _3709;
+                int _3713 = max(_3711, 0);
+                uint _3715 = uint(int(uint(_3713) >> uint(2)));
+                float _3717 = uintBitsToFloat(cp_s3_1._m0[int(_3715)]);
+                int _3719 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3721 = _3705 - _3719;
+                int _3723 = max(_3721, 0);
+                uint _3725 = uint(int(uint(_3723) >> uint(2)));
+                float _3727 = uintBitsToFloat(cp_s3_1._m0[int(_3725)]);
+                int _3729 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3731 = _3707 - _3729;
+                int _3733 = max(_3731, 0);
+                uint _3735 = uint(int(uint(_3733) >> uint(2)));
+                float _3737 = uintBitsToFloat(cp_s3_1._m0[int(_3735)]);
+                precise float _10061 = _3547 * _3669;
+                float _3739 = _10061;
+                precise float _10064 = _3553 * _3669;
+                float _3741 = _10064;
+                precise float _10067 = _3559 * _3669;
+                float _3743 = _10067;
+                precise float _10070 = _3563 + _3681;
+                float _3745 = _10070;
+                precise float _10073 = _3745 * 0.15915493667125701904296875;
+                float _3747 = _10073;
+                float _3749 = abs(_3747);
+                float _3751 = floor(_3749);
+                float _3753 = -_3747;
+                bool _3755 = _3747 >= _3753;
+                float _3757 = abs(_3747);
+                float _3759 = -_3751;
+                precise float _10089 = _3757 + _3759;
+                float _3761 = _10089;
+                float _3763 = _3761;
+                if (!_3755)
+                {
+                    float _3765 = -_3761;
+                    precise float _10097 = _3765 + (-0.0);
+                    float _3767 = _10097;
+                    _3763 = _3767;
+                }
+                float _3769 = _3763;
+                precise float _10103 = _3769 * 6.283185482025146484375;
+                float _3771 = _10103;
+                float _3773 = sin(_3771);
+                float _3775 = -_3563;
+                precise float _10110 = _3565 + _3775;
+                float _3777 = _10110;
+                float _3779 = fma(_3773, 0.5, 0.5);
+                precise float _10115 = _3739 * _3779;
+                float _3781 = _10115;
+                precise float _10118 = _3741 * _3779;
+                float _3783 = _10118;
+                precise float _10121 = _3743 * _3779;
+                float _3785 = _10121;
+                precise float _10124 = _3781 * _3777;
+                float _3787 = _10124;
+                precise float _10127 = _3783 * _3777;
+                float _3789 = _10127;
+                precise float _10130 = _3785 * _3777;
+                float _3791 = _10130;
+                precise float _10133 = _3471 * _3787;
+                float _3793 = _10133;
+                precise float _10136 = _3471 * _3789;
+                float _3795 = _10136;
+                precise float _10139 = _3471 * _3791;
+                float _3797 = _10139;
+                float _3799 = fma(_3703, _3793, _3717);
+                float _3801 = fma(_3703, _3795, _3727);
+                int _3803 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3805 = _3693 - _3803;
+                int _3807 = max(_3805, 0);
+                uint _3809 = uint(int(uint(_3807) >> uint(2)));
+                cp_s3_1._m0[int(_3809)] = floatBitsToUint(_3799);
+                float _3811 = fma(_3703, _3797, _3737);
+                int _3813 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3815 = _3705 - _3813;
+                int _3817 = max(_3815, 0);
+                uint _3819 = uint(int(uint(_3817) >> uint(2)));
+                cp_s3_1._m0[int(_3819)] = floatBitsToUint(_3801);
+                int _3821 = floatBitsToInt(cp_c0_1._m0[49].x) & (-64);
+                int _3823 = _3707 - _3821;
+                int _3825 = max(_3823, 0);
+                uint _3827 = uint(int(uint(_3825) >> uint(2)));
+                cp_s3_1._m0[int(_3827)] = floatBitsToUint(_3811);
+            }
+        }
+        int _3829 = _3487 + 1;
+        _3485 = uint(_3829) >= floatBitsToUint(cp_c5_1._m0[12].w);
+        _3483 = _3829;
+    } while (!_3485);
+}
+
