@@ -36,7 +36,7 @@ jobs:
             out_dir="spirv_output/$(dirname "$rel_path")"
             mkdir -p "$out_dir"
             echo "Compiling $file -> $out_dir/${base}.spv"
-            glslangValidator -V "$file" -o "$out_dir/${base}.spv"
+            glslangValidator -V --target-env vulkan1.1 "$file" -o "$out_dir/${base}.spv"
           done
 
       - name: List compiled SPIR-V files
