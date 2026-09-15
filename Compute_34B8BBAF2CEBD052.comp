@@ -3,7 +3,7 @@
 #extension GL_KHR_shader_subgroup_shuffle : require
 #extension GL_KHR_shader_subgroup_ballot : require
 #extension GL_KHR_shader_subgroup_vote : require
-layout(local_size_x = 768, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 896, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0, std140) uniform support_buffer
 {
