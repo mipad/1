@@ -2,9 +2,9 @@ name: Andro
 
 on:                                        
   push:   
-    branches: [ "13" ]  
+    branches: [ "14" ]  
   pull_request:
-    branches: [ "13" ]
+    branches: [ "14" ]
 
 jobs: 
   build:
