@@ -2,9 +2,9 @@ name: Andro
 
 on:                                        
   push:   
-    branches: [ "15" ]  
+    branches: [ "yj" ]  
   pull_request:
-    branches: [ "15" ]
+    branches: [ "yj" ]
 
 jobs: 
   build:
@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: mipad1-my-着色器跳过-试-malio
+        ref: mipad1-my-着色器跳过-试-yjwb2
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
