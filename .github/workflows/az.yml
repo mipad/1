@@ -1,186 +1,106 @@
-name: Andro
+name: Disassemble SPIR-V
 
-on:                                        
-  push:   
-    branches: [ "yj" ]  
-  pull_request:
-    branches: [ "yj" ]
+on:
+  # 手动触发（推荐，手机上最方便）
+  workflow_dispatch:
 
-jobs: 
-  build:
+  # 推送到 shaders/ 目录时自动触发
+  push:
+    paths:
+      - 'shaders/**.spv'
+
+jobs:
+  disassemble:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    
-    env:
-      JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=4g"
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
-      PROJECT_DIR: src/RyujinxAndroid
-      ANDROID_NDK_VERSION: "29.0.14206865"
-      DOTNET_VERSION: "10.0.201"
-      ANDROID_API_LEVEL: "36"
-      GRADLE_VERSION: "9.2.0"
-      ANDROID_BUILD_TOOLS: "36.0.0"
 
     steps:
-    # ========== 1. 从 GitLab 检出代码（私有仓库） ==========
-    - name: Checkout code from GitLab
-      uses: actions/checkout@v4
-      with:
-        github-server-url: https://gitlab.com
-        repository: mipad1-group/Test-ryu
-        ref: mipad1-my-着色器跳过-试-yjwb2
-        path: Test-ryu
-        token: ${{ secrets.GITLAB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # ========== 2. 环境配置 ==========
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 21
-        architecture: x64
+      - name: Install SPIRV-Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y spirv-tools
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v4
-      with:
-        # 关键：显式覆盖默认 packages，去掉已被 Google 移除的 'tools' 包
-        packages: 'platform-tools'
+      - name: Show tool versions
+        run: |
+          spirv-dis --version
+          spirv-val --version
 
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: List SPIR-V files
+        run: |
+          echo "SPIR-V files found:"
+          find shaders -name "*.spv" -type f | sort
 
-    # ========== 3. 缓存优化 ==========
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - name: Validate SPIR-V files
+        run: |
+          mkdir -p output
+          for file in $(find shaders -name "*.spv" -type f); do
+            echo "========================================"
+            echo "Validating: $file"
+            echo "========================================"
+            if spirv-val "$file"; then
+              echo "[OK] $file is valid."
+            else
+              echo "[FAIL] $file is INVALID!"
+            fi
+            echo
+          done
 
-    # ========== 4. 权限和Gradle设置 ==========
-    - name: Set execution permissions
-      working-directory: ${{ github.workspace }}/Test-ryu
-      run: |
-        find . -name "gradlew" -exec chmod +x {} \;
-        find . -name "*.sh" -exec chmod +x {} \;
-        find . -name "*.bat" -exec chmod +x {} \; 2>/dev/null || true
+      - name: Disassemble SPIR-V files
+        run: |
+          mkdir -p output
+          for file in $(find shaders -name "*.spv" -type f); do
+            base=$(basename "$file" .spv)
+            echo "Disassembling: $file -> output/${base}.spvasm"
+            spirv-dis "$file" -o "output/${base}.spvasm"
+          done
 
-    - name: Setup Gradle Wrapper
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        if [ ! -f "gradlew" ]; then
-          echo "Initializing Gradle Wrapper"
-          gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }}
-        else
-          echo "Gradle Wrapper already exists"
-        fi
+      - name: Cross-compile to GLSL (可选，辅助理解)
+        run: |
+          sudo apt-get install -y spirv-cross
+          mkdir -p output_glsl
+          for file in $(find shaders -name "*.spv" -type f); do
+            base=$(basename "$file" .spv)
+            # 根据文件名判断阶段
+            if echo "$base" | grep -qi "vertex"; then
+              stage="vert"
+            elif echo "$base" | grep -qi "fragment"; then
+              stage="frag"
+            elif echo "$base" | grep -qi "compute"; then
+              stage="comp"
+            else
+              stage="vert"
+            fi
+            echo "Cross-compiling: $file -> output_glsl/${base}.glsl (stage=$stage)"
+            spirv-cross "$file" --output "output_glsl/${base}.glsl" --stage "$stage" || echo "  (skipped, may not be supported)"
+          done
 
-    # ========== 5. 验证环境 ==========
-    - name: Verify .NET SDK Installation
-      run: |
-        dotnet --list-sdks
-        echo "检查是否安装 .NET ${{ env.DOTNET_VERSION }}"
+      - name: Show disassembly summary
+        run: |
+          echo "===== Disassembly Summary ====="
+          for file in output/*.spvasm; do
+            echo
+            echo "--- $file ---"
+            echo "Total lines: $(wc -l < "$file")"
+            echo "OpSpecConstantOp count: $(grep -c 'OpSpecConstantOp' "$file" || true)"
+            echo "OpPhi count:            $(grep -c 'OpPhi' "$file" || true)"
+            echo "OpLoopMerge count:      $(grep -c 'OpLoopMerge' "$file" || true)"
+            echo "OpVectorShuffle count:  $(grep -c 'OpVectorShuffle' "$file" || true)"
+            echo "OpFunctionCall count:   $(grep -c 'OpFunctionCall' "$file" || true)"
+            echo "OpImageSample* count:   $(grep -c 'OpImageSample' "$file" || true)"
+          done
 
-    - name: Install Android SDK Components
-      run: |
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
-          "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
-          "platforms;android-${{ env.ANDROID_API_LEVEL }}" \
-          "cmake;3.22.1" \
-          "ndk;${{ env.ANDROID_NDK_VERSION }}"
+      - name: Upload disassembled files (.spvasm)
+        uses: actions/upload-artifact@v4
+        with:
+          name: spirv-disassembly
+          path: output/*.spvasm
+          if-no-files-found: warn
 
-    - name: Configure Environment Paths
-      shell: bash
-      run: |
-        ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION }}"
-        LLVM_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-        LIB_DIR="$LLVM_PATH/sysroot/usr/lib/aarch64-linux-android/${{ env.ANDROID_API_LEVEL }}"
-
-        echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
-        echo "LLVM_PATH=$LLVM_PATH" >> $GITHUB_ENV
-        echo "LIB_DIR=$LIB_DIR" >> $GITHUB_ENV
-        echo "$LLVM_PATH/bin" >> $GITHUB_PATH
-
-    - name: Install Ninja Build
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ninja-build
-        ninja --version
-
-    - name: Validate Build Environment
-      run: |
-        echo "=== 环境验证 ==="
-        echo "Java version:"
-        java -version
-        echo "Gradle version:"
-        ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/gradlew --version
-        echo "Android SDK路径:"
-        echo $ANDROID_HOME
-        echo "NDK路径:"
-        echo $ANDROID_NDK_HOME
-        echo "LLVM路径:"
-        echo $LLVM_PATH
-        echo "=== 环境验证完成 ==="
-
-    # ========== 6. 主构建流程 ==========
-    - name: Build APK
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      env:
-        OPENSSL_ROOT_DIR: /opt/openssl-x64
-      run: |
-        echo "LLVM_PATH: $LLVM_PATH"
-        echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
-        echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-
-        ./gradlew clean assembleRelease \
-          -DllvmToolchainPath=$LLVM_PATH \
-          -Dopenssl.root=$OPENSSL_ROOT_DIR \
-          -Pandroid.overridePathCheck=true \
-          --no-daemon \
-          --stacktrace \
-          --info
-
-    # ========== 7. 构建产物检查 ==========
-    - name: Find Native Libraries (.so)
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        echo "========== 开始搜索 .so 文件 =========="
-        find app/build -name "*.so" -print
-        echo "========== 搜索完成 =========="
-
-    - name: List APK Files
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        echo "========== APK 文件列表 =========="
-        find app/build/outputs/apk -name "*.apk" -print
-        echo "========== 列表完成 =========="
-
-    # ========== 8. 产物处理 ==========
-    - name: Upload Native Libraries
-      uses: actions/upload-artifact@v4
-      with:
-        name: native-libs
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
-        retention-days: 7
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-arm64-release
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
-        retention-days: 7
-
-    - name: Upload Build Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: build-reports
-        path: |
-          ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/reports/
-          ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/build/reports/
-        retention-days: 3
+      - name: Upload GLSL files (可选)
+        uses: actions/upload-artifact@v4
+        with:
+          name: spirv-cross-glsl
+          path: output_glsl/*.glsl
+          if-no-files-found: ignore
