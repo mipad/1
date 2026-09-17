@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: mipad1-my-着色器跳过-试-日志
+        ref: mipad1-my-着色器跳过-试-malio
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
