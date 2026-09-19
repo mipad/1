@@ -11,19 +11,19 @@ def get_caps(spv):
     ))
 
 subprocess.run(
-    ["spirv-dis", "fixed_raw.spv", "-o", "fixed_raw.spvasm"],
+    ["spirv-dis", "fixed_stripped.spv", "-o", "fixed_stripped.spvasm"],
     check=True
 )
 
 orig = get_caps("original.spv")
-fix = get_caps("fixed_raw.spv")
+fix = get_caps("fixed_stripped.spv")
 missing = [c for c in orig if c not in fix]
 
 print("=== Missing capabilities ===")
 for c in missing:
     print(c)
 
-with open("fixed_raw.spvasm") as f:
+with open("fixed_stripped.spvasm") as f:
     lines = f.readlines()
 
 last_cap_idx = -1
