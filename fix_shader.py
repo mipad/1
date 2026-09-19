@@ -34,22 +34,24 @@ def clamp_33(m):
 
 code = re.sub(r'_33\[([^\]]+)\]', clamp_33, code)
 
-# ========== 4. cp_s0_1._m0[...] 非负保护 ==========
-def clamp_s0(m):
-    expr = m.group(1).strip()
-    return f'cp_s0_1._m0[max({expr}, 0)]'
-
-code = re.sub(r'cp_s0_1\._m0\[([^\]]+)\]', clamp_s0, code)
-
-# ========== 5. texelFetch 索引非负保护 ==========
-def clamp_texel(m):
-    sampler = m.group(1)
-    expr = m.group(2).strip()
-    return f'texelFetch({sampler}, max({expr}, 0))'
-
+# ========== 4. cp_s0_1._m0[...] 非负保护（精确匹配） ==========
 code = re.sub(
-    r'texelFetch\((cp_t_tcb_8|cp_t_tcb_42),\s*([^,]+?)\)',
-    clamp_texel,
+    r'cp_s0_1\._m0\[\s*(int\(_[0-9]+\)|_[0-9]+)\s*\]',
+    r'cp_s0_1._m0[max(\1, 0)]',
+    code
+)
+
+# ========== 5. texelFetch 索引非负保护（精确匹配） ==========
+# 模式 A：texelFetch(cp_t_tcb_8, int(_NNN))
+code = re.sub(
+    r'texelFetch\((cp_t_tcb_8|cp_t_tcb_42),\s*int\((_[0-9]+)\)\)',
+    r'texelFetch(\1, max(int(\2), 0))',
+    code
+)
+# 模式 B：texelFetch(cp_t_tcb_8, _NNN)
+code = re.sub(
+    r'texelFetch\((cp_t_tcb_8|cp_t_tcb_42),\s*(_[0-9]+)\)',
+    r'texelFetch(\1, max(\2, 0))',
     code
 )
 
