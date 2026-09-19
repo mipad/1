@@ -17,139 +17,44 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y spirv-cross glslang-tools spirv-tools python3
+          sudo apt-get install -y spirv-tools python3
 
-      - name: Verify tool versions
+      - name: Disassemble original SPV
         run: |
-          glslangValidator --version || true
-          spirv-val --version || true
-          which spirv-cross || true
-          echo "tool check done"
-
-      - name: Decompile SPV -> GLSL
-        run: |
-          spirv-cross original.spv --version 450 --vulkan-semantics --output shader.glsl
-          echo "--- GLSL head ---"
-          head -20 shader.glsl
-
-      - name: Patch GLSL
-        run: python3 fix_shader.py
-
-      - name: Compile GLSL -> SPV
-        run: |
-          glslangValidator -S comp -V --target-env vulkan1.1 \
-            -o fixed_raw.spv shader_fixed.glsl
-
-      - name: Strip debug info
-        run: |
-          spirv-opt --strip-debug fixed_raw.spv -o fixed_stripped.spv
-          echo "=== Size comparison ==="
-          ls -la original.spv fixed_raw.spv fixed_stripped.spv
-          echo "=== OpName count ==="
-          echo "original: $(spirv-dis original.spv | grep -c OpName)"
-          echo "raw:      $(spirv-dis fixed_raw.spv | grep -c OpName)"
-          echo "stripped: $(spirv-dis fixed_stripped.spv | grep -c OpName)"
-
-      - name: Patch missing capabilities
-        run: |
-          set -e
-          python3 patch_caps.py
-          spirv-as --target-env vulkan1.1 -o fixed.spv fixed_patched.spvasm
-          spirv-val --target-env vulkan1.1 fixed.spv
-          echo "=== Validation passed ==="
-          echo "=== Final capabilities ==="
-          spirv-dis fixed.spv | grep OpCapability
-
-      - name: Diagnose SPIR-V differences
-        run: |
-          set +e
-
-          echo "=========================================="
-          echo "1. SPIR-V version"
-          echo "=========================================="
-          echo "--- original ---"
-          spirv-dis original.spv | head -3
-          echo "--- fixed ---"
-          spirv-dis fixed.spv | head -3
-
-          echo ""
-          echo "=========================================="
-          echo "2. Capability diff"
-          echo "=========================================="
-          spirv-dis original.spv | grep OpCapability > /tmp/o_cap.txt
-          spirv-dis fixed.spv    | grep OpCapability > /tmp/f_cap.txt
-          diff /tmp/o_cap.txt /tmp/f_cap.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "3. ExtInst imports diff"
-          echo "=========================================="
-          spirv-dis original.spv | grep OpExtInstImport > /tmp/o_imp.txt
-          spirv-dis fixed.spv    | grep OpExtInstImport > /tmp/f_imp.txt
-          diff /tmp/o_imp.txt /tmp/f_imp.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "4. GLSLstd450 functions used"
-          echo "=========================================="
-          spirv-dis original.spv | grep -oE "GLSLstd450[A-Za-z0-9]+" | sort -u > /tmp/o_ext.txt
-          spirv-dis fixed.spv    | grep -oE "GLSLstd450[A-Za-z0-9]+" | sort -u > /tmp/f_ext.txt
-          echo "--- original ---"; cat /tmp/o_ext.txt
-          echo "--- fixed ---";    cat /tmp/f_ext.txt
-          echo "--- diff ---";     diff /tmp/o_ext.txt /tmp/f_ext.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "5. Execution mode diff"
-          echo "=========================================="
-          spirv-dis original.spv | grep OpExecutionMode > /tmp/o_em.txt
-          spirv-dis fixed.spv    | grep OpExecutionMode > /tmp/f_em.txt
-          diff /tmp/o_em.txt /tmp/f_em.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "6. Decoration diff (DescriptorSet/Binding only)"
-          echo "=========================================="
-          spirv-dis original.spv | grep -E "OpDecorate.*(DescriptorSet|Binding)" | sort > /tmp/o_dec.txt
-          spirv-dis fixed.spv    | grep -E "OpDecorate.*(DescriptorSet|Binding)" | sort > /tmp/f_dec.txt
-          diff /tmp/o_dec.txt /tmp/f_dec.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "7. Opcode frequency diff"
-          echo "=========================================="
-          spirv-dis original.spv | grep -oE "Op[A-Za-z]+" | sort | uniq -c > /tmp/o_ops.txt
-          spirv-dis fixed.spv    | grep -oE "Op[A-Za-z]+" | sort | uniq -c > /tmp/f_ops.txt
-          diff /tmp/o_ops.txt /tmp/f_ops.txt && echo "no diff"
-
-          echo ""
-          echo "=========================================="
-          echo "8. Clip / Cull Distance"
-          echo "=========================================="
-          echo "--- original ---"
-          spirv-dis original.spv | grep -i -E "ClipDistance|CullDistance" || echo "none"
-          echo "--- fixed ---"
-          spirv-dis fixed.spv    | grep -i -E "ClipDistance|CullDistance" || echo "none"
-
-          echo ""
-          echo "=========================================="
-          echo "9. Save disassembly"
-          echo "=========================================="
           spirv-dis original.spv -o original.spvasm
-          spirv-dis fixed.spv    -o fixed.spvasm
-          echo "done"
+          echo "=== original head ==="
+          head -5 original.spvasm
 
-      - name: Upload artifacts
+      - name: Patch SPIR-V assembly
+        run: python3 spv_clamp.py
+
+      - name: Reassemble
+        run: |
+          spirv-as --target-env vulkan1.1 -o fixed_raw.spv fixed.spvasm
+          spirv-val --target-env vulkan1.1 fixed_raw.spv
+          echo "=== reassembly validation passed ==="
+
+      - name: Strip debug
+        run: |
+          spirv-opt --strip-debug fixed_raw.spv -o fixed.spv
+          spirv-val --target-env vulkan1.1 fixed.spv
+          echo "=== final validation passed ==="
+          ls -la original.spv fixed_raw.spv fixed.spv
+
+      - name: Verify clamps inserted
+        run: |
+          echo "=== OpSMax count in fixed ==="
+          spirv-dis fixed.spv | grep -c "OpSMax"
+          echo "=== OpExtInst with GLSLstd450 count in fixed ==="
+          spirv-dis fixed.spv | grep -c "OpExtInst.*GLSLstd450" || echo "0"
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: fixed-shader
           path: |
             fixed.spv
-            fixed_stripped.spv
-            fixed_patched.spvasm
-            fixed_raw.spvasm
-            shader_fixed.glsl
-            shader.glsl
+            fixed_raw.spv
             original.spvasm
             fixed.spvasm
           retention-days: 30
