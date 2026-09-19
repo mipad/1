@@ -33,24 +33,23 @@ code = code.replace(
     'layout(set = 2, binding = 65) uniform samplerBuffer cp_t_tcb_42'
 )
 
-# ========== 2. clamp -> min/max ==========
-code = re.sub(
-    r'_33\[clamp\(([^,]+), 0, 1983\)\]',
-    r'_33[min(max(\1, 0), 1983)]',
-    code
-)
+# ========== 2. 先把数组声明保护起来 ==========
+code = code.replace('shared uint _33[1984];', '@@SHARED_DECL@@')
 
-# ========== 3. 数组声明兜底 ==========
-code = code.replace(
-    'shared uint _33[clamp(1984, 0, 1983)];',
-    'shared uint _33[1984];'
-)
-code = code.replace(
-    'shared uint _33[min(max(1984, 0), 1983)];',
-    'shared uint _33[1984];'
-)
+# ========== 3. 把所有裸 _33[...] 用 min/max 钳位 ==========
+def clamp_33(m):
+    expr = m.group(1).strip()
+    # 纯数字常量索引（如 _33[6]、_33[10]）跳过
+    if expr.isdigit():
+        return m.group(0)
+    return f'_33[min(max({expr}, 0), 1983)]'
 
-# ========== 4. samplerBuffer 需要的扩展 ==========
+code = re.sub(r'_33\[([^\]]+)\]', clamp_33, code)
+
+# ========== 4. 恢复数组声明 ==========
+code = code.replace('@@SHARED_DECL@@', 'shared uint _33[1984];')
+
+# ========== 5. samplerBuffer 需要的扩展 ==========
 if 'GL_EXT_samplerless_texture_functions' not in code:
     code = code.replace(
         '#version 450',
