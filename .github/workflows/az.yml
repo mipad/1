@@ -1,8 +1,8 @@
 name: Fix Mali Shader OOB
 
-on:                                        
-  push:   
-    branches: [ "shader" ]  
+on:
+  push:
+    branches: [ "shader" ]
   pull_request:
     branches: [ "shader" ]
 
@@ -18,19 +18,110 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-cross glslang-tools spirv-tools python3
 
+      - name: Verify tool versions
+        run: |
+          spirv-cross --version
+          glslangValidator --version
+          spirv-val --version
+
       - name: Decompile SPV -> GLSL
-        run: spirv-cross original.spv --version 450 --output shader.glsl
+        run: |
+          spirv-cross original.spv --version 450 --output shader.glsl
+          echo "--- GLSL head ---"
+          head -20 shader.glsl
 
       - name: Clamp _33 indices
-        run: python3 fix_shader.py shader.glsl shader_fixed.glsl
+        run: |
+          python3 fix_shader.py shader.glsl shader_fixed.glsl
 
       - name: Compile GLSL -> SPV
-        run: glslangValidator -S comp -V --target-env vulkan1.1 -o fixed.spv shader_fixed.glsl
+        run: |
+          glslangValidator -S comp -V --target-env vulkan1.1 -o fixed.spv shader_fixed.glsl
 
-      - name: Validate
-        run: spirv-val --target-env vulkan1.1 fixed.spv
+      - name: Validate SPIR-V
+        run: |
+          spirv-val --target-env vulkan1.1 fixed.spv
 
-      - name: Upload artifact
+      - name: Diagnose SPIR-V differences
+        run: |
+          set +e
+
+          echo "=========================================="
+          echo "1. SPIR-V version"
+          echo "=========================================="
+          echo "--- original ---"
+          spirv-dis original.spv | head -3
+          echo "--- fixed ---"
+          spirv-dis fixed.spv | head -3
+
+          echo ""
+          echo "=========================================="
+          echo "2. Capability diff"
+          echo "=========================================="
+          spirv-dis original.spv | grep OpCapability > /tmp/o_cap.txt
+          spirv-dis fixed.spv    | grep OpCapability > /tmp/f_cap.txt
+          diff /tmp/o_cap.txt /tmp/f_cap.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "3. ExtInst imports diff"
+          echo "=========================================="
+          spirv-dis original.spv | grep OpExtInstImport > /tmp/o_imp.txt
+          spirv-dis fixed.spv    | grep OpExtInstImport > /tmp/f_imp.txt
+          diff /tmp/o_imp.txt /tmp/f_imp.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "4. GLSLstd450 functions used"
+          echo "=========================================="
+          spirv-dis original.spv | grep -oE "GLSLstd450[A-Za-z0-9]+" | sort -u > /tmp/o_ext.txt
+          spirv-dis fixed.spv    | grep -oE "GLSLstd450[A-Za-z0-9]+" | sort -u > /tmp/f_ext.txt
+          echo "--- original ---"; cat /tmp/o_ext.txt
+          echo "--- fixed ---";    cat /tmp/f_ext.txt
+          echo "--- diff ---";     diff /tmp/o_ext.txt /tmp/f_ext.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "5. Execution mode diff"
+          echo "=========================================="
+          spirv-dis original.spv | grep OpExecutionMode > /tmp/o_em.txt
+          spirv-dis fixed.spv    | grep OpExecutionMode > /tmp/f_em.txt
+          diff /tmp/o_em.txt /tmp/f_em.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "6. Decoration diff"
+          echo "=========================================="
+          spirv-dis original.spv | grep -E "OpDecorate|OpMemberDecorate" > /tmp/o_dec.txt
+          spirv-dis fixed.spv    | grep -E "OpDecorate|OpMemberDecorate" > /tmp/f_dec.txt
+          diff /tmp/o_dec.txt /tmp/f_dec.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "7. Opcode frequency diff"
+          echo "=========================================="
+          spirv-dis original.spv | grep -oE "Op[A-Za-z]+" | sort | uniq -c > /tmp/o_ops.txt
+          spirv-dis fixed.spv    | grep -oE "Op[A-Za-z]+" | sort | uniq -c > /tmp/f_ops.txt
+          diff /tmp/o_ops.txt /tmp/f_ops.txt && echo "no diff"
+
+          echo ""
+          echo "=========================================="
+          echo "8. Clip / Cull Distance"
+          echo "=========================================="
+          echo "--- original ---"
+          spirv-dis original.spv | grep -i -E "ClipDistance|CullDistance" || echo "none"
+          echo "--- fixed ---"
+          spirv-dis fixed.spv    | grep -i -E "ClipDistance|CullDistance" || echo "none"
+
+          echo ""
+          echo "=========================================="
+          echo "9. Save disassembly"
+          echo "=========================================="
+          spirv-dis original.spv -o original.spvasm
+          spirv-dis fixed.spv    -o fixed.spvasm
+          echo "done"
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: fixed-shader
@@ -38,3 +129,6 @@ jobs:
             fixed.spv
             shader_fixed.glsl
             shader.glsl
+            original.spvasm
+            fixed.spvasm
+          retention-days: 30
