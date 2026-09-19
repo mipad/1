@@ -22,23 +22,22 @@ for old, new in [
 ]:
     code = code.replace(old, new)
 
-# ========== 2. 保护数组声明 ==========
+# ========== 2. 保护数组声明，防止被 _33 正则误伤 ==========
 code = code.replace('shared uint _33[1984];', '@@SHARED_DECL@@')
 
-# ========== 3. _33 动态索引：改用三元运算 ==========
+# ========== 3. _33 动态索引钳位 ==========
 def clamp_33(m):
     expr = m.group(1).strip()
     if expr.isdigit():
         return m.group(0)
-    # 上下界都用三元判断
     return f'_33[min(max({expr}, 0), 1983)]'
 
 code = re.sub(r'_33\[([^\]]+)\]', clamp_33, code)
 
-# ========== 4. cp_s0_1._m0[...] 非负保护（三元运算） ==========
+# ========== 4. cp_s0_1._m0[...] 非负保护 ==========
 def clamp_s0(m):
     expr = m.group(1).strip()
-    return f'cp_s0_1._m0[(({expr}) < 0 ? 0 : ({expr}))]'
+    return f'cp_s0_1._m0[max({expr}, 0)]'
 
 code = re.sub(
     r'cp_s0_1\._m0\[\s*(int\(_[0-9]+\)|_[0-9]+)\s*\]',
@@ -46,28 +45,17 @@ code = re.sub(
     code
 )
 
-# ========== 5. texelFetch 索引非负保护（三元运算） ==========
+# ========== 5. texelFetch 索引非负保护 ==========
 # 模式 A：texelFetch(cp_t_tcb_8, int(_NNN))
-def clamp_texel_a(m):
-    sampler = m.group(1)
-    inner = m.group(2)
-    return f'texelFetch({sampler}, (int({inner}) < 0 ? 0 : int({inner})))'
-
 code = re.sub(
     r'texelFetch\((cp_t_tcb_8|cp_t_tcb_42),\s*int\((_[0-9]+)\)\)',
-    clamp_texel_a,
+    r'texelFetch(\1, max(int(\2), 0))',
     code
 )
-
-# 模式 B：texelFetch(cp_t_tcb_8, _NNN)  (其中 _NNN 是 int 类型的变量)
-def clamp_texel_b(m):
-    sampler = m.group(1)
-    inner = m.group(2)
-    return f'texelFetch({sampler}, ({inner} < 0 ? 0 : {inner}))'
-
+# 模式 B：texelFetch(cp_t_tcb_8, _NNN)
 code = re.sub(
     r'texelFetch\((cp_t_tcb_8|cp_t_tcb_42),\s*(_[0-9]+)\)',
-    clamp_texel_b,
+    r'texelFetch(\1, max(\2, 0))',
     code
 )
 
