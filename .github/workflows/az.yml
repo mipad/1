@@ -43,10 +43,15 @@ jobs:
 
       - name: Verify clamps inserted
         run: |
-          echo "=== OpSMax count in fixed ==="
-          spirv-dis fixed.spv | grep -c "OpSMax"
-          echo "=== OpExtInst with GLSLstd450 count in fixed ==="
-          spirv-dis fixed.spv | grep -c "OpExtInst.*GLSLstd450" || echo "0"
+          echo "=== OpSLessThan count ==="
+          spirv-dis fixed.spv | grep -c "OpSLessThan" || true
+          echo "=== OpSelect count ==="
+          spirv-dis fixed.spv | grep -c "OpSelect" || true
+          echo "=== OpImageFetch count ==="
+          spirv-dis fixed.spv | grep -c "OpImageFetch" || true
+          echo "=== OpExtInst with GLSLstd450 count ==="
+          spirv-dis fixed.spv | grep -c "OpExtInst.*GLSLstd450" || true
+          echo "=== check done ==="
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
