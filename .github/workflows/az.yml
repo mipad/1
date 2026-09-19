@@ -20,14 +20,13 @@ jobs:
 
       - name: Verify tool versions
         run: |
-          glslangValidator --version || true
-          spirv-val --version || true
-          which spirv-cross
-          echo "spirv-cross ok"
+          spirv-cross --version
+          glslangValidator --version
+          spirv-val --version
 
       - name: Decompile SPV -> GLSL
         run: |
-          spirv-cross original.spv --version 450 --output shader.glsl
+          spirv-cross original.spv --version 450 --vulkan-semantics --output shader.glsl
           echo "--- GLSL head ---"
           head -20 shader.glsl
 
