@@ -44,11 +44,19 @@ jobs:
         run: |
           set -e
           python3 patch_caps.py
-          spirv-as --target-env vulkan1.1 -o fixed.spv fixed_patched.spvasm
+          spirv-as --target-env vulkan1.1 -o fixed_patched.spv fixed_patched.spvasm
+          spirv-val --target-env vulkan1.1 fixed_patched.spv
+          echo "=== Assembled, validation passed ==="
+
+      - name: Strip debug info
+        run: |
+          set -e
+          spirv-opt --strip-debug fixed_patched.spv -o fixed.spv
           spirv-val --target-env vulkan1.1 fixed.spv
-          echo "=== Validation passed ==="
           echo "=== Final capabilities ==="
           spirv-dis fixed.spv | grep OpCapability
+          echo "=== OpName count ==="
+          spirv-dis fixed.spv | grep -c OpName || echo "0 (good!)"
 
       - name: Diagnose SPIR-V differences
         run: |
@@ -135,8 +143,9 @@ jobs:
           name: fixed-shader
           path: |
             fixed.spv
+            fixed_patched.spv
+            fixed_raw.spv
             fixed_patched.spvasm
-            fixed_raw.spvasm
             shader_fixed.glsl
             shader.glsl
             original.spvasm
