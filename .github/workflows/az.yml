@@ -1,106 +1,40 @@
-name: Disassemble SPIR-V
+name: Fix Mali Shader OOB
 
 on:
-  # 手动触发（推荐，手机上最方便）
-  workflow_dispatch:
-
-  # 推送到 shaders/ 目录时自动触发
   push:
     paths:
-      - 'shaders/**.spv'
+      - 'original.spv'
+  workflow_dispatch:
 
 jobs:
-  disassemble:
-    runs-on: ubuntu-latest
-
+  fix:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install SPIRV-Tools
+      - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y spirv-tools
+          sudo apt-get install -y spirv-cross glslang-tools spirv-tools python3
 
-      - name: Show tool versions
-        run: |
-          spirv-dis --version
-          spirv-val --version
+      - name: Decompile SPV -> GLSL
+        run: spirv-cross original.spv --version 450 --output shader.glsl
 
-      - name: List SPIR-V files
-        run: |
-          echo "SPIR-V files found:"
-          find shaders -name "*.spv" -type f | sort
+      - name: Clamp _33 indices
+        run: python3 fix_shader.py shader.glsl shader_fixed.glsl
 
-      - name: Validate SPIR-V files
-        run: |
-          mkdir -p output
-          for file in $(find shaders -name "*.spv" -type f); do
-            echo "========================================"
-            echo "Validating: $file"
-            echo "========================================"
-            if spirv-val "$file"; then
-              echo "[OK] $file is valid."
-            else
-              echo "[FAIL] $file is INVALID!"
-            fi
-            echo
-          done
+      - name: Compile GLSL -> SPV
+        run: glslangValidator -S comp -V --target-env vulkan1.1 -o fixed.spv shader_fixed.glsl
 
-      - name: Disassemble SPIR-V files
-        run: |
-          mkdir -p output
-          for file in $(find shaders -name "*.spv" -type f); do
-            base=$(basename "$file" .spv)
-            echo "Disassembling: $file -> output/${base}.spvasm"
-            spirv-dis "$file" -o "output/${base}.spvasm"
-          done
+      - name: Validate
+        run: spirv-val --target-env vulkan1.1 fixed.spv
 
-      - name: Cross-compile to GLSL (可选，辅助理解)
-        run: |
-          sudo apt-get install -y spirv-cross
-          mkdir -p output_glsl
-          for file in $(find shaders -name "*.spv" -type f); do
-            base=$(basename "$file" .spv)
-            # 根据文件名判断阶段
-            if echo "$base" | grep -qi "vertex"; then
-              stage="vert"
-            elif echo "$base" | grep -qi "fragment"; then
-              stage="frag"
-            elif echo "$base" | grep -qi "compute"; then
-              stage="comp"
-            else
-              stage="vert"
-            fi
-            echo "Cross-compiling: $file -> output_glsl/${base}.glsl (stage=$stage)"
-            spirv-cross "$file" --output "output_glsl/${base}.glsl" --stage "$stage" || echo "  (skipped, may not be supported)"
-          done
-
-      - name: Show disassembly summary
-        run: |
-          echo "===== Disassembly Summary ====="
-          for file in output/*.spvasm; do
-            echo
-            echo "--- $file ---"
-            echo "Total lines: $(wc -l < "$file")"
-            echo "OpSpecConstantOp count: $(grep -c 'OpSpecConstantOp' "$file" || true)"
-            echo "OpPhi count:            $(grep -c 'OpPhi' "$file" || true)"
-            echo "OpLoopMerge count:      $(grep -c 'OpLoopMerge' "$file" || true)"
-            echo "OpVectorShuffle count:  $(grep -c 'OpVectorShuffle' "$file" || true)"
-            echo "OpFunctionCall count:   $(grep -c 'OpFunctionCall' "$file" || true)"
-            echo "OpImageSample* count:   $(grep -c 'OpImageSample' "$file" || true)"
-          done
-
-      - name: Upload disassembled files (.spvasm)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: spirv-disassembly
-          path: output/*.spvasm
-          if-no-files-found: warn
-
-      - name: Upload GLSL files (可选)
-        uses: actions/upload-artifact@v4
-        with:
-          name: spirv-cross-glsl
-          path: output_glsl/*.glsl
-          if-no-files-found: ignore
+          name: fixed-shader
+          path: |
+            fixed.spv
+            shader_fixed.glsl
+            shader.glsl
