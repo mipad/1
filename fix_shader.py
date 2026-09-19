@@ -3,7 +3,7 @@ import re
 with open("shader.glsl", "r", encoding="utf-8") as f:
     code = f.read()
 
-# ========== 1. 补回 DescriptorSet（spirv-cross 丢失的） ==========
+# ========== 1. 补回 DescriptorSet ==========
 code = code.replace(
     'layout(binding = 0, std140) uniform support_buffer',
     'layout(set = 0, binding = 0, std140) uniform support_buffer'
@@ -33,16 +33,29 @@ code = code.replace(
     'layout(set = 2, binding = 65) uniform samplerBuffer cp_t_tcb_42'
 )
 
-# ========== 2. clamp -> min/max 组合（避开 Mali 不认的 SClamp） ==========
+# ========== 2. clamp -> min/max ==========
 code = re.sub(
     r'_33\[clamp\(([^,]+), 0, 1983\)\]',
     r'_33[min(max(\1, 0), 1983)]',
     code
 )
 
-# ========== 3. 防止数组声明被误改 ==========
-code = code.replace('shared uint _33[clamp(1984, 0, 1983)];', 'shared uint _33[1984];')
-code = code.replace('shared uint _33[min(max(1984, 0), 1983)];', 'shared uint _33[1984];')
+# ========== 3. 数组声明兜底 ==========
+code = code.replace(
+    'shared uint _33[clamp(1984, 0, 1983)];',
+    'shared uint _33[1984];'
+)
+code = code.replace(
+    'shared uint _33[min(max(1984, 0), 1983)];',
+    'shared uint _33[1984];'
+)
+
+# ========== 4. samplerBuffer 需要的扩展 ==========
+if 'GL_EXT_samplerless_texture_functions' not in code:
+    code = code.replace(
+        '#version 450',
+        '#version 450\n#extension GL_EXT_samplerless_texture_functions : require'
+    )
 
 with open("shader_fixed.glsl", "w", encoding="utf-8") as f:
     f.write(code)
