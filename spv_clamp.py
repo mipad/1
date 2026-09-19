@@ -40,6 +40,16 @@ def patch_spvasm(input_path, output_path):
 
     print(f"int_type={int_type_id}, int_zero={int_zero_id}, max_id={max_id}")
 
+    # DEBUG：打印实际 OpImageFetch 和 OpAccessChain 样本
+    op_fetch_lines = [l for l in lines if 'OpImageFetch' in l]
+    op_ac_lines = [l for l in lines if 'OpAccessChain' in l]
+    print(f"DEBUG: total OpImageFetch lines: {len(op_fetch_lines)}")
+    for l in op_fetch_lines[:3]:
+        print(f"  {l.rstrip()}")
+    print(f"DEBUG: total OpAccessChain lines: {len(op_ac_lines)}")
+    for l in op_ac_lines[:3]:
+        print(f"  {l.rstrip()}")
+
     id_pat = r'%[A-Za-z0-9_]+'
 
     new_lines = []
@@ -47,39 +57,43 @@ def patch_spvasm(input_path, output_path):
     access_chain_count = 0
 
     for line in lines:
-        stripped = line.rstrip('\n').rstrip()
-        leading = line[:len(line) - len(line.lstrip())]
-        trailing_newline = '\n' if line.endswith('\n') else ''
+        s = line.strip()
 
-        # %N = OpImageFetch %type %img %coord [rest...]
+        # 匹配 OpImageFetch：%N = OpImageFetch %type %img %coord [rest...]
         m = re.match(
             r'^(' + id_pat + r')\s*=\s*OpImageFetch\s+(' + id_pat + r')\s+(' + id_pat + r')\s+(' + id_pat + r')(\s.*)?$',
-            stripped
+            s
         )
         if m:
             result, img_type, sampler, coord, rest = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5) or ''
             max_id += 1
             safe_id = f'%{max_id}'
+            leading = line[:len(line) - len(line.lstrip())]
+            trailing_newline = '\n' if line.endswith('\n') else ''
             new_lines.append(f'{leading}{safe_id} = OpSMax {int_type_id} {coord} {int_zero_id}{trailing_newline}')
             new_lines.append(f'{leading}{result} = OpImageFetch {img_type} {sampler} {safe_id}{rest}{trailing_newline}')
             image_fetch_count += 1
             continue
 
-        # %N = OpAccessChain %_ptr_StorageBuffer_... %base %idx0 %idx1
+        # 匹配 OpAccessChain：%N = OpAccessChain %type %base %idx0 [%idx1 ...]
         m = re.match(
-            r'^(' + id_pat + r')\s*=\s*OpAccessChain\s+(' + id_pat + r')\s+(' + id_pat + r')\s+(' + id_pat + r')\s+(' + id_pat + r')\s*$',
-            stripped
+            r'^(' + id_pat + r')\s*=\s*OpAccessChain\s+(' + id_pat + r')\s+(' + id_pat + r')\s+((?:' + id_pat + r'\s*)+)$',
+            s
         )
         if m:
-            result, ptr_type, base, idx0, idx1 = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)
-            # 只处理 StorageBuffer 指针类型
+            result, ptr_type, base, indices_str = m.group(1), m.group(2), m.group(3), m.group(4)
             if 'StorageBuffer' not in ptr_type:
                 new_lines.append(line)
                 continue
+            indices = indices_str.split()
+            last_idx = indices[-1]
             max_id += 1
             safe_id = f'%{max_id}'
-            new_lines.append(f'{leading}{safe_id} = OpSMax {int_type_id} {idx1} {int_zero_id}{trailing_newline}')
-            new_lines.append(f'{leading}{result} = OpAccessChain {ptr_type} {base} {idx0} {safe_id}{trailing_newline}')
+            leading = line[:len(line) - len(line.lstrip())]
+            trailing_newline = '\n' if line.endswith('\n') else ''
+            new_lines.append(f'{leading}{safe_id} = OpSMax {int_type_id} {last_idx} {int_zero_id}{trailing_newline}')
+            new_indices = ' '.join(indices[:-1] + [safe_id])
+            new_lines.append(f'{leading}{result} = OpAccessChain {ptr_type} {base} {new_indices}{trailing_newline}')
             access_chain_count += 1
             continue
 
