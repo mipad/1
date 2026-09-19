@@ -5,6 +5,7 @@ on:
     branches: [ "shader" ]
   pull_request:
     branches: [ "shader" ]
+  workflow_dispatch:
 
 jobs:
   fix:
@@ -31,17 +32,23 @@ jobs:
           echo "--- GLSL head ---"
           head -20 shader.glsl
 
-      - name: Clamp _33 indices
-        run: |
-          python3 fix_shader.py shader.glsl shader_fixed.glsl
+      - name: Patch GLSL
+        run: python3 fix_shader.py
 
       - name: Compile GLSL -> SPV
         run: |
-          glslangValidator -S comp -V --target-env vulkan1.1 -o fixed.spv shader_fixed.glsl
+          glslangValidator -S comp -V --target-env vulkan1.1 \
+            -o fixed_raw.spv shader_fixed.glsl
 
-      - name: Validate SPIR-V
+      - name: Patch missing capabilities
         run: |
+          set -e
+          python3 patch_caps.py
+          spirv-as --target-env vulkan1.1 -o fixed.spv fixed_patched.spvasm
           spirv-val --target-env vulkan1.1 fixed.spv
+          echo "=== Validation passed ==="
+          echo "=== Final capabilities ==="
+          spirv-dis fixed.spv | grep OpCapability
 
       - name: Diagnose SPIR-V differences
         run: |
@@ -91,10 +98,10 @@ jobs:
 
           echo ""
           echo "=========================================="
-          echo "6. Decoration diff"
+          echo "6. Decoration diff (DescriptorSet/Binding only)"
           echo "=========================================="
-          spirv-dis original.spv | grep -E "OpDecorate|OpMemberDecorate" > /tmp/o_dec.txt
-          spirv-dis fixed.spv    | grep -E "OpDecorate|OpMemberDecorate" > /tmp/f_dec.txt
+          spirv-dis original.spv | grep -E "OpDecorate.*(DescriptorSet|Binding)" | sort > /tmp/o_dec.txt
+          spirv-dis fixed.spv    | grep -E "OpDecorate.*(DescriptorSet|Binding)" | sort > /tmp/f_dec.txt
           diff /tmp/o_dec.txt /tmp/f_dec.txt && echo "no diff"
 
           echo ""
@@ -128,6 +135,8 @@ jobs:
           name: fixed-shader
           path: |
             fixed.spv
+            fixed_patched.spvasm
+            fixed_raw.spvasm
             shader_fixed.glsl
             shader.glsl
             original.spvasm
