@@ -1,119 +1,57 @@
-name: Compare SPIR-V
+name: Assemble SPIR-V
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "shader1" ]
-  pull_request:
-    branches: [ "shader1" ]
+    branches: [ "shader2" ]
+    paths:
+      - '*.spvasm'
+      - '.github/workflows/assemble-spv.yml'
 
 jobs:
-  compare:
+  assemble:
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List repo root
-        run: |
-          echo "=== repo root ==="
-          ls -la
-          shopt -s nullglob
-          echo "spv files: ${files[*]}"
-          spvs=(*.spv)
-          frags=(*.frag)
-          glsls=(*.glsl)
-          echo "spv:  ${spvs[*]:-(none)}"
-          echo "frag: ${frags[*]:-(none)}"
-          echo "glsl: ${glsls[*]:-(none)}"
-
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y glslang-tools spirv-tools
+          sudo apt-get install -y spirv-tools
 
-      - name: Prepare dirs
-        run: mkdir -p out
-
-      - name: Check shader source exists
+      - name: List spvasm
         run: |
           shopt -s nullglob
-          files=(*.frag *.glsl)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "::error::No .frag or .glsl file found in repo root."
-            exit 1
-          fi
-          echo "Found shader sources: ${files[*]}"
+          files=(*.spvasm)
+          echo "spvasm files: ${files[*]:-(none)}"
 
-      - name: Disassemble original SPIR-V (if any)
-        if: ${{ hashFiles('*.spv') != '' }}
+      - name: Assemble spvasm -> spv
         run: |
-          shopt -s nullglob
-          for spv in *.spv; do
-            base=$(basename "$spv" .spv)
-            echo "Disassembling $spv"
-            spirv-dis "$spv" -o "out/${base}.original.spvasm"
-          done
-          ls -la out
-
-      - name: Recompile shader -> SPIR-V
-        run: |
-          shopt -s nullglob
-          for src in *.frag *.glsl; do
-            base=$(basename "$src")
-            base="${base%.frag}"
-            base="${base%.glsl}"
-            echo "Compiling $src -> out/${base}.recompiled.spv"
-            glslangValidator -V --target-env vulkan1.1 \
-              "$src" -o "out/${base}.recompiled.spv"
-          done
-          ls -la out
-
-      - name: Disassemble recompiled SPIR-V
-        run: |
-          shopt -s nullglob
-          for spv in out/*.recompiled.spv; do
-            base=$(basename "$spv" .recompiled.spv)
-            echo "Disassembling $spv"
-            spirv-dis "$spv" -o "out/${base}.recompiled.spvasm"
-          done
-          ls -la out
-
-      - name: Diff (only if original exists)
-        if: ${{ hashFiles('*.spv') != '' }}
-        run: |
-          set +e
-          shopt -s nullglob
-          for orig in out/*.original.spvasm; do
-            base=$(basename "$orig" .original.spvasm)
-            rec="out/${base}.recompiled.spvasm"
-            if [ -f "$rec" ]; then
-              echo "=== diff $base ==="
-              diff -u "$orig" "$rec" > "out/${base}.diff"
-              echo "diff exit code: $?"
-            else
-              echo "No matching recompiled spvasm for $base (name mismatch?), skip"
-            fi
-          done
           set -e
-
-      - name: Key differences (only if diff exists)
-        if: ${{ hashFiles('*.spv') != '' }}
-        run: |
           shopt -s nullglob
-          files=(out/*.diff)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No diff files generated (likely name mismatch between original spv and source)."
-            exit 0
-          fi
-          echo "===== KEY DIFF ====="
-          grep -E "OpDecorate|OpMemberDecorate|OpExecutionMode|OpEntryPoint|OpAccessChain|OpLoad|OpFDiv|OpFMA|NoContraction|RelaxedPrecision|Flat|NoPerspective|Centroid|Sample|Invariant|Block|BufferBlock" \
-            "${files[@]}" > out/key.diff 2>/dev/null || true
-          cat out/key.diff || true
+          mkdir -p out
+          for src in *.spvasm; do
+            base="${src%.spvasm}"
+            echo "Assembling $src -> out/${base}.spv"
+            spirv-as "$src" -o "out/${base}.spv" --target-env spv1.3
+          done
+          ls -la out
+
+      - name: Verify round-trip
+        run: |
+          set -e
+          shopt -s nullglob
+          for spv in out/*.spv; do
+            base="${spv%.spv}"
+            spirv-dis "$spv" -o "${base}.disasm.spvasm"
+          done
+          ls -la out
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: spv-compare
+          name: assembled-spv
           path: out/
           if-no-files-found: warn
