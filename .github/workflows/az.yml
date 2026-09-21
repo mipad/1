@@ -18,10 +18,14 @@ jobs:
         run: |
           echo "=== repo root ==="
           ls -la
-          echo "spv files:"
-          ls -1 *.spv 2>/dev/null || echo "  (none)"
-          echo "shader source files:"
-          ls -1 *.frag *.glsl 2>/dev/null || echo "  (none)"
+          shopt -s nullglob
+          echo "spv files: ${files[*]}"
+          spvs=(*.spv)
+          frags=(*.frag)
+          glsls=(*.glsl)
+          echo "spv:  ${spvs[*]:-(none)}"
+          echo "frag: ${frags[*]:-(none)}"
+          echo "glsl: ${glsls[*]:-(none)}"
 
       - name: Install tools
         run: |
@@ -33,15 +37,18 @@ jobs:
 
       - name: Check shader source exists
         run: |
-          if ! ls *.frag *.glsl >/dev/null 2>&1; then
+          shopt -s nullglob
+          files=(*.frag *.glsl)
+          if [ ${#files[@]} -eq 0 ]; then
             echo "::error::No .frag or .glsl file found in repo root."
             exit 1
           fi
+          echo "Found shader sources: ${files[*]}"
 
       - name: Disassemble original SPIR-V (if any)
         if: ${{ hashFiles('*.spv') != '' }}
         run: |
-          set -e
+          shopt -s nullglob
           for spv in *.spv; do
             base=$(basename "$spv" .spv)
             echo "Disassembling $spv"
@@ -51,9 +58,8 @@ jobs:
 
       - name: Recompile shader -> SPIR-V
         run: |
-          set -e
+          shopt -s nullglob
           for src in *.frag *.glsl; do
-            [ -f "$src" ] || continue
             base=$(basename "$src")
             base="${base%.frag}"
             base="${base%.glsl}"
@@ -65,9 +71,8 @@ jobs:
 
       - name: Disassemble recompiled SPIR-V
         run: |
-          set -e
+          shopt -s nullglob
           for spv in out/*.recompiled.spv; do
-            [ -f "$spv" ] || continue
             base=$(basename "$spv" .recompiled.spv)
             echo "Disassembling $spv"
             spirv-dis "$spv" -o "out/${base}.recompiled.spvasm"
@@ -78,14 +83,16 @@ jobs:
         if: ${{ hashFiles('*.spv') != '' }}
         run: |
           set +e
+          shopt -s nullglob
           for orig in out/*.original.spvasm; do
-            [ -f "$orig" ] || continue
             base=$(basename "$orig" .original.spvasm)
             rec="out/${base}.recompiled.spvasm"
             if [ -f "$rec" ]; then
               echo "=== diff $base ==="
               diff -u "$orig" "$rec" > "out/${base}.diff"
               echo "diff exit code: $?"
+            else
+              echo "No matching recompiled spvasm for $base (name mismatch?), skip"
             fi
           done
           set -e
@@ -93,9 +100,15 @@ jobs:
       - name: Key differences (only if diff exists)
         if: ${{ hashFiles('*.spv') != '' }}
         run: |
+          shopt -s nullglob
+          files=(out/*.diff)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No diff files generated (likely name mismatch between original spv and source)."
+            exit 0
+          fi
           echo "===== KEY DIFF ====="
           grep -E "OpDecorate|OpMemberDecorate|OpExecutionMode|OpEntryPoint|OpAccessChain|OpLoad|OpFDiv|OpFMA|NoContraction|RelaxedPrecision|Flat|NoPerspective|Centroid|Sample|Invariant|Block|BufferBlock" \
-            out/*.diff > out/key.diff 2>/dev/null || true
+            "${files[@]}" > out/key.diff 2>/dev/null || true
           cat out/key.diff || true
 
       - name: Upload
