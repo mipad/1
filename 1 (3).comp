@@ -1,0 +1,9 @@
+#version 450
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(set = 3, binding = 0, r32ui) uniform uimageBuffer vertexOutput;
+
+void main() {
+    uint idx = gl_GlobalInvocationID.y * 32u + gl_GlobalInvocationID.x;
+    imageStore(vertexOutput, int(idx), uvec4(0xDEADBEEFu));
+}
