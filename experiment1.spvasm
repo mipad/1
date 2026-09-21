@@ -31,6 +31,7 @@
                OpDecorate %22 Location 0
                OpDecorate %25 Location 0
                OpDecorate %48 NoContraction
+               OpDecorate %57 NoContraction
        %uint = OpTypeInt 32 0
      %uint_8 = OpConstant %uint 8
 %_arr_uint_uint_8 = OpTypeArray %uint %uint_8
