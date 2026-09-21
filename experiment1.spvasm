@@ -4,6 +4,14 @@
 ; Bound: 67
 ; Schema: 0
                OpCapability Shader
+               OpCapability GroupNonUniformBallot
+               OpCapability GroupNonUniformShuffle
+               OpCapability GroupNonUniformVote
+               OpCapability ImageBuffer
+               OpCapability ImageGatherExtended
+               OpCapability ImageQuery
+               OpCapability SampledBuffer
+               OpCapability StorageImageExtendedFormats
          %56 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %28 "main" %22 %25
@@ -31,7 +39,6 @@
                OpDecorate %22 Location 0
                OpDecorate %25 Location 0
                OpDecorate %48 NoContraction
-               OpDecorate %57 NoContraction
        %uint = OpTypeInt 32 0
      %uint_8 = OpConstant %uint 8
 %_arr_uint_uint_8 = OpTypeArray %uint %uint_8
