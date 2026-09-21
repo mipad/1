@@ -20,8 +20,8 @@ jobs:
           ls -la
           echo "spv files:"
           ls -1 *.spv 2>/dev/null || echo "  (none)"
-          echo "glsl files:"
-          ls -1 *.glsl 2>/dev/null || echo "  (none)"
+          echo "shader source files:"
+          ls -1 *.frag *.glsl 2>/dev/null || echo "  (none)"
 
       - name: Install tools
         run: |
@@ -31,10 +31,10 @@ jobs:
       - name: Prepare dirs
         run: mkdir -p out
 
-      - name: Check glsl exists
+      - name: Check shader source exists
         run: |
-          if ! ls *.glsl >/dev/null 2>&1; then
-            echo "::error::No .glsl file found in repo root."
+          if ! ls *.frag *.glsl >/dev/null 2>&1; then
+            echo "::error::No .frag or .glsl file found in repo root."
             exit 1
           fi
 
@@ -49,14 +49,17 @@ jobs:
           done
           ls -la out
 
-      - name: Recompile GLSL -> SPIR-V
+      - name: Recompile shader -> SPIR-V
         run: |
           set -e
-          for glsl in *.glsl; do
-            base=$(basename "$glsl" .glsl)
-            echo "Compiling $glsl"
+          for src in *.frag *.glsl; do
+            [ -f "$src" ] || continue
+            base=$(basename "$src")
+            base="${base%.frag}"
+            base="${base%.glsl}"
+            echo "Compiling $src -> out/${base}.recompiled.spv"
             glslangValidator -V --target-env vulkan1.1 \
-              "$glsl" -o "out/${base}.recompiled.spv"
+              "$src" -o "out/${base}.recompiled.spv"
           done
           ls -la out
 
@@ -64,6 +67,7 @@ jobs:
         run: |
           set -e
           for spv in out/*.recompiled.spv; do
+            [ -f "$spv" ] || continue
             base=$(basename "$spv" .recompiled.spv)
             echo "Disassembling $spv"
             spirv-dis "$spv" -o "out/${base}.recompiled.spvasm"
@@ -75,6 +79,7 @@ jobs:
         run: |
           set +e
           for orig in out/*.original.spvasm; do
+            [ -f "$orig" ] || continue
             base=$(basename "$orig" .original.spvasm)
             rec="out/${base}.recompiled.spvasm"
             if [ -f "$rec" ]; then
