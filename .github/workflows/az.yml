@@ -1,8 +1,8 @@
 name: Compare SPIR-V
 
-on:                                        
-  push:   
-    branches: [ "shader1" ]  
+on:
+  push:
+    branches: [ "shader1" ]
   pull_request:
     branches: [ "shader1" ]
 
@@ -14,6 +14,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List repo root
+        run: |
+          echo "=== repo root ==="
+          ls -la
+          echo "spv files:"
+          ls -1 *.spv 2>/dev/null || echo "  (none)"
+          echo "glsl files:"
+          ls -1 *.glsl 2>/dev/null || echo "  (none)"
+
       - name: Install tools
         run: |
           sudo apt-get update
@@ -22,45 +31,66 @@ jobs:
       - name: Prepare dirs
         run: mkdir -p out
 
-      - name: Disassemble original SPIR-V
+      - name: Check glsl exists
         run: |
-          for spv in shaders/*.spv; do
+          if ! ls *.glsl >/dev/null 2>&1; then
+            echo "::error::No .glsl file found in repo root."
+            exit 1
+          fi
+
+      - name: Disassemble original SPIR-V (if any)
+        if: ${{ hashFiles('*.spv') != '' }}
+        run: |
+          set -e
+          for spv in *.spv; do
             base=$(basename "$spv" .spv)
+            echo "Disassembling $spv"
             spirv-dis "$spv" -o "out/${base}.original.spvasm"
           done
+          ls -la out
 
       - name: Recompile GLSL -> SPIR-V
         run: |
-          for glsl in shaders/*.glsl; do
+          set -e
+          for glsl in *.glsl; do
             base=$(basename "$glsl" .glsl)
+            echo "Compiling $glsl"
             glslangValidator -V --target-env vulkan1.1 \
               "$glsl" -o "out/${base}.recompiled.spv"
           done
+          ls -la out
 
       - name: Disassemble recompiled SPIR-V
         run: |
+          set -e
           for spv in out/*.recompiled.spv; do
             base=$(basename "$spv" .recompiled.spv)
+            echo "Disassembling $spv"
             spirv-dis "$spv" -o "out/${base}.recompiled.spvasm"
           done
+          ls -la out
 
-      - name: Diff
+      - name: Diff (only if original exists)
+        if: ${{ hashFiles('*.spv') != '' }}
         run: |
           set +e
           for orig in out/*.original.spvasm; do
             base=$(basename "$orig" .original.spvasm)
             rec="out/${base}.recompiled.spvasm"
             if [ -f "$rec" ]; then
+              echo "=== diff $base ==="
               diff -u "$orig" "$rec" > "out/${base}.diff"
+              echo "diff exit code: $?"
             fi
           done
           set -e
 
-      - name: Key differences
+      - name: Key differences (only if diff exists)
+        if: ${{ hashFiles('*.spv') != '' }}
         run: |
-          grep -E "OpDecorate|OpMemberDecorate|OpExecutionMode|OpEntryPoint|OpAccessChain|OpLoad|OpFDiv|OpFMA|NoContraction|RelaxedPrecision|Flat|NoPerspective|Centroid|Sample|Invariant|Block|BufferBlock" \
-            out/*.diff > out/key.diff || true
           echo "===== KEY DIFF ====="
+          grep -E "OpDecorate|OpMemberDecorate|OpExecutionMode|OpEntryPoint|OpAccessChain|OpLoad|OpFDiv|OpFMA|NoContraction|RelaxedPrecision|Flat|NoPerspective|Centroid|Sample|Invariant|Block|BufferBlock" \
+            out/*.diff > out/key.diff 2>/dev/null || true
           cat out/key.diff || true
 
       - name: Upload
@@ -68,3 +98,4 @@ jobs:
         with:
           name: spv-compare
           path: out/
+          if-no-files-found: warn
