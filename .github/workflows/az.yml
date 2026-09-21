@@ -2,9 +2,9 @@ name: Compile Shaders to SPIR-V
 
 on:
   push:
-    branches: [ "spv" ]
+    branches: [ "spv1" ]
   pull_request:
-    branches: [ "spv" ]
+    branches: [ "spv1" ]
   workflow_dispatch:
 
 jobs:
