@@ -1,4 +1,4 @@
-name: Extract dynamic uniform index
+name: Patch dynamic uniform index (vertex)
 
 on:                                        
   push:   
@@ -10,11 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  extract:
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install SPIRV-Tools
         run: |
@@ -25,91 +24,138 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/disasm
+          mkdir -p work/in
           : > work/list.txt
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/${base}.spv"
+            cp "$f" "work/in/${base}.spv"
             echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
+          echo "Found $(wc -l < work/list.txt) file(s)"
 
-          while IFS= read -r -d '' f; do
-            base="$(basename "${f%.spvasm}")"
-            [ -f "work/${base}.spv" ] && continue
-            spirv-as --target-env vulkan1.1 -o "work/${base}.spv" "$f" || true
-            [ -f "work/${base}.spv" ] && echo "${base}|$f" >> work/list.txt
-          done < <(find . -type f -name 'Vertex_*.spvasm' -not -path './.git/*' -not -path './work/*' -print0)
-
-          while IFS='|' read -r base src; do
-            spirv-dis "work/${base}.spv" -o "work/disasm/${base}.spvasm"
-          done < work/list.txt
-          ls -la work/disasm
-
-      - name: Dump dynamic uniform accesses
+      - name: Disassemble
         shell: bash
         run: |
           set -euo pipefail
-
-          {
-            echo "# 动态索引 uniform 访问明细"
-            echo ""
-            echo "抓取形如 \`OpAccessChain %_ptr_Uniform_* %var %int_0 <dyn> <dyn>\` 的指令，"
-            echo "其中 \`<dyn>\` 不是 int_N 常量。"
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
-
           while IFS='|' read -r base src; do
-            asm="work/disasm/${base}.spvasm"
-            out="work/${base}.dynidx.txt"
-            : > "$out"
+            spirv-dis "work/in/${base}.spv" -o "work/in/${base}.spvasm"
+          done < work/list.txt
 
-            # 抓 OpAccessChain 指向 Uniform 变量的行
-            # 匹配 %_ptr_Uniform_* %support_buffer 或 %vp_c3
-            # 用 awk 提取每行末尾两个索引，判断是否是常量
-            grep -nE 'OpAccessChain %_ptr_Uniform' "$asm" > /tmp/ac.txt || true
+      - name: Save patcher
+        shell: bash
+        run: |
+          cat > patch.py <<'PYEOF'
+          import re, sys
 
-            # 对每行：把行按空格拆，找出 %var 后面跟的所有 %xxx
-            # 如果最后两个中任一个不是 %int_<数字>，则算动态
-            while IFS= read -r line; do
-              [ -z "$line" ] && continue
-              # 提取所有 %开头的 token
-              ids=$(echo "$line" | grep -oE '%[A-Za-z0-9_]+' | tr '\n' ' ')
+          def ensure_const_4095(text):
+              if '%int_4095 = OpConstant %int 4095' in text:
+                  return text
+              # 在第一个 OpFunction 前插入
+              idx = text.find('OpFunction ')
+              if idx < 0:
+                  return text
+              return text[:idx] + '    %int_4095 = OpConstant %int 4095\n' + text[idx:]
 
-              # 找到 %int_0 之后的部分（索引）
-              after=$(echo "$ids" | sed -n 's/.*%int_0 \(.*\)$/\1/p')
-              [ -z "$after" ] && continue
+          PAT = re.compile(
+              r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
+              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*$',
+              re.MULTILINE)
 
-              # 判断 after 中的每个 id 是不是 int_ 前缀
-              dyn=0
-              for t in $after; do
-                case "$t" in
-                  %int_[0-9]*) ;;
-                  *) dyn=1 ;;
-                esac
-              done
-              [ "$dyn" -eq 1 ] && echo "$line" >> "$out"
-            done < /tmp/ac.txt
+          def patch_clamp(text):
+              text = ensure_const_4095(text)
+              counter = [0]
+              def repl(m):
+                  counter[0] += 1
+                  n = counter[0]
+                  i, r, a, b = m.group('indent'), m.group('res'), m.group('a'), m.group('b')
+                  ca, cb = f'%__clamp_{n}_a', f'%__clamp_{n}_b'
+                  return (
+                      f'{i}{ca} = OpSMax %int {a} %int_0\n'
+                      f'{i}{cb} = OpSMin %int {ca} %int_4095\n'
+                      f'{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {cb} {b}'
+                  )
+              out = PAT.sub(repl, text)
+              print(f'  clamp: patched {counter[0]} accesses', file=sys.stderr)
+              return out
 
-            count=$(wc -l < "$out" | tr -d ' ')
-            echo "## \`$src\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "动态索引访问：**$count** 条" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            head -60 "$out" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
+          def patch_constant(text):
+              counter = [0]
+              def repl(m):
+                  counter[0] += 1
+                  return (
+                      f"{m.group('indent')}{m.group('res')} = "
+                      f"OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %int_0 %int_0"
+                  )
+              out = PAT.sub(repl, text)
+              print(f'  constant: patched {counter[0]} accesses', file=sys.stderr)
+              return out
 
-            echo "=== $src: $count dynamic accesses ==="
-            head -20 "$out"
+          mode, infile, outfile = sys.argv[1], sys.argv[2], sys.argv[3]
+          with open(infile) as f:
+              text = f.read()
+          if mode == 'clamp':
+              out = patch_clamp(text)
+          elif mode == 'constant':
+              out = patch_constant(text)
+          else:
+              sys.exit(f'unknown mode {mode}')
+          with open(outfile, 'w') as f:
+              f.write(out)
+          PYEOF
+
+      - name: Apply clamp patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/clamp work/constant
+          while IFS='|' read -r base src; do
+            echo "=== $base (clamp) ==="
+            python3 patch.py clamp "work/in/${base}.spvasm" "work/clamp/${base}.spvasm"
+            spirv-as --target-env vulkan1.1 "work/clamp/${base}.spvasm" -o "work/clamp/${base}.spv"
+            spirv-val --target-env vulkan1.1 "work/clamp/${base}.spv"
+          done < work/list.txt
+
+      - name: Apply constant patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS='|' read -r base src; do
+            echo "=== $base (constant) ==="
+            python3 patch.py constant "work/in/${base}.spvasm" "work/constant/${base}.spvasm"
+            spirv-as --target-env vulkan1.1 "work/constant/${base}.spvasm" -o "work/constant/${base}.spv"
+            spirv-val --target-env vulkan1.1 "work/constant/${base}.spv"
+          done < work/list.txt
+
+      - name: Compare patched vs original (dynamic access count)
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Patch results"
+            echo ""
+            echo "| file | variant | dynamic accesses remaining |"
+            echo "|---|---|---:|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS='|' read -r base src; do
+            for v in clamp constant; do
+              asm="work/${v}/${base}.spvasm"
+              cnt=$(grep -cE 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9A-Za-z_]+ %[0-9A-Za-z_]+' "$asm" \
+                    | grep -v '%int_0 %int_0' || true)
+              # 上面那个 grep -v 对 grep -c 无效；用两步算
+              dyn=$(grep -E 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9A-Za-z_]+ %[0-9A-Za-z_]+' "$asm" \
+                    | grep -vE '%int_[0-9]+ %int_[0-9]+$' | wc -l || true)
+              echo "| \`$base\` | $v | $dyn |" >> "$GITHUB_STEP_SUMMARY"
+            done
           done < work/list.txt
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-dynidx
+          name: vertex-patched
           path: |
-            work/*.dynidx.txt
-            work/disasm/*.spvasm
+            work/clamp/*.spv
+            work/clamp/*.spvasm
+            work/constant/*.spv
+            work/constant/*.spvasm
           if-no-files-found: error
           retention-days: 14
