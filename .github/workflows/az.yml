@@ -48,9 +48,8 @@ jobs:
               sys.exit(2)
 
           indent = m.group('i')
-          tail = m.group('tail')  # 保留尾部注释
+          tail = m.group('tail')
 
-          # 2. 插入新类型（在 %vp_c3 声明之前，确保先声明后使用）
           new_types = (
               f'{indent}%__texelbuf = OpTypeImage %float Buffer 0 0 0 1 Unknown\n'
               f'{indent}%__ptr_texelbuf = OpTypePointer UniformConstant %__texelbuf\n'
@@ -59,27 +58,47 @@ jobs:
           new_decl = f'{indent}%vp_c3 = OpVariable %__ptr_texelbuf UniformConstant{tail}'
           text = text[:m.start()] + new_types + new_decl + text[m.end():]
 
-          # 3. 把 OpAccessChain + OpLoad 模式替换为 OpImageFetch + OpVectorExtractDynamic
-          pat = re.compile(
+          # 2. 第一趟：找所有 vp_c3 的 OpAccessChain
+          chains = {}
+          for m in re.finditer(
               r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
-              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*\n'
-              r'(?P<i2>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+%(?P=r)[ \t]*$',
-              re.MULTILINE)
+              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)\s*$',
+              text, re.MULTILINE):
+              chains[m.group('r')] = (m.group('a'), m.group('b'), m.group('i'))
 
+          print(f'  found {len(chains)} access chains', file=sys.stderr)
+          if not chains:
+              print('  ERROR: no access chains found', file=sys.stderr)
+              sys.exit(3)
+
+          # 3. 第二趟：找 OpLoad %float %R，把这一行替换成 OpImageFetch + OpVectorExtractDynamic
           counter = [0]
-          def repl(m):
+          def load_repl(m):
+              r = m.group('r')
+              if r not in chains:
+                  return m.group(0)
+              a, b, i = chains[r]
               counter[0] += 1
               n = counter[0]
-              i, a, b, v = m.group('i'), m.group('a'), m.group('b'), m.group('v')
+              v = m.group('v')
               tmp = f'%__tf_{n}'
               return (f'{i}{tmp} = OpImageFetch %v4float %vp_c3 {a} Lod %__lod0\n'
                       f'{i}{v} = OpVectorExtractDynamic %float {tmp} {b}')
-          text = pat.sub(repl, text)
-          print(f'  replaced {counter[0]} accesses', file=sys.stderr)
+          text = re.sub(
+              r'^(?P<i>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+(?P<r>%\w+)\s*$',
+              load_repl, text, flags=re.MULTILINE)
 
+          # 4. 删掉原来那 156 行 OpAccessChain（结果已不再被使用）
+          for r in chains:
+              text = re.sub(
+                  r'^[ \t]*' + re.escape(r) + r'\s*=\s*OpAccessChain\s+'
+                  r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+%\w+\s+%\w+\s*\n',
+                  '', text, flags=re.MULTILINE)
+
+          print(f'  replaced {counter[0]} loads', file=sys.stderr)
           if counter[0] == 0:
-              print('  ERROR: no accesses replaced', file=sys.stderr)
-              sys.exit(3)
+              print('  ERROR: no loads replaced', file=sys.stderr)
+              sys.exit(4)
 
           with open(path, 'w') as fp:
               fp.write(text)
