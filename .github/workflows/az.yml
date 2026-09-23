@@ -39,7 +39,6 @@ jobs:
           with open(path) as fp:
               text = fp.read()
 
-          # 1. 找 %vp_c3 的声明行
           m = re.search(
               r'^(?P<i>[ \t]*)%vp_c3\s*=\s*OpVariable\s+%_ptr_Uniform__struct_16\s+Uniform(?P<tail>.*)$',
               text, re.MULTILINE)
@@ -53,38 +52,35 @@ jobs:
           new_types = (
               f'{indent}%__texelbuf = OpTypeImage %float Buffer 0 0 0 1 Unknown\n'
               f'{indent}%__ptr_texelbuf = OpTypePointer UniformConstant %__texelbuf\n'
-              f'{indent}%__lod0 = OpConstant %int 0\n'
           )
           new_decl = f'{indent}%vp_c3 = OpVariable %__ptr_texelbuf UniformConstant{tail}'
           text = text[:m.start()] + new_types + new_decl + text[m.end():]
 
-          # 2. 找所有 vp_c3 的 OpAccessChain
           chains = {}
-          for m in re.finditer(
+          for mm in re.finditer(
               r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
               r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)\s*$',
               text, re.MULTILINE):
-              chains[m.group('r')] = (m.group('a'), m.group('b'), m.group('i'))
+              chains[mm.group('r')] = (mm.group('a'), mm.group('b'), mm.group('i'))
 
-          print(f'  found {len(chains)} access chains (static+dynamic)', file=sys.stderr)
+          print(f'  found {len(chains)} access chains', file=sys.stderr)
           if not chains:
-              print('  ERROR: no access chains found', file=sys.stderr)
               sys.exit(3)
 
-          # 3. 把 OpLoad 替换为 OpLoad(image) + OpImageFetch + OpVectorExtractDynamic
           counter = [0]
-          def load_repl(m):
-              r = m.group('r')
+          def load_repl(mm):
+              r = mm.group('r')
               if r not in chains:
-                  return m.group(0)
+                  return mm.group(0)
               a, b, i = chains[r]
               counter[0] += 1
               n = counter[0]
-              v = m.group('v')
+              v = mm.group('v')
               img = f'%__img_{n}'
               tmp = f'%__tf_{n}'
+              # Buffer 类型：OpImageFetch 不带 Lod
               return (f'{i}{img} = OpLoad %__texelbuf %vp_c3\n'
-                      f'{i}{tmp} = OpImageFetch %v4float {img} {a} Lod %__lod0\n'
+                      f'{i}{tmp} = OpImageFetch %v4float {img} {a}\n'
                       f'{i}{v} = OpVectorExtractDynamic %float {tmp} {b}')
           text = re.sub(
               r'^(?P<i>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+(?P<r>%\w+)\s*$',
@@ -92,7 +88,6 @@ jobs:
 
           print(f'  replaced {counter[0]} loads', file=sys.stderr)
 
-          # 4. 删除所有原始 OpAccessChain
           removed = 0
           for r in chains:
               new_text, n = re.subn(
