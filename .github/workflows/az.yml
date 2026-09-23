@@ -1,87 +1,81 @@
-name: Disassemble SPIR-V
+name: Validate SPIR-V
 
 on:                                        
   push:   
-    branches: [ "spvasm" ]  
+    branches: [ "spv-yz" ]  
   pull_request:
-    branches: [ "spvasm" ]
+    branches: [ "spv-yz" ]
+
+permissions:
+  contents: read
 
 jobs:
-  disassemble:
+  validate-spirv:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install SPIRV-Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y spirv-tools
-          spirv-dis --version
+          spirv-val --version
+          spirv-as --version
 
-      - name: Find SPV files in repo root
-        id: find
+      - name: Validate .spv files
+        shell: bash
         run: |
-          mkdir -p disasm
-          shopt -s nullglob
-          files=(*.spv)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No .spv files found in repo root."
-            echo "found=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "Found ${#files[@]} SPV file(s):"
-          printf '%s\n' "${files[@]}"
-          echo "found=true" >> $GITHUB_OUTPUT
-
-      - name: Disassemble each SPV file
-        if: steps.find.outputs.found == 'true'
-        run: |
-          shopt -s nullglob
-          for f in *.spv; do
-            base="${f%.spv}"
-            echo "=== Disassembling: $f ==="
-            # 反汇编为 SPIR-V 汇编（.spvasm）
-            spirv-dis "$f" -o "disasm/${base}.spvasm"
-            # 附带一份注释更友好的版本（可选）
-            spirv-dis --comment --nested-indent "$f" \
-              -o "disasm/${base}.annotated.spvasm" || true
-            echo "  -> disasm/${base}.spvasm"
-          done
-          echo "--- Listing output ---"
-          ls -lh disasm/
-
-      - name: Grep suspicious instructions (summary)
-        if: steps.find.outputs.found == 'true'
-        run: |
-          echo "## SPIR-V 反汇编摘要" > summary.md
-          echo "" >> summary.md
-          for f in disasm/*.spvasm; do
-            echo "### \`$f\`" >> summary.md
-            echo "" >> summary.md
-            echo "| 指令 | 数量 |" >> summary.md
-            echo "|---|---|" >> summary.md
-            for op in OpImageWrite OpImageRead OpVariable OpBitcast OpUMin OpSMin OpUMax OpSMax OpAccessChain; do
-              cnt=$(grep -c "$op" "$f" || true)
-              echo "| $op | $cnt |" >> summary.md
-            done
-            # 检查是否还有 StorageBuffer 残留
-            sb=$(grep -c "StorageBuffer" "$f" || true)
-            if [ "$sb" -gt 0 ]; then
-              echo "" >> summary.md
-              echo "> ⚠️ **发现 StorageBuffer 残留**：$sb 处" >> summary.md
+          set -euo pipefail
+          fail=0
+          found=0
+          while IFS= read -r -d '' f; do
+            found=1
+            echo "::group::spirv-val $f"
+            if spirv-val --target-env vulkan1.1 "$f"; then
+              echo "OK: $f"
+            else
+              echo "::error file=$f::SPIR-V validation failed"
+              fail=1
             fi
-            echo "" >> summary.md
-          done
-          cat summary.md
+            echo "::endgroup::"
+          done < <(find . -type f -name '*.spv' -not -path './.git/*' -print0)
+          if [ "$found" -eq 0 ]; then
+            echo "No .spv files found"
+          fi
+          exit $fail
 
-      - name: Upload disassembly artifacts
-        if: steps.find.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: spv-disassembly
-          path: |
-            disasm/
-            summary.md
-          retention-days: 14
+      - name: Assemble and validate .spvasm files
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          found=0
+          while IFS= read -r -d '' f; do
+            found=1
+            out="$(mktemp --suffix=.spv)"
+            echo "::group::spirv-as $f"
+            if ! spirv-as --target-env vulkan1.1 -o "$out" "$f"; then
+              echo "::error file=$f::SPIR-V assembly failed"
+              fail=1
+              rm -f "$out"
+              echo "::endgroup::"
+              continue
+            fi
+            echo "OK assembled: $f -> $out"
+            echo "::endgroup::"
+
+            echo "::group::spirv-val $out (from $f)"
+            if spirv-val --target-env vulkan1.1 "$out"; then
+              echo "OK: $f"
+            else
+              echo "::error file=$f::SPIR-V validation failed"
+              fail=1
+            fi
+            echo "::endgroup::"
+            rm -f "$out"
+          done < <(find . -type f -name '*.spvasm' -not -path './.git/*' -print0)
+          if [ "$found" -eq 0 ]; then
+            echo "No .spvasm files found"
+          fi
+          exit $fail
