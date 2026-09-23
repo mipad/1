@@ -1,8 +1,8 @@
 name: Patch dynamic uniform index (vertex)
 
-on:                                        
-  push:   
-    branches: [ "spv-yz" ]  
+on:
+  push:
+    branches: [ "spv-yz" ]
   pull_request:
     branches: [ "spv-yz" ]
 
@@ -47,33 +47,52 @@ jobs:
           cat > patch.py <<'PYEOF'
           import re, sys
 
-          def ensure_const_4095(text):
-              if '%int_4095 = OpConstant %int 4095' in text:
+          def ensure_constants(text):
+              missing = []
+              if '%int_4095 = OpConstant %int 4095' not in text:
+                  missing.append('%int_4095 = OpConstant %int 4095')
+              if not re.search(r'^\s*%int_3 = OpConstant %int 3\b', text, re.MULTILINE):
+                  missing.append('%int_3 = OpConstant %int 3')
+              if not missing:
                   return text
-              # 在第一个 OpFunction 前插入
-              idx = text.find('OpFunction ')
-              if idx < 0:
+              m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
+              if not m:
                   return text
-              return text[:idx] + '    %int_4095 = OpConstant %int 4095\n' + text[idx:]
+              inject = '\n'.join('    ' + line for line in missing) + '\n'
+              return text[:m.start()] + inject + text[m.start():]
 
           PAT = re.compile(
               r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
               r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*$',
               re.MULTILINE)
 
+          def is_const(tok):
+              return bool(re.match(r'%int_\d+$', tok))
+
           def patch_clamp(text):
-              text = ensure_const_4095(text)
+              text = ensure_constants(text)
               counter = [0]
               def repl(m):
+                  a, b = m.group('a'), m.group('b')
+                  if is_const(a) and is_const(b):
+                      return m.group(0)
                   counter[0] += 1
                   n = counter[0]
-                  i, r, a, b = m.group('indent'), m.group('res'), m.group('a'), m.group('b')
-                  ca, cb = f'%__clamp_{n}_a', f'%__clamp_{n}_b'
-                  return (
-                      f'{i}{ca} = OpSMax %int {a} %int_0\n'
-                      f'{i}{cb} = OpSMin %int {ca} %int_4095\n'
-                      f'{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {cb} {b}'
-                  )
+                  i, r = m.group('indent'), m.group('res')
+
+                  head = ''
+                  if not is_const(a):
+                      lo, hi = f'%__cl_a_{n}_lo', f'%__cl_a_{n}_hi'
+                      head += (f'{i}{lo} = OpSMax %int {a} %int_0\n'
+                               f'{i}{hi} = OpSMin %int {lo} %int_4095\n')
+                      a = hi
+                  if not is_const(b):
+                      lo, hi = f'%__cl_b_{n}_lo', f'%__cl_b_{n}_hi'
+                      head += (f'{i}{lo} = OpSMax %int {b} %int_0\n'
+                               f'{i}{hi} = OpSMin %int {lo} %int_3\n')
+                      b = hi
+
+                  return f'{head}{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {a} {b}'
               out = PAT.sub(repl, text)
               print(f'  clamp: patched {counter[0]} accesses', file=sys.stderr)
               return out
@@ -81,11 +100,11 @@ jobs:
           def patch_constant(text):
               counter = [0]
               def repl(m):
+                  if is_const(m.group('a')) and is_const(m.group('b')):
+                      return m.group(0)
                   counter[0] += 1
-                  return (
-                      f"{m.group('indent')}{m.group('res')} = "
-                      f"OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %int_0 %int_0"
-                  )
+                  return (f"{m.group('indent')}{m.group('res')} = "
+                          f"OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %int_0 %int_0")
               out = PAT.sub(repl, text)
               print(f'  constant: patched {counter[0]} accesses', file=sys.stderr)
               return out
@@ -139,9 +158,6 @@ jobs:
           while IFS='|' read -r base src; do
             for v in clamp constant; do
               asm="work/${v}/${base}.spvasm"
-              cnt=$(grep -cE 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9A-Za-z_]+ %[0-9A-Za-z_]+' "$asm" \
-                    | grep -v '%int_0 %int_0' || true)
-              # 上面那个 grep -v 对 grep -c 无效；用两步算
               dyn=$(grep -E 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9A-Za-z_]+ %[0-9A-Za-z_]+' "$asm" \
                     | grep -vE '%int_[0-9]+ %int_[0-9]+$' | wc -l || true)
               echo "| \`$base\` | $v | $dyn |" >> "$GITHUB_STEP_SUMMARY"
