@@ -1,4 +1,4 @@
-name: Scan Vertex SPIR-V (Mali-hazard)
+name: Extract dynamic uniform index
 
 on:                                        
   push:   
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  scan-vertex:
+  extract:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,9 +20,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y spirv-tools
-          spirv-dis --version
-          spirv-as --version
-          spirv-val --version
 
       - name: Prepare
         shell: bash
@@ -30,121 +27,89 @@ jobs:
           set -euo pipefail
           mkdir -p work/disasm
           : > work/list.txt
-
-          # 收集 .spv（Vertex）
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
             cp "$f" "work/${base}.spv"
             echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
-          # 收集 .spvasm（Vertex），汇编后一起处理
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spvasm}")"
             [ -f "work/${base}.spv" ] && continue
-            if spirv-as --target-env vulkan1.1 -o "work/${base}.spv" "$f"; then
-              echo "${base}|$f" >> work/list.txt
-            fi
+            spirv-as --target-env vulkan1.1 -o "work/${base}.spv" "$f" || true
+            [ -f "work/${base}.spv" ] && echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spvasm' -not -path './.git/*' -not -path './work/*' -print0)
 
-          echo "Found $(wc -l < work/list.txt) vertex shader(s)"
-          cat work/list.txt
-
-      - name: Disassemble
-        shell: bash
-        run: |
-          set -euo pipefail
           while IFS='|' read -r base src; do
             spirv-dis "work/${base}.spv" -o "work/disasm/${base}.spvasm"
           done < work/list.txt
           ls -la work/disasm
 
-      - name: Scan hazards
+      - name: Dump dynamic uniform accesses
         shell: bash
         run: |
           set -euo pipefail
 
           {
-            echo "# Vertex shader hazard scan"
+            echo "# 动态索引 uniform 访问明细"
             echo ""
-            echo "扫描目标：Mali 上已知会触发 device lost / hang 的模式。"
+            echo "抓取形如 \`OpAccessChain %_ptr_Uniform_* %var %int_0 <dyn> <dyn>\` 的指令，"
+            echo "其中 \`<dyn>\` 不是 int_N 常量。"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
           while IFS='|' read -r base src; do
             asm="work/disasm/${base}.spvasm"
+            out="work/${base}.dynidx.txt"
+            : > "$out"
 
-            # ---- 1. 敏感指令（顶点里不该出现） ----
-            barriers=$(grep -cE 'OpControlBarrier|OpMemoryBarrier' "$asm" || true)
-            kills=$(grep -cE 'OpKill|OpDemoteToHelperInvocation|OpTerminateInvocation' "$asm" || true)
+            # 抓 OpAccessChain 指向 Uniform 变量的行
+            # 匹配 %_ptr_Uniform_* %support_buffer 或 %vp_c3
+            # 用 awk 提取每行末尾两个索引，判断是否是常量
+            grep -nE 'OpAccessChain %_ptr_Uniform' "$asm" > /tmp/ac.txt || true
 
-            # ---- 2. 可疑模式计数 ----
-            bitcast=$(grep -cE 'OpBitcast' "$asm" || true)
-            fma=$(grep -cE 'OpExtInst %float %[0-9]+ Fma' "$asm" || true)
-            accesschain=$(grep -cE 'OpAccessChain' "$asm" || true)
-            imgsample=$(grep -cE 'OpImageSampleImplicitLod|OpImageSampleExplicitLod|OpImageFetch' "$asm" || true)
-            imgsample_impl=$(grep -cE 'OpImageSampleImplicitLod' "$asm" || true)
+            # 对每行：把行按空格拆，找出 %var 后面跟的所有 %xxx
+            # 如果最后两个中任一个不是 %int_<数字>，则算动态
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              # 提取所有 %开头的 token
+              ids=$(echo "$line" | grep -oE '%[A-Za-z0-9_]+' | tr '\n' ' ')
 
-            # ---- 3. 动态索引 vp_c3 / uniform 数组 ----
-            # 匹配 OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 <id> <id>，且后两个索引都不是 int_N 常量
-            dyn_idx=$(grep -nE 'OpAccessChain %_ptr_Uniform_float %(vp_c3|support_buffer)' "$asm" \
-                      | grep -vE '%int_[0-9]+( %int_[0-9]+)*$' || true)
-            dyn_idx_count=$(printf '%s\n' "$dyn_idx" | grep -c . || true)
+              # 找到 %int_0 之后的部分（索引）
+              after=$(echo "$ids" | sed -n 's/.*%int_0 \(.*\)$/\1/p')
+              [ -z "$after" ] && continue
 
-            # ---- 4. 循环 ----
-            loops=$(grep -cE 'OpLoopMerge' "$asm" || true)
+              # 判断 after 中的每个 id 是不是 int_ 前缀
+              dyn=0
+              for t in $after; do
+                case "$t" in
+                  %int_[0-9]*) ;;
+                  *) dyn=1 ;;
+                esac
+              done
+              [ "$dyn" -eq 1 ] && echo "$line" >> "$out"
+            done < /tmp/ac.txt
 
-            # ---- 写入 Summary ----
-            {
-              echo "## \`$src\`"
-              echo ""
-              echo "| 指标 | 数量 | 备注 |"
-              echo "|---|---:|---|"
-              echo "| OpControlBarrier / OpMemoryBarrier | $barriers | 顶点中应为 0 |"
-              echo "| OpKill / OpDemote / OpTerminate | $kills | 顶点中应为 0 |"
-              echo "| OpBitcast | $bitcast | 位重解释，Mali 敏感 |"
-              echo "| Fma (OpExtInst) | $fma | 长链会造成寄存器压力 |"
-              echo "| OpAccessChain | $accesschain | 总量 |"
-              echo "| OpImageSample* | $imgsample | 顶点中不应有纹理采样 |"
-              echo "| 其中 ImplicitLod | $imgsample_impl | 顶点中应为 0 |"
-              echo "| 动态索引 uniform 数组 | $dyn_idx_count | Mali 极不友好 |"
-              echo "| OpLoopMerge | $loops | 循环数量 |"
-              echo ""
+            count=$(wc -l < "$out" | tr -d ' ')
+            echo "## \`$src\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "动态索引访问：**$count** 条" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            head -60 "$out" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
 
-              if [ "$barriers" -gt 0 ] || [ "$kills" -gt 0 ] || [ "$imgsample" -gt 0 ]; then
-                echo "⚠️ **发现顶点中不应存在的指令**" >> "$GITHUB_STEP_SUMMARY"
-                echo ""
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                grep -nE 'OpControlBarrier|OpMemoryBarrier|OpKill|OpDemoteToHelperInvocation|OpTerminateInvocation|OpImageSampleImplicitLod|OpImageSampleExplicitLod|OpImageFetch' "$asm" | head -50 >> "$GITHUB_STEP_SUMMARY"
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                echo ""
-              fi
-
-              if [ "$dyn_idx_count" -gt 0 ]; then
-                echo "### 动态索引 uniform 数组（前 30 条）" >> "$GITHUB_STEP_SUMMARY"
-                echo "" >> "$GITHUB_STEP_SUMMARY"
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                echo "$dyn_idx" | head -30 >> "$GITHUB_STEP_SUMMARY"
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                echo "" >> "$GITHUB_STEP_SUMMARY"
-              fi
-
-              echo "---" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-            } >> "$GITHUB_STEP_SUMMARY"
-
-            # ---- 控制台同步输出 ----
-            echo "======== $src ========"
-            echo "barriers=$barriers kills=$kills bitcast=$bitcast fma=$fma"
-            echo "accesschain=$accesschain imgsample=$imgsample(impl=$imgsample_impl)"
-            echo "dynamic_uniform_idx=$dyn_idx_count loops=$loops"
-
+            echo "=== $src: $count dynamic accesses ==="
+            head -20 "$out"
           done < work/list.txt
 
-      - name: Upload disassembly + scan
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-scan
-          path: work/disasm/*.spvasm
+          name: vertex-dynidx
+          path: |
+            work/*.dynidx.txt
+            work/disasm/*.spvasm
           if-no-files-found: error
           retention-days: 14
