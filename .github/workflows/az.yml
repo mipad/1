@@ -1,71 +1,64 @@
-name: Optimize SPIR-V (Mali-friendly)
+name: Vertex GLSL Round-trip (Mali workaround)
 
 on:                                        
   push:   
     branches: [ "spv-yz" ]  
   pull_request:
     branches: [ "spv-yz" ]
-    inputs:
-      opt_flags:
-        description: 'spirv-opt 标志 (空格分隔)'
-        required: false
-        default: '-O --scalar-replacement --convert-local-access-chains --eliminate-dead-variables'
 
 permissions:
   contents: read
 
 jobs:
-  optimize-spirv:
+  vertex-roundtrip:
     runs-on: ubuntu-latest
-    env:
-      OPT_FLAGS: ${{ github.event.inputs.opt_flags || '-O --scalar-replacement --convert-local-access-chains --eliminate-dead-variables' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install SPIRV-Tools
+      - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y spirv-tools
+          sudo apt-get install -y spirv-tools spirv-cross glslang-tools
           spirv-val --version
-          spirv-opt --version
-          spirv-dis --version
-          spirv-as --version
+          spirv-cross --help | head -1 || true
+          glslangValidator --version
 
-      - name: Prepare input list
-        id: prep
+      - name: Prepare
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/in work/out
+          mkdir -p work/in work/out work/glsl
           : > work/inputs.txt
 
+          # 只收集 Vertex_*.spv
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
             cp "$f" "work/in/${base}.spv"
-            echo "${base}|spv|$f" >> work/inputs.txt
-          done < <(find . -type f -name '*.spv' -not -path './.git/*' -not -path './work/*' -print0)
+            echo "${base}|$f" >> work/inputs.txt
+          done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
+          # 也收集 .spvasm 形式的 Vertex（汇编后一起处理）
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spvasm}")"
+            # 跳过已经同名 .spv 的
+            [ -f "work/in/${base}.spv" ] && continue
             out="work/in/${base}.spv"
             if spirv-as --target-env vulkan1.1 -o "$out" "$f"; then
-              echo "${base}|spvasm|$f" >> work/inputs.txt
-            else
-              echo "::error file=$f::spirv-as failed"
-              exit 1
+              echo "${base}|$f" >> work/inputs.txt
             fi
-          done < <(find . -type f -name '*.spvasm' -not -path './.git/*' -not -path './work/*' -print0)
+          done < <(find . -type f -name 'Vertex_*.spvasm' -not -path './.git/*' -not -path './work/*' -print0)
 
-          echo "Found $(wc -l < work/inputs.txt) file(s)"
+          echo "Found $(wc -l < work/inputs.txt) vertex shader(s)"
+          cat work/inputs.txt
 
-      - name: Validate inputs first
+      - name: Validate inputs
         shell: bash
         run: |
           set -euo pipefail
           fail=0
-          while IFS='|' read -r base kind src; do
-            echo "::group::spirv-val work/in/${base}.spv (from $src)"
+          while IFS='|' read -r base src; do
+            echo "::group::spirv-val work/in/${base}.spv"
             if spirv-val --target-env vulkan1.1 "work/in/${base}.spv"; then
               echo "OK: $src"
             else
@@ -76,104 +69,120 @@ jobs:
           done < work/inputs.txt
           exit $fail
 
-      - name: Count Function-scope OpVariable BEFORE
+      - name: SPIR-V -> GLSL (spirv-cross)
         shell: bash
         run: |
           set -euo pipefail
-          echo "### OpVariable count BEFORE optimization" >> "$GITHUB_STEP_SUMMARY"
-          echo "| File | Function | Total |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
-          while IFS='|' read -r base kind src; do
-            spv="work/in/${base}.spv"
-            total=$(spirv-dis "$spv" | grep -cE 'OpVariable' || true)
-            func=$(spirv-dis "$spv" | grep -cE 'OpVariable .* Function' || true)
-            echo "| \`$src\` | $func | $total |" >> "$GITHUB_STEP_SUMMARY"
-            echo "$src: Function-scope=$func total=$total"
-          done < work/inputs.txt
-
-      - name: Show available spirv-opt passes (for debugging)
-        shell: bash
-        run: |
-          spirv-opt --help 2>&1 | sed -n '1,120p'
-
-      - name: Optimize (conservative, Mali-friendly)
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Using OPT_FLAGS=$OPT_FLAGS"
           fail=0
-          while IFS='|' read -r base kind src; do
+          while IFS='|' read -r base src; do
             in="work/in/${base}.spv"
-            out="work/out/${base}.opt.spv"
-            echo "::group::spirv-opt $OPT_FLAGS $in"
-
-            # shellcheck disable=SC2086
-            if spirv-opt \
-                --target-env=vulkan1.1 \
-                $OPT_FLAGS \
-                -o "$out" "$in"; then
-              echo "OK: $src -> $out"
+            out="work/glsl/${base}.vert"
+            echo "::group::spirv-cross $in -> $out"
+            if spirv-cross \
+                --version 450 \
+                --no-es \
+                --output "$out" \
+                "$in"; then
+              echo "OK: $out"
             else
-              echo "::error file=$src::spirv-opt failed"
+              echo "::error file=$src::spirv-cross failed"
               fail=1
             fi
             echo "::endgroup::"
           done < work/inputs.txt
           exit $fail
 
-      - name: Validate optimized output
+      - name: GLSL -> SPIR-V (glslangValidator)
         shell: bash
         run: |
           set -euo pipefail
           fail=0
-          while IFS='|' read -r base kind src; do
-            out="work/out/${base}.opt.spv"
+          while IFS='|' read -r base src; do
+            glsl="work/glsl/${base}.vert"
+            out="work/out/${base}.rt.spv"
+            [ -f "$glsl" ] || continue
+            echo "::group::glslangValidator $glsl -> $out"
+            if glslangValidator \
+                -V \
+                --target-env vulkan1.1 \
+                "$glsl" \
+                -o "$out"; then
+              echo "OK: $out"
+            else
+              echo "::error file=$src::glslangValidator failed"
+              fail=1
+            fi
+            echo "::endgroup::"
+          done < work/inputs.txt
+          exit $fail
+
+      - name: Validate round-tripped output
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS='|' read -r base src; do
+            out="work/out/${base}.rt.spv"
             [ -f "$out" ] || continue
             echo "::group::spirv-val $out"
             if spirv-val --target-env vulkan1.1 "$out"; then
               echo "OK: $out"
             else
-              echo "::error file=$src::optimized SPIR-V validation failed"
+              echo "::error file=$src::round-tripped SPIR-V validation failed"
               fail=1
             fi
             echo "::endgroup::"
           done < work/inputs.txt
           exit $fail
 
-      - name: Count Function-scope OpVariable AFTER
+      - name: Interface check (EntryPoint / IO / Decorate)
         shell: bash
         run: |
           set -euo pipefail
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### OpVariable count AFTER optimization" >> "$GITHUB_STEP_SUMMARY"
-          echo "| File | Function | Total |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
-          while IFS='|' read -r base kind src; do
-            out="work/out/${base}.opt.spv"
-            [ -f "$out" ] || continue
-            total=$(spirv-dis "$out" | grep -cE 'OpVariable' || true)
-            func=$(spirv-dis "$out" | grep -cE 'OpVariable .* Function' || true)
-            echo "| \`$src\` | $func | $total |" >> "$GITHUB_STEP_SUMMARY"
-            echo "$src: Function-scope=$func total=$total"
+          echo "### Interface diff (original vs round-trip)" >> "$GITHUB_STEP_SUMMARY"
+          while IFS='|' read -r base src; do
+            a="work/in/${base}.spv"
+            b="work/out/${base}.rt.spv"
+            [ -f "$b" ] || continue
+
+            spirv-dis "$a" | grep -E 'OpEntryPoint|OpVariable.*(Input|Output)|OpDecorate' | sort > /tmp/a.txt
+            spirv-dis "$b" | grep -E 'OpEntryPoint|OpVariable.*(Input|Output)|OpDecorate' | sort > /tmp/b.txt
+
+            echo "#### \`$src\`" >> "$GITHUB_STEP_SUMMARY"
+            if diff -u /tmp/a.txt /tmp/b.txt > /tmp/d.txt; then
+              echo "Interface identical." >> "$GITHUB_STEP_SUMMARY"
+              echo "OK: $src interface identical"
+            else
+              echo '```diff' >> "$GITHUB_STEP_SUMMARY"
+              cat /tmp/d.txt >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning file=$src::interface differs after round-trip (see summary)"
+            fi
           done < work/inputs.txt
 
-      - name: Disassemble optimized output
+      - name: Rename for drop-in replacement
         shell: bash
         run: |
           set -euo pipefail
-          while IFS='|' read -r base kind src; do
-            out="work/out/${base}.opt.spv"
+          mkdir -p work/dropin
+          while IFS='|' read -r base src; do
+            out="work/out/${base}.rt.spv"
             [ -f "$out" ] || continue
-            spirv-dis "$out" > "work/out/${base}.opt.spvasm"
+            # 去掉 .rt 后缀，让文件名与原始一致
+            cp "$out" "work/dropin/${base}.spv"
+            # 同时输出反汇编方便 review
+            spirv-dis "$out" > "work/dropin/${base}.rt.spvasm"
           done < work/inputs.txt
-          ls -la work/out
+          ls -la work/dropin
 
-      - name: Upload optimized artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: spirv-optimized
+          name: vertex-roundtrip
           path: |
-            work/out/*.spv
-            work/out/*.opt.spvasm
+            work/out/*.rt.spv
+            work/glsl/*.vert
+            work/dropin/*.spv
+            work/dropin/*.rt.spvasm
           if-no-files-found: error
           retention-days: 14
