@@ -1,4 +1,4 @@
-name: Patch dynamic uniform index (vertex) - OpUMod
+name: Dump dynamic index definition chains
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  patch:
+  dump:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,111 +19,67 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-tools
 
-      - name: Prepare
+      - name: Disassemble + dump chains
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/in work/umod
+          mkdir -p work
           : > work/list.txt
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/in/${base}.spv"
+            cp "$f" "work/${base}.spv"
             echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
-          cat work/list.txt
 
-      - name: Save patcher
-        shell: bash
-        run: |
-          cat > patch.py <<'PYEOF'
-          import re, sys
-
-          def ensure_constants(text):
-              inject = []
-              if not re.search(r'^\s*%uint_4096\s*=', text, re.MULTILINE):
-                  inject.append('%uint_4096 = OpConstant %uint 4096')
-              if not re.search(r'^\s*%uint_4\s*=', text, re.MULTILINE):
-                  inject.append('%uint_4 = OpConstant %uint 4')
-              if not inject:
-                  return text
-              m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
-              if not m:
-                  return text
-              blob = '\n'.join('    ' + line for line in inject) + '\n'
-              return text[:m.start()] + blob + text[m.start():]
-
-          PAT = re.compile(
-              r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
-              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*$',
-              re.MULTILINE)
-
-          def is_const(tok):
-              return bool(re.match(r'%int_\d+$', tok))
-
-          def patch_umod(text):
-              text = ensure_constants(text)
-              counter = [0]
-              def repl(m):
-                  a, b = m.group('a'), m.group('b')
-                  if is_const(a) and is_const(b):
-                      return m.group(0)
-                  counter[0] += 1
-                  n = counter[0]
-                  i, r = m.group('indent'), m.group('res')
-                  head = ''
-                  if not is_const(a):
-                      ua, ur, ia = f'%__u_{n}_a', f'%__u_{n}_r', f'%__u_{n}_i'
-                      head += (f'{i}{ua} = OpBitcast %uint {a}\n'
-                               f'{i}{ur} = OpUMod %uint {ua} %uint_4096\n'
-                               f'{i}{ia} = OpBitcast %int {ur}\n')
-                      a = ia
-                  if not is_const(b):
-                      ub, ur, ib = f'%__v_{n}_a', f'%__v_{n}_r', f'%__v_{n}_i'
-                      head += (f'{i}{ub} = OpBitcast %uint {b}\n'
-                               f'{i}{ur} = OpUMod %uint {ub} %uint_4\n'
-                               f'{i}{ib} = OpBitcast %int {ur}\n')
-                      b = ib
-                  return f'{head}{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {a} {b}'
-              out = PAT.sub(repl, text)
-              print(f'  umod: patched {counter[0]} accesses', file=sys.stderr)
-              return out
-
-          mode, infile, outfile = sys.argv[1], sys.argv[2], sys.argv[3]
-          with open(infile) as f:
-              text = f.read()
-          if mode == 'umod':
-              out = patch_umod(text)
-          else:
-              sys.exit(f'unknown mode {mode}')
-          with open(outfile, 'w') as f:
-              f.write(out)
-          PYEOF
-
-      - name: Disassemble
-        shell: bash
-        run: |
-          set -euo pipefail
           while IFS='|' read -r base src; do
-            spirv-dis "work/in/${base}.spv" -o "work/in/${base}.spvasm"
-          done < work/list.txt
+            spirv-dis "work/${base}.spv" -o "work/${base}.spvasm"
 
-      - name: Apply umod patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS='|' read -r base src; do
-            echo "=== $base (umod) ==="
-            python3 patch.py umod "work/in/${base}.spvasm" "work/umod/${base}.spvasm"
-            spirv-as --target-env vulkan1.1 "work/umod/${base}.spvasm" -o "work/umod/${base}.spv"
-            spirv-val --target-env vulkan1.1 "work/umod/${base}.spv"
+            # 建一个 %id -> 定义行的索引
+            awk '
+              /^ *%[0-9]+ = / { id=$1; line=$0; defs[id]=line }
+              { lines[NR]=$0 }
+              END {
+                # 输出全部定义
+                for (k in defs) print k "\t" defs[k]
+              }' "work/${base}.spvasm" | sort -V > "work/${base}.defs.txt"
+
+            # 抓出 156 条动态访问的 a、b SSA id
+            grep -nE 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9]+ %[0-9]+' "work/${base}.spvasm" \
+              | grep -vE '%int_[0-9]+ %int_[0-9]+$' \
+              | awk '{print $NF, $(NF-1)}' \
+              | sort -u > "work/${base}.dyn_ids.txt"
+
+            echo "=========== $base ==========="
+            echo "dynamic accesses found: $(wc -l < work/${base}.dyn_ids.txt)"
+
+            # 对每个 a 索引，向上追 8 层定义，看它怎么算出来的
+            : > "work/${base}.chains.txt"
+            while read -r b a; do
+              echo "--- a=$a b=$b ---" >> "work/${base}.chains.txt"
+              cur="$a"
+              for depth in 1 2 3 4 5 6 7 8; do
+                def=$(grep -m1 -P "^\Q${cur}\E\s+=" "work/${base}.defs.txt" | cut -f2- || true)
+                [ -z "$def" ] && break
+                echo "  [$depth] $def" >> "work/${base}.chains.txt"
+                # 从定义里取第一个源操作数
+                next=$(echo "$def" | grep -oE '%[0-9]+' | sed -n '2p')
+                [ -z "$next" ] && break
+                cur="$next"
+              done
+              echo "" >> "work/${base}.chains.txt"
+            done < "work/${base}.dyn_ids.txt"
+
+            echo "---- first 3 chains ----"
+            head -40 "work/${base}.chains.txt"
           done < work/list.txt
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-umod
+          name: index-chains
           path: |
-            work/umod/*.spv
-            work/umod/*.spvasm
+            work/*.chains.txt
+            work/*.dyn_ids.txt
+            work/*.defs.txt
           if-no-files-found: error
           retention-days: 14
