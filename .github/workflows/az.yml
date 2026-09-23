@@ -23,46 +23,47 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/out work/in
+          mkdir -p work/out
           fail=0
 
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/in/${base}.spv"
-            spirv-dis "$f" -o "work/out/${base}.spvasm"
+            asm="work/out/${base}.spvasm"
+            outspv="work/out/${base}.spv"
 
-            python3 - "work/out/${base}.spvasm" <<'PYEOF'
+            spirv-dis "$f" -o "$asm"
+
+            python3 - "$asm" <<'PYEOF'
           import re, sys
           path = sys.argv[1]
           with open(path) as fp:
               text = fp.read()
 
-          # 1. 加 texel buffer 类型 + 指针类型（放在 OpTypeImage 之后或文件顶部附近）
-          extra_types = (
-              "%__tb = OpTypeImage %float Buffer 0 0 0 1 Unknown\n"
-              "%_ptr_UniformConstant_tb = OpTypePointer UniformConstant %__tb\n"
-              "%int_0 = OpConstant %int 0\n"
+          # 1. 找 %vp_c3 的声明行
+          m = re.search(
+              r'^(?P<i>[ \t]*)%vp_c3\s*=\s*OpVariable\s+%_ptr_Uniform__struct_16\s+Uniform(?P<tail>.*)$',
+              text, re.MULTILINE)
+          if not m:
+              print('  ERROR: %vp_c3 declaration not found', file=sys.stderr)
+              sys.exit(2)
+
+          indent = m.group('i')
+          tail = m.group('tail')  # 保留尾部注释
+
+          # 2. 插入新类型（在 %vp_c3 声明之前，确保先声明后使用）
+          new_types = (
+              f'{indent}%__texelbuf = OpTypeImage %float Buffer 0 0 0 1 Unknown\n'
+              f'{indent}%__ptr_texelbuf = OpTypePointer UniformConstant %__texelbuf\n'
+              f'{indent}%__lod0 = OpConstant %int 0\n'
           )
-          # 在第一个 OpFunction 前插入类型
-          m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
-          text = text[:m.start()] + "    " + extra_types.replace("\n", "\n    ").strip() + "\n" + text[m.start():]
+          new_decl = f'{indent}%vp_c3 = OpVariable %__ptr_texelbuf UniformConstant{tail}'
+          text = text[:m.start()] + new_types + new_decl + text[m.end():]
 
-          # 2. vp_c3 变量：从 Uniform 指针改成 UniformConstant texel buffer
-          text = re.sub(
-              r'%vp_c3\s*=\s*OpVariable\s+%_ptr_Uniform__struct_16\s+Uniform',
-              '%vp_c3 = OpVariable %_ptr_UniformConstant_tb UniformConstant',
-              text)
-
-          # 3. 所有 OpAccessChain + OpLoad 模式：
-          #    %r = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %a %b
-          #    %v = OpLoad %float %r
-          #  改成：
-          #    %__v4_N = OpImageFetch %v4float %vp_c3 %a Lod %int_0
-          #    %v = OpVectorExtractDynamic %float %__v4_N %b
+          # 3. 把 OpAccessChain + OpLoad 模式替换为 OpImageFetch + OpVectorExtractDynamic
           pat = re.compile(
               r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
-              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)\s*\n'
-              r'(?P<i2>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+%(?P=r)\s*$',
+              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*\n'
+              r'(?P<i2>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+%(?P=r)[ \t]*$',
               re.MULTILINE)
 
           counter = [0]
@@ -71,18 +72,30 @@ jobs:
               n = counter[0]
               i, a, b, v = m.group('i'), m.group('a'), m.group('b'), m.group('v')
               tmp = f'%__tf_{n}'
-              return (f'{i}{tmp} = OpImageFetch %v4float %vp_c3 {a} Lod %int_0\n'
+              return (f'{i}{tmp} = OpImageFetch %v4float %vp_c3 {a} Lod %__lod0\n'
                       f'{i}{v} = OpVectorExtractDynamic %float {tmp} {b}')
           text = pat.sub(repl, text)
           print(f'  replaced {counter[0]} accesses', file=sys.stderr)
+
+          if counter[0] == 0:
+              print('  ERROR: no accesses replaced', file=sys.stderr)
+              sys.exit(3)
 
           with open(path, 'w') as fp:
               fp.write(text)
           PYEOF
 
-            spirv-as --target-env vulkan1.1 "work/out/${base}.spvasm" -o "work/out/${base}.spv" || { echo "::error file=$f::spirv-as failed"; fail=1; continue; }
-            spirv-val --target-env vulkan1.1 "work/out/${base}.spv" || { echo "::error file=$f::spirv-val failed"; fail=1; continue; }
-            echo "OK: $f -> work/out/${base}.spv"
+            if ! spirv-as --target-env vulkan1.1 "$asm" -o "$outspv"; then
+              echo "::error file=$f::spirv-as failed"
+              fail=1
+              continue
+            fi
+            if ! spirv-val --target-env vulkan1.1 "$outspv"; then
+              echo "::error file=$f::spirv-val failed"
+              fail=1
+              continue
+            fi
+            echo "OK: $f -> $outspv"
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
           exit $fail
