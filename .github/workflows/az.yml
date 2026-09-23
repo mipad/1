@@ -1,4 +1,4 @@
-name: Vertex GLSL Round-trip (Mali workaround)
+name: Scan Vertex SPIR-V (Mali-hazard)
 
 on:                                        
   push:   
@@ -10,179 +10,141 @@ permissions:
   contents: read
 
 jobs:
-  vertex-roundtrip:
+  scan-vertex:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install tools
+      - name: Install SPIRV-Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y spirv-tools spirv-cross glslang-tools
+          sudo apt-get install -y spirv-tools
+          spirv-dis --version
+          spirv-as --version
           spirv-val --version
-          spirv-cross --help | head -1 || true
-          glslangValidator --version
 
       - name: Prepare
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/in work/out work/glsl
-          : > work/inputs.txt
+          mkdir -p work/disasm
+          : > work/list.txt
 
-          # 只收集 Vertex_*.spv
+          # 收集 .spv（Vertex）
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/in/${base}.spv"
-            echo "${base}|$f" >> work/inputs.txt
+            cp "$f" "work/${base}.spv"
+            echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
-          # 也收集 .spvasm 形式的 Vertex（汇编后一起处理）
+          # 收集 .spvasm（Vertex），汇编后一起处理
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spvasm}")"
-            # 跳过已经同名 .spv 的
-            [ -f "work/in/${base}.spv" ] && continue
-            out="work/in/${base}.spv"
-            if spirv-as --target-env vulkan1.1 -o "$out" "$f"; then
-              echo "${base}|$f" >> work/inputs.txt
+            [ -f "work/${base}.spv" ] && continue
+            if spirv-as --target-env vulkan1.1 -o "work/${base}.spv" "$f"; then
+              echo "${base}|$f" >> work/list.txt
             fi
           done < <(find . -type f -name 'Vertex_*.spvasm' -not -path './.git/*' -not -path './work/*' -print0)
 
-          echo "Found $(wc -l < work/inputs.txt) vertex shader(s)"
-          cat work/inputs.txt
+          echo "Found $(wc -l < work/list.txt) vertex shader(s)"
+          cat work/list.txt
 
-      - name: Validate inputs
+      - name: Disassemble
         shell: bash
         run: |
           set -euo pipefail
-          fail=0
           while IFS='|' read -r base src; do
-            echo "::group::spirv-val work/in/${base}.spv"
-            if spirv-val --target-env vulkan1.1 "work/in/${base}.spv"; then
-              echo "OK: $src"
-            else
-              echo "::error file=$src::input SPIR-V validation failed"
-              fail=1
-            fi
-            echo "::endgroup::"
-          done < work/inputs.txt
-          exit $fail
+            spirv-dis "work/${base}.spv" -o "work/disasm/${base}.spvasm"
+          done < work/list.txt
+          ls -la work/disasm
 
-      - name: SPIR-V -> GLSL (spirv-cross)
+      - name: Scan hazards
         shell: bash
         run: |
           set -euo pipefail
-          fail=0
+
+          {
+            echo "# Vertex shader hazard scan"
+            echo ""
+            echo "扫描目标：Mali 上已知会触发 device lost / hang 的模式。"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
           while IFS='|' read -r base src; do
-            in="work/in/${base}.spv"
-            out="work/glsl/${base}.vert"
-            echo "::group::spirv-cross $in -> $out"
-            if spirv-cross \
-                --version 450 \
-                --no-es \
-                --output "$out" \
-                "$in"; then
-              echo "OK: $out"
-            else
-              echo "::error file=$src::spirv-cross failed"
-              fail=1
-            fi
-            echo "::endgroup::"
-          done < work/inputs.txt
-          exit $fail
+            asm="work/disasm/${base}.spvasm"
 
-      - name: GLSL -> SPIR-V (glslangValidator)
-        shell: bash
-        run: |
-          set -euo pipefail
-          fail=0
-          while IFS='|' read -r base src; do
-            glsl="work/glsl/${base}.vert"
-            out="work/out/${base}.rt.spv"
-            [ -f "$glsl" ] || continue
-            echo "::group::glslangValidator $glsl -> $out"
-            if glslangValidator \
-                -V \
-                --target-env vulkan1.1 \
-                "$glsl" \
-                -o "$out"; then
-              echo "OK: $out"
-            else
-              echo "::error file=$src::glslangValidator failed"
-              fail=1
-            fi
-            echo "::endgroup::"
-          done < work/inputs.txt
-          exit $fail
+            # ---- 1. 敏感指令（顶点里不该出现） ----
+            barriers=$(grep -cE 'OpControlBarrier|OpMemoryBarrier' "$asm" || true)
+            kills=$(grep -cE 'OpKill|OpDemoteToHelperInvocation|OpTerminateInvocation' "$asm" || true)
 
-      - name: Validate round-tripped output
-        shell: bash
-        run: |
-          set -euo pipefail
-          fail=0
-          while IFS='|' read -r base src; do
-            out="work/out/${base}.rt.spv"
-            [ -f "$out" ] || continue
-            echo "::group::spirv-val $out"
-            if spirv-val --target-env vulkan1.1 "$out"; then
-              echo "OK: $out"
-            else
-              echo "::error file=$src::round-tripped SPIR-V validation failed"
-              fail=1
-            fi
-            echo "::endgroup::"
-          done < work/inputs.txt
-          exit $fail
+            # ---- 2. 可疑模式计数 ----
+            bitcast=$(grep -cE 'OpBitcast' "$asm" || true)
+            fma=$(grep -cE 'OpExtInst %float %[0-9]+ Fma' "$asm" || true)
+            accesschain=$(grep -cE 'OpAccessChain' "$asm" || true)
+            imgsample=$(grep -cE 'OpImageSampleImplicitLod|OpImageSampleExplicitLod|OpImageFetch' "$asm" || true)
+            imgsample_impl=$(grep -cE 'OpImageSampleImplicitLod' "$asm" || true)
 
-      - name: Interface check (EntryPoint / IO / Decorate)
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "### Interface diff (original vs round-trip)" >> "$GITHUB_STEP_SUMMARY"
-          while IFS='|' read -r base src; do
-            a="work/in/${base}.spv"
-            b="work/out/${base}.rt.spv"
-            [ -f "$b" ] || continue
+            # ---- 3. 动态索引 vp_c3 / uniform 数组 ----
+            # 匹配 OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 <id> <id>，且后两个索引都不是 int_N 常量
+            dyn_idx=$(grep -nE 'OpAccessChain %_ptr_Uniform_float %(vp_c3|support_buffer)' "$asm" \
+                      | grep -vE '%int_[0-9]+( %int_[0-9]+)*$' || true)
+            dyn_idx_count=$(printf '%s\n' "$dyn_idx" | grep -c . || true)
 
-            spirv-dis "$a" | grep -E 'OpEntryPoint|OpVariable.*(Input|Output)|OpDecorate' | sort > /tmp/a.txt
-            spirv-dis "$b" | grep -E 'OpEntryPoint|OpVariable.*(Input|Output)|OpDecorate' | sort > /tmp/b.txt
+            # ---- 4. 循环 ----
+            loops=$(grep -cE 'OpLoopMerge' "$asm" || true)
 
-            echo "#### \`$src\`" >> "$GITHUB_STEP_SUMMARY"
-            if diff -u /tmp/a.txt /tmp/b.txt > /tmp/d.txt; then
-              echo "Interface identical." >> "$GITHUB_STEP_SUMMARY"
-              echo "OK: $src interface identical"
-            else
-              echo '```diff' >> "$GITHUB_STEP_SUMMARY"
-              cat /tmp/d.txt >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              echo "::warning file=$src::interface differs after round-trip (see summary)"
-            fi
-          done < work/inputs.txt
+            # ---- 写入 Summary ----
+            {
+              echo "## \`$src\`"
+              echo ""
+              echo "| 指标 | 数量 | 备注 |"
+              echo "|---|---:|---|"
+              echo "| OpControlBarrier / OpMemoryBarrier | $barriers | 顶点中应为 0 |"
+              echo "| OpKill / OpDemote / OpTerminate | $kills | 顶点中应为 0 |"
+              echo "| OpBitcast | $bitcast | 位重解释，Mali 敏感 |"
+              echo "| Fma (OpExtInst) | $fma | 长链会造成寄存器压力 |"
+              echo "| OpAccessChain | $accesschain | 总量 |"
+              echo "| OpImageSample* | $imgsample | 顶点中不应有纹理采样 |"
+              echo "| 其中 ImplicitLod | $imgsample_impl | 顶点中应为 0 |"
+              echo "| 动态索引 uniform 数组 | $dyn_idx_count | Mali 极不友好 |"
+              echo "| OpLoopMerge | $loops | 循环数量 |"
+              echo ""
 
-      - name: Rename for drop-in replacement
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p work/dropin
-          while IFS='|' read -r base src; do
-            out="work/out/${base}.rt.spv"
-            [ -f "$out" ] || continue
-            # 去掉 .rt 后缀，让文件名与原始一致
-            cp "$out" "work/dropin/${base}.spv"
-            # 同时输出反汇编方便 review
-            spirv-dis "$out" > "work/dropin/${base}.rt.spvasm"
-          done < work/inputs.txt
-          ls -la work/dropin
+              if [ "$barriers" -gt 0 ] || [ "$kills" -gt 0 ] || [ "$imgsample" -gt 0 ]; then
+                echo "⚠️ **发现顶点中不应存在的指令**" >> "$GITHUB_STEP_SUMMARY"
+                echo ""
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                grep -nE 'OpControlBarrier|OpMemoryBarrier|OpKill|OpDemoteToHelperInvocation|OpTerminateInvocation|OpImageSampleImplicitLod|OpImageSampleExplicitLod|OpImageFetch' "$asm" | head -50 >> "$GITHUB_STEP_SUMMARY"
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                echo ""
+              fi
 
-      - name: Upload artifacts
+              if [ "$dyn_idx_count" -gt 0 ]; then
+                echo "### 动态索引 uniform 数组（前 30 条）" >> "$GITHUB_STEP_SUMMARY"
+                echo "" >> "$GITHUB_STEP_SUMMARY"
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                echo "$dyn_idx" | head -30 >> "$GITHUB_STEP_SUMMARY"
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                echo "" >> "$GITHUB_STEP_SUMMARY"
+              fi
+
+              echo "---" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            # ---- 控制台同步输出 ----
+            echo "======== $src ========"
+            echo "barriers=$barriers kills=$kills bitcast=$bitcast fma=$fma"
+            echo "accesschain=$accesschain imgsample=$imgsample(impl=$imgsample_impl)"
+            echo "dynamic_uniform_idx=$dyn_idx_count loops=$loops"
+
+          done < work/list.txt
+
+      - name: Upload disassembly + scan
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-roundtrip
-          path: |
-            work/out/*.rt.spv
-            work/glsl/*.vert
-            work/dropin/*.spv
-            work/dropin/*.rt.spvasm
+          name: vertex-scan
+          path: work/disasm/*.spvasm
           if-no-files-found: error
           retention-days: 14
