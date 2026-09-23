@@ -48,18 +48,18 @@ jobs:
           import re, sys
 
           def ensure_constants(text):
-              missing = []
-              if '%int_4095 = OpConstant %int 4095' not in text:
-                  missing.append('%int_4095 = OpConstant %int 4095')
-              if not re.search(r'^\s*%int_3 = OpConstant %int 3\b', text, re.MULTILINE):
-                  missing.append('%int_3 = OpConstant %int 3')
-              if not missing:
+              inject = []
+              if not re.search(r'^\s*%int_4096\s*=', text, re.MULTILINE):
+                  inject.append('%int_4096 = OpConstant %int 4096')
+              if not re.search(r'^\s*%int_4\s*=', text, re.MULTILINE):
+                  inject.append('%int_4 = OpConstant %int 4')
+              if not inject:
                   return text
               m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
               if not m:
                   return text
-              inject = '\n'.join('    ' + line for line in missing) + '\n'
-              return text[:m.start()] + inject + text[m.start():]
+              blob = '\n'.join('    ' + line for line in inject) + '\n'
+              return text[:m.start()] + blob + text[m.start():]
 
           PAT = re.compile(
               r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
@@ -82,15 +82,13 @@ jobs:
 
                   head = ''
                   if not is_const(a):
-                      lo, hi = f'%__cl_a_{n}_lo', f'%__cl_a_{n}_hi'
-                      head += (f'{i}{lo} = OpSMax %int {a} %int_0\n'
-                               f'{i}{hi} = OpSMin %int {lo} %int_4095\n')
-                      a = hi
+                      t = f'%__cl_a_{n}'
+                      head += f'{i}{t} = OpSMod %int {a} %int_4096\n'
+                      a = t
                   if not is_const(b):
-                      lo, hi = f'%__cl_b_{n}_lo', f'%__cl_b_{n}_hi'
-                      head += (f'{i}{lo} = OpSMax %int {b} %int_0\n'
-                               f'{i}{hi} = OpSMin %int {lo} %int_3\n')
-                      b = hi
+                      t = f'%__cl_b_{n}'
+                      head += f'{i}{t} = OpSMod %int {b} %int_4\n'
+                      b = t
 
                   return f'{head}{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {a} {b}'
               out = PAT.sub(repl, text)
@@ -143,25 +141,6 @@ jobs:
             python3 patch.py constant "work/in/${base}.spvasm" "work/constant/${base}.spvasm"
             spirv-as --target-env vulkan1.1 "work/constant/${base}.spvasm" -o "work/constant/${base}.spv"
             spirv-val --target-env vulkan1.1 "work/constant/${base}.spv"
-          done < work/list.txt
-
-      - name: Compare patched vs original (dynamic access count)
-        shell: bash
-        run: |
-          set -euo pipefail
-          {
-            echo "# Patch results"
-            echo ""
-            echo "| file | variant | dynamic accesses remaining |"
-            echo "|---|---|---:|"
-          } >> "$GITHUB_STEP_SUMMARY"
-          while IFS='|' read -r base src; do
-            for v in clamp constant; do
-              asm="work/${v}/${base}.spvasm"
-              dyn=$(grep -E 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9A-Za-z_]+ %[0-9A-Za-z_]+' "$asm" \
-                    | grep -vE '%int_[0-9]+ %int_[0-9]+$' | wc -l || true)
-              echo "| \`$base\` | $v | $dyn |" >> "$GITHUB_STEP_SUMMARY"
-            done
           done < work/list.txt
 
       - name: Upload
