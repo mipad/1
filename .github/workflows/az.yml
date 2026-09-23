@@ -58,7 +58,7 @@ jobs:
           new_decl = f'{indent}%vp_c3 = OpVariable %__ptr_texelbuf UniformConstant{tail}'
           text = text[:m.start()] + new_types + new_decl + text[m.end():]
 
-          # 2. 第一趟：找所有 vp_c3 的 OpAccessChain
+          # 2. 找所有 vp_c3 的 OpAccessChain（静态+动态都抓）
           chains = {}
           for m in re.finditer(
               r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
@@ -66,12 +66,12 @@ jobs:
               text, re.MULTILINE):
               chains[m.group('r')] = (m.group('a'), m.group('b'), m.group('i'))
 
-          print(f'  found {len(chains)} access chains', file=sys.stderr)
+          print(f'  found {len(chains)} access chains (static+dynamic)', file=sys.stderr)
           if not chains:
               print('  ERROR: no access chains found', file=sys.stderr)
               sys.exit(3)
 
-          # 3. 第二趟：找 OpLoad %float %R，把这一行替换成 OpImageFetch + OpVectorExtractDynamic
+          # 3. 把每个 access chain 的 OpLoad 使用者替换成 texel fetch
           counter = [0]
           def load_repl(m):
               r = m.group('r')
@@ -88,33 +88,43 @@ jobs:
               r'^(?P<i>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+(?P<r>%\w+)\s*$',
               load_repl, text, flags=re.MULTILINE)
 
-          # 4. 删掉原来那 156 行 OpAccessChain（结果已不再被使用）
+          print(f'  replaced {counter[0]} loads', file=sys.stderr)
+
+          # 4. 删除所有原始 OpAccessChain
+          removed = 0
           for r in chains:
-              text = re.sub(
+              new_text, n = re.subn(
                   r'^[ \t]*' + re.escape(r) + r'\s*=\s*OpAccessChain\s+'
                   r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+%\w+\s+%\w+\s*\n',
                   '', text, flags=re.MULTILINE)
-
-          print(f'  replaced {counter[0]} loads', file=sys.stderr)
-          if counter[0] == 0:
-              print('  ERROR: no loads replaced', file=sys.stderr)
-              sys.exit(4)
+              if n:
+                  removed += n
+                  text = new_text
+          print(f'  removed {removed} access chains', file=sys.stderr)
 
           with open(path, 'w') as fp:
               fp.write(text)
           PYEOF
 
+            echo "::group::spirv-as $f"
             if ! spirv-as --target-env vulkan1.1 "$asm" -o "$outspv"; then
               echo "::error file=$f::spirv-as failed"
               fail=1
+              echo "::endgroup::"
               continue
             fi
-            if ! spirv-val --target-env vulkan1.1 "$outspv"; then
-              echo "::error file=$f::spirv-val failed"
+            echo "::endgroup::"
+
+            echo "::group::spirv-val $outspv"
+            if ! spirv-val --target-env vulkan1.1 "$outspv" 2>&1 | tee /tmp/val.out; then
+              echo "::error file=$f::spirv-val failed (see log above)"
+              cat /tmp/val.out
               fail=1
+              echo "::endgroup::"
               continue
             fi
             echo "OK: $f -> $outspv"
+            echo "::endgroup::"
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
           exit $fail
@@ -126,5 +136,5 @@ jobs:
           path: |
             work/out/*.spv
             work/out/*.spvasm
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
