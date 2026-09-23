@@ -1,4 +1,4 @@
-name: Dump dynamic index context
+name: Vertex vp_c3 UBO -> TexelBuffer
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  dump:
+  convert:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,64 +19,80 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-tools
 
-      - name: Dump context around dynamic accesses
+      - name: Disassemble, convert, reassemble
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work
+          mkdir -p work/out work/in
+          fail=0
+
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            spirv-dis "$f" -o "work/${base}.spvasm"
+            cp "$f" "work/in/${base}.spv"
+            spirv-dis "$f" -o "work/out/${base}.spvasm"
 
-            # 找所有动态索引访问的行号
-            grep -nE 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9]+ %[0-9]+' "work/${base}.spvasm" \
-              | grep -vE '%int_[0-9]+ %int_[0-9]+$' \
-              | cut -d: -f1 > "work/${base}.lines.txt"
+            python3 - "work/out/${base}.spvasm" <<'PYEOF'
+          import re, sys
+          path = sys.argv[1]
+          with open(path) as fp:
+              text = fp.read()
 
-            total=$(wc -l < "work/${base}.lines.txt")
-            echo "Found $total dynamic accesses in $base"
+          # 1. 加 texel buffer 类型 + 指针类型（放在 OpTypeImage 之后或文件顶部附近）
+          extra_types = (
+              "%__tb = OpTypeImage %float Buffer 0 0 0 1 Unknown\n"
+              "%_ptr_UniformConstant_tb = OpTypePointer UniformConstant %__tb\n"
+              "%int_0 = OpConstant %int 0\n"
+          )
+          # 在第一个 OpFunction 前插入类型
+          m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
+          text = text[:m.start()] + "    " + extra_types.replace("\n", "\n    ").strip() + "\n" + text[m.start():]
 
-            # 抓每条的索引定义（%a 和 %b 各自往前追 5 条指令的上下文）
-            : > "work/${base}.context.txt"
+          # 2. vp_c3 变量：从 Uniform 指针改成 UniformConstant texel buffer
+          text = re.sub(
+              r'%vp_c3\s*=\s*OpVariable\s+%_ptr_Uniform__struct_16\s+Uniform',
+              '%vp_c3 = OpVariable %_ptr_UniformConstant_tb UniformConstant',
+              text)
 
-            # 先把所有 SSA 定义做成一个可查文件
-            grep -E '^\s+%[0-9]+ = ' "work/${base}.spvasm" > "work/${base}.defs.txt"
+          # 3. 所有 OpAccessChain + OpLoad 模式：
+          #    %r = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %a %b
+          #    %v = OpLoad %float %r
+          #  改成：
+          #    %__v4_N = OpImageFetch %v4float %vp_c3 %a Lod %int_0
+          #    %v = OpVectorExtractDynamic %float %__v4_N %b
+          pat = re.compile(
+              r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
+              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)\s*\n'
+              r'(?P<i2>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+%(?P=r)\s*$',
+              re.MULTILINE)
 
-            count=0
-            while read -r ln; do
-              count=$((count+1))
-              # 抓这一行
-              line=$(sed -n "${ln}p" "work/${base}.spvasm")
+          counter = [0]
+          def repl(m):
+              counter[0] += 1
+              n = counter[0]
+              i, a, b, v = m.group('i'), m.group('a'), m.group('b'), m.group('v')
+              tmp = f'%__tf_{n}'
+              return (f'{i}{tmp} = OpImageFetch %v4float %vp_c3 {a} Lod %int_0\n'
+                      f'{i}{v} = OpVectorExtractDynamic %float {tmp} {b}')
+          text = pat.sub(repl, text)
+          print(f'  replaced {counter[0]} accesses', file=sys.stderr)
 
-              # 提取 %a %b
-              a=$(echo "$line" | grep -oE '%[0-9]+' | tail -2 | head -1)
-              b=$(echo "$line" | grep -oE '%[0-9]+' | tail -1)
+          with open(path, 'w') as fp:
+              fp.write(text)
+          PYEOF
 
-              echo "=== [$count] line $ln: a=$a b=$b ===" >> "work/${base}.context.txt"
-
-              # 找 a 的直接定义（多次）
-              for id in "$a" "$b"; do
-                echo "  $id defined by:" >> "work/${base}.context.txt"
-                grep -E "^\s+${id} = " "work/${base}.defs.txt" >> "work/${base}.context.txt" || echo "    (not found)" >> "work/${base}.context.txt"
-              done
-              echo "" >> "work/${base}.context.txt"
-
-              # 前 10 条就够看
-              [ "$count" -ge 10 ] && break
-            done < "work/${base}.lines.txt"
-
-            echo "---- preview ----"
-            head -60 "work/${base}.context.txt"
+            spirv-as --target-env vulkan1.1 "work/out/${base}.spvasm" -o "work/out/${base}.spv" || { echo "::error file=$f::spirv-as failed"; fail=1; continue; }
+            spirv-val --target-env vulkan1.1 "work/out/${base}.spv" || { echo "::error file=$f::spirv-val failed"; fail=1; continue; }
+            echo "OK: $f -> work/out/${base}.spv"
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
+
+          exit $fail
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: dyn-index-context
+          name: vertex-texelbuffer
           path: |
-            work/*.context.txt
-            work/*.defs.txt
-            work/*.lines.txt
-            work/*.spvasm
+            work/out/*.spv
+            work/out/*.spvasm
           if-no-files-found: error
           retention-days: 14
