@@ -1,4 +1,4 @@
-name: Shrink vp_c3 UBO size 
+name: Patch dynamic uniform index (vertex) - OpUMod
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  shrink:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,44 +19,111 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-tools
 
-      - name: Prepare + shrink + reassemble
+      - name: Prepare
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/out
-          fail=0
+          mkdir -p work/in work/umod
+          : > work/list.txt
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            asm="work/out/${base}.orig.spvasm"
-            out_asm="work/out/${base}.spvasm"
-            out_spv="work/out/${base}.spv"
-
-            spirv-dis "$f" -o "$asm"
-
-            # 把 4096 改成 256；只改 OpConstant 声明，不动 OpTypeArray 的引用
-            sed -E 's/^(\s*)%uint_4096 = OpConstant %uint 4096\s*$/\1%uint_4096 = OpConstant %uint 256/' \
-              "$asm" > "$out_asm"
-
-            if ! spirv-as --target-env vulkan1.1 "$out_asm" -o "$out_spv"; then
-              echo "::error file=$f::spirv-as failed"
-              fail=1
-              continue
-            fi
-            if ! spirv-val --target-env vulkan1.1 "$out_spv"; then
-              echo "::error file=$f::spirv-val failed"
-              fail=1
-              continue
-            fi
-            echo "OK: $f -> $out_spv"
+            cp "$f" "work/in/${base}.spv"
+            echo "${base}|$f" >> work/list.txt
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
-          exit $fail
+          cat work/list.txt
+
+      - name: Save patcher
+        shell: bash
+        run: |
+          cat > patch.py <<'PYEOF'
+          import re, sys
+
+          def ensure_constants(text):
+              inject = []
+              if not re.search(r'^\s*%uint_4096\s*=', text, re.MULTILINE):
+                  inject.append('%uint_4096 = OpConstant %uint 4096')
+              if not re.search(r'^\s*%uint_4\s*=', text, re.MULTILINE):
+                  inject.append('%uint_4 = OpConstant %uint 4')
+              if not inject:
+                  return text
+              m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
+              if not m:
+                  return text
+              blob = '\n'.join('    ' + line for line in inject) + '\n'
+              return text[:m.start()] + blob + text[m.start():]
+
+          PAT = re.compile(
+              r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
+              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*$',
+              re.MULTILINE)
+
+          def is_const(tok):
+              return bool(re.match(r'%int_\d+$', tok))
+
+          def patch_umod(text):
+              text = ensure_constants(text)
+              counter = [0]
+              def repl(m):
+                  a, b = m.group('a'), m.group('b')
+                  if is_const(a) and is_const(b):
+                      return m.group(0)
+                  counter[0] += 1
+                  n = counter[0]
+                  i, r = m.group('indent'), m.group('res')
+                  head = ''
+                  if not is_const(a):
+                      ua, ur, ia = f'%__u_{n}_a', f'%__u_{n}_r', f'%__u_{n}_i'
+                      head += (f'{i}{ua} = OpBitcast %uint {a}\n'
+                               f'{i}{ur} = OpUMod %uint {ua} %uint_4096\n'
+                               f'{i}{ia} = OpBitcast %int {ur}\n')
+                      a = ia
+                  if not is_const(b):
+                      ub, ur, ib = f'%__v_{n}_a', f'%__v_{n}_r', f'%__v_{n}_i'
+                      head += (f'{i}{ub} = OpBitcast %uint {b}\n'
+                               f'{i}{ur} = OpUMod %uint {ub} %uint_4\n'
+                               f'{i}{ib} = OpBitcast %int {ur}\n')
+                      b = ib
+                  return f'{head}{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {a} {b}'
+              out = PAT.sub(repl, text)
+              print(f'  umod: patched {counter[0]} accesses', file=sys.stderr)
+              return out
+
+          mode, infile, outfile = sys.argv[1], sys.argv[2], sys.argv[3]
+          with open(infile) as f:
+              text = f.read()
+          if mode == 'umod':
+              out = patch_umod(text)
+          else:
+              sys.exit(f'unknown mode {mode}')
+          with open(outfile, 'w') as f:
+              f.write(out)
+          PYEOF
+
+      - name: Disassemble
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS='|' read -r base src; do
+            spirv-dis "work/in/${base}.spv" -o "work/in/${base}.spvasm"
+          done < work/list.txt
+
+      - name: Apply umod patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS='|' read -r base src; do
+            echo "=== $base (umod) ==="
+            python3 patch.py umod "work/in/${base}.spvasm" "work/umod/${base}.spvasm"
+            spirv-as --target-env vulkan1.1 "work/umod/${base}.spvasm" -o "work/umod/${base}.spv"
+            spirv-val --target-env vulkan1.1 "work/umod/${base}.spv"
+          done < work/list.txt
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-shrunk-ubo
+          name: vertex-umod
           path: |
-            work/out/*.spv
-            work/out/*.spvasm
+            work/umod/*.spv
+            work/umod/*.spvasm
           if-no-files-found: error
           retention-days: 14
