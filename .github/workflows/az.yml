@@ -58,7 +58,7 @@ jobs:
           new_decl = f'{indent}%vp_c3 = OpVariable %__ptr_texelbuf UniformConstant{tail}'
           text = text[:m.start()] + new_types + new_decl + text[m.end():]
 
-          # 2. 找所有 vp_c3 的 OpAccessChain（静态+动态都抓）
+          # 2. 找所有 vp_c3 的 OpAccessChain
           chains = {}
           for m in re.finditer(
               r'^(?P<i>[ \t]*)(?P<r>%\w+)\s*=\s*OpAccessChain\s+'
@@ -71,7 +71,7 @@ jobs:
               print('  ERROR: no access chains found', file=sys.stderr)
               sys.exit(3)
 
-          # 3. 把每个 access chain 的 OpLoad 使用者替换成 texel fetch
+          # 3. 把 OpLoad 替换为 OpLoad(image) + OpImageFetch + OpVectorExtractDynamic
           counter = [0]
           def load_repl(m):
               r = m.group('r')
@@ -81,8 +81,10 @@ jobs:
               counter[0] += 1
               n = counter[0]
               v = m.group('v')
+              img = f'%__img_{n}'
               tmp = f'%__tf_{n}'
-              return (f'{i}{tmp} = OpImageFetch %v4float %vp_c3 {a} Lod %__lod0\n'
+              return (f'{i}{img} = OpLoad %__texelbuf %vp_c3\n'
+                      f'{i}{tmp} = OpImageFetch %v4float {img} {a} Lod %__lod0\n'
                       f'{i}{v} = OpVectorExtractDynamic %float {tmp} {b}')
           text = re.sub(
               r'^(?P<i>[ \t]*)(?P<v>%\w+)\s*=\s*OpLoad\s+%float\s+(?P<r>%\w+)\s*$',
