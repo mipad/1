@@ -1,4 +1,4 @@
-name: Shrink vp_c3 UBO size
+name: Shrink vp_c3 UBO size 
 
 on:
   push:
