@@ -1,4 +1,4 @@
-name: Dump dynamic index definition chains
+name: Dump dynamic index context
 
 on:
   push:
@@ -19,67 +19,64 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-tools
 
-      - name: Disassemble + dump chains
+      - name: Dump context around dynamic accesses
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p work
-          : > work/list.txt
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/${base}.spv"
-            echo "${base}|$f" >> work/list.txt
-          done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
+            spirv-dis "$f" -o "work/${base}.spvasm"
 
-          while IFS='|' read -r base src; do
-            spirv-dis "work/${base}.spv" -o "work/${base}.spvasm"
-
-            # 建一个 %id -> 定义行的索引
-            awk '
-              /^ *%[0-9]+ = / { id=$1; line=$0; defs[id]=line }
-              { lines[NR]=$0 }
-              END {
-                # 输出全部定义
-                for (k in defs) print k "\t" defs[k]
-              }' "work/${base}.spvasm" | sort -V > "work/${base}.defs.txt"
-
-            # 抓出 156 条动态访问的 a、b SSA id
+            # 找所有动态索引访问的行号
             grep -nE 'OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %[0-9]+ %[0-9]+' "work/${base}.spvasm" \
               | grep -vE '%int_[0-9]+ %int_[0-9]+$' \
-              | awk '{print $NF, $(NF-1)}' \
-              | sort -u > "work/${base}.dyn_ids.txt"
+              | cut -d: -f1 > "work/${base}.lines.txt"
 
-            echo "=========== $base ==========="
-            echo "dynamic accesses found: $(wc -l < work/${base}.dyn_ids.txt)"
+            total=$(wc -l < "work/${base}.lines.txt")
+            echo "Found $total dynamic accesses in $base"
 
-            # 对每个 a 索引，向上追 8 层定义，看它怎么算出来的
-            : > "work/${base}.chains.txt"
-            while read -r b a; do
-              echo "--- a=$a b=$b ---" >> "work/${base}.chains.txt"
-              cur="$a"
-              for depth in 1 2 3 4 5 6 7 8; do
-                def=$(grep -m1 -P "^\Q${cur}\E\s+=" "work/${base}.defs.txt" | cut -f2- || true)
-                [ -z "$def" ] && break
-                echo "  [$depth] $def" >> "work/${base}.chains.txt"
-                # 从定义里取第一个源操作数
-                next=$(echo "$def" | grep -oE '%[0-9]+' | sed -n '2p')
-                [ -z "$next" ] && break
-                cur="$next"
+            # 抓每条的索引定义（%a 和 %b 各自往前追 5 条指令的上下文）
+            : > "work/${base}.context.txt"
+
+            # 先把所有 SSA 定义做成一个可查文件
+            grep -E '^\s+%[0-9]+ = ' "work/${base}.spvasm" > "work/${base}.defs.txt"
+
+            count=0
+            while read -r ln; do
+              count=$((count+1))
+              # 抓这一行
+              line=$(sed -n "${ln}p" "work/${base}.spvasm")
+
+              # 提取 %a %b
+              a=$(echo "$line" | grep -oE '%[0-9]+' | tail -2 | head -1)
+              b=$(echo "$line" | grep -oE '%[0-9]+' | tail -1)
+
+              echo "=== [$count] line $ln: a=$a b=$b ===" >> "work/${base}.context.txt"
+
+              # 找 a 的直接定义（多次）
+              for id in "$a" "$b"; do
+                echo "  $id defined by:" >> "work/${base}.context.txt"
+                grep -E "^\s+${id} = " "work/${base}.defs.txt" >> "work/${base}.context.txt" || echo "    (not found)" >> "work/${base}.context.txt"
               done
-              echo "" >> "work/${base}.chains.txt"
-            done < "work/${base}.dyn_ids.txt"
+              echo "" >> "work/${base}.context.txt"
 
-            echo "---- first 3 chains ----"
-            head -40 "work/${base}.chains.txt"
-          done < work/list.txt
+              # 前 10 条就够看
+              [ "$count" -ge 10 ] && break
+            done < "work/${base}.lines.txt"
+
+            echo "---- preview ----"
+            head -60 "work/${base}.context.txt"
+          done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: index-chains
+          name: dyn-index-context
           path: |
-            work/*.chains.txt
-            work/*.dyn_ids.txt
+            work/*.context.txt
             work/*.defs.txt
+            work/*.lines.txt
+            work/*.spvasm
           if-no-files-found: error
           retention-days: 14
