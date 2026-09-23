@@ -1,16 +1,15 @@
-name: Patch dynamic uniform index (vertex)
+name: Shrink vp_c3 UBO size
 
 on:
   push:
     branches: [ "spv-yz" ]
-  pull_request:
-    branches: [ "spv-yz" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  patch:
+  shrink:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,137 +19,44 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y spirv-tools
 
-      - name: Prepare
+      - name: Prepare + shrink + reassemble
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p work/in
-          : > work/list.txt
+          mkdir -p work/out
+          fail=0
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
-            cp "$f" "work/in/${base}.spv"
-            echo "${base}|$f" >> work/list.txt
+            asm="work/out/${base}.orig.spvasm"
+            out_asm="work/out/${base}.spvasm"
+            out_spv="work/out/${base}.spv"
+
+            spirv-dis "$f" -o "$asm"
+
+            # 把 4096 改成 256；只改 OpConstant 声明，不动 OpTypeArray 的引用
+            sed -E 's/^(\s*)%uint_4096 = OpConstant %uint 4096\s*$/\1%uint_4096 = OpConstant %uint 256/' \
+              "$asm" > "$out_asm"
+
+            if ! spirv-as --target-env vulkan1.1 "$out_asm" -o "$out_spv"; then
+              echo "::error file=$f::spirv-as failed"
+              fail=1
+              continue
+            fi
+            if ! spirv-val --target-env vulkan1.1 "$out_spv"; then
+              echo "::error file=$f::spirv-val failed"
+              fail=1
+              continue
+            fi
+            echo "OK: $f -> $out_spv"
           done < <(find . -type f -name 'Vertex_*.spv' -not -path './.git/*' -not -path './work/*' -print0)
-          echo "Found $(wc -l < work/list.txt) file(s)"
-
-      - name: Disassemble
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS='|' read -r base src; do
-            spirv-dis "work/in/${base}.spv" -o "work/in/${base}.spvasm"
-          done < work/list.txt
-
-      - name: Save patcher
-        shell: bash
-        run: |
-          cat > patch.py <<'PYEOF'
-          import re, sys
-
-          def ensure_constants(text):
-              inject = []
-              if not re.search(r'^\s*%int_4096\s*=', text, re.MULTILINE):
-                  inject.append('%int_4096 = OpConstant %int 4096')
-              if not re.search(r'^\s*%int_4\s*=', text, re.MULTILINE):
-                  inject.append('%int_4 = OpConstant %int 4')
-              if not inject:
-                  return text
-              m = re.search(r'^\s*%\d+\s*=\s*OpFunction\b', text, re.MULTILINE)
-              if not m:
-                  return text
-              blob = '\n'.join('    ' + line for line in inject) + '\n'
-              return text[:m.start()] + blob + text[m.start():]
-
-          PAT = re.compile(
-              r'^(?P<indent>[ \t]*)(?P<res>%\w+)\s*=\s*OpAccessChain\s+'
-              r'%_ptr_Uniform_float\s+%vp_c3\s+%int_0\s+(?P<a>%\w+)\s+(?P<b>%\w+)[ \t]*$',
-              re.MULTILINE)
-
-          def is_const(tok):
-              return bool(re.match(r'%int_\d+$', tok))
-
-          def patch_clamp(text):
-              text = ensure_constants(text)
-              counter = [0]
-              def repl(m):
-                  a, b = m.group('a'), m.group('b')
-                  if is_const(a) and is_const(b):
-                      return m.group(0)
-                  counter[0] += 1
-                  n = counter[0]
-                  i, r = m.group('indent'), m.group('res')
-
-                  head = ''
-                  if not is_const(a):
-                      t = f'%__cl_a_{n}'
-                      head += f'{i}{t} = OpSMod %int {a} %int_4096\n'
-                      a = t
-                  if not is_const(b):
-                      t = f'%__cl_b_{n}'
-                      head += f'{i}{t} = OpSMod %int {b} %int_4\n'
-                      b = t
-
-                  return f'{head}{i}{r} = OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 {a} {b}'
-              out = PAT.sub(repl, text)
-              print(f'  clamp: patched {counter[0]} accesses', file=sys.stderr)
-              return out
-
-          def patch_constant(text):
-              counter = [0]
-              def repl(m):
-                  if is_const(m.group('a')) and is_const(m.group('b')):
-                      return m.group(0)
-                  counter[0] += 1
-                  return (f"{m.group('indent')}{m.group('res')} = "
-                          f"OpAccessChain %_ptr_Uniform_float %vp_c3 %int_0 %int_0 %int_0")
-              out = PAT.sub(repl, text)
-              print(f'  constant: patched {counter[0]} accesses', file=sys.stderr)
-              return out
-
-          mode, infile, outfile = sys.argv[1], sys.argv[2], sys.argv[3]
-          with open(infile) as f:
-              text = f.read()
-          if mode == 'clamp':
-              out = patch_clamp(text)
-          elif mode == 'constant':
-              out = patch_constant(text)
-          else:
-              sys.exit(f'unknown mode {mode}')
-          with open(outfile, 'w') as f:
-              f.write(out)
-          PYEOF
-
-      - name: Apply clamp patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p work/clamp work/constant
-          while IFS='|' read -r base src; do
-            echo "=== $base (clamp) ==="
-            python3 patch.py clamp "work/in/${base}.spvasm" "work/clamp/${base}.spvasm"
-            spirv-as --target-env vulkan1.1 "work/clamp/${base}.spvasm" -o "work/clamp/${base}.spv"
-            spirv-val --target-env vulkan1.1 "work/clamp/${base}.spv"
-          done < work/list.txt
-
-      - name: Apply constant patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS='|' read -r base src; do
-            echo "=== $base (constant) ==="
-            python3 patch.py constant "work/in/${base}.spvasm" "work/constant/${base}.spvasm"
-            spirv-as --target-env vulkan1.1 "work/constant/${base}.spvasm" -o "work/constant/${base}.spv"
-            spirv-val --target-env vulkan1.1 "work/constant/${base}.spv"
-          done < work/list.txt
+          exit $fail
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: vertex-patched
+          name: vertex-shrunk-ubo
           path: |
-            work/clamp/*.spv
-            work/clamp/*.spvasm
-            work/constant/*.spv
-            work/constant/*.spvasm
+            work/out/*.spv
+            work/out/*.spvasm
           if-no-files-found: error
           retention-days: 14
