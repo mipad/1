@@ -5,12 +5,11 @@ on:
     branches: [ "spv-yz" ]  
   pull_request:
     branches: [ "spv-yz" ]
-  workflow_dispatch:
     inputs:
-      opt_level:
-        description: 'spirv-opt 优化级别 (-O / -Os / --legalize-hlsl 等)'
+      opt_flags:
+        description: 'spirv-opt 标志 (空格分隔)'
         required: false
-        default: '-O'
+        default: '-O --scalar-replacement --convert-local-access-chains --eliminate-dead-variables'
 
 permissions:
   contents: read
@@ -19,7 +18,7 @@ jobs:
   optimize-spirv:
     runs-on: ubuntu-latest
     env:
-      OPT_FLAGS: ${{ github.event.inputs.opt_level || '-O' }}
+      OPT_FLAGS: ${{ github.event.inputs.opt_flags || '-O --scalar-replacement --convert-local-access-chains --eliminate-dead-variables' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,14 +40,12 @@ jobs:
           mkdir -p work/in work/out
           : > work/inputs.txt
 
-          # 收集 .spv
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spv}")"
             cp "$f" "work/in/${base}.spv"
             echo "${base}|spv|$f" >> work/inputs.txt
           done < <(find . -type f -name '*.spv' -not -path './.git/*' -not -path './work/*' -print0)
 
-          # 收集 .spvasm 并汇编成 .spv
           while IFS= read -r -d '' f; do
             base="$(basename "${f%.spvasm}")"
             out="work/in/${base}.spv"
@@ -79,11 +76,12 @@ jobs:
           done < work/inputs.txt
           exit $fail
 
-      - name: Count Function-scope OpVariable (register pressure heuristic)
+      - name: Count Function-scope OpVariable BEFORE
         shell: bash
         run: |
           set -euo pipefail
-          echo "| File | Function OpVariable | Total OpVariable |" >> "$GITHUB_STEP_SUMMARY"
+          echo "### OpVariable count BEFORE optimization" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Function | Total |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
           while IFS='|' read -r base kind src; do
             spv="work/in/${base}.spv"
@@ -92,6 +90,11 @@ jobs:
             echo "| \`$src\` | $func | $total |" >> "$GITHUB_STEP_SUMMARY"
             echo "$src: Function-scope=$func total=$total"
           done < work/inputs.txt
+
+      - name: Show available spirv-opt passes (for debugging)
+        shell: bash
+        run: |
+          spirv-opt --help 2>&1 | sed -n '1,120p'
 
       - name: Optimize (conservative, Mali-friendly)
         shell: bash
@@ -104,10 +107,9 @@ jobs:
             out="work/out/${base}.opt.spv"
             echo "::group::spirv-opt $OPT_FLAGS $in"
 
-            # 分步执行，便于日志定位；--legalize-vector-shuffle 对 Mali 友好
+            # shellcheck disable=SC2086
             if spirv-opt \
                 --target-env=vulkan1.1 \
-                --legalize-vector-shuffle \
                 $OPT_FLAGS \
                 -o "$out" "$in"; then
               echo "OK: $src -> $out"
@@ -138,7 +140,24 @@ jobs:
           done < work/inputs.txt
           exit $fail
 
-      - name: Disassemble optimized output (for diffing / Mali inspection)
+      - name: Count Function-scope OpVariable AFTER
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### OpVariable count AFTER optimization" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Function | Total |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
+          while IFS='|' read -r base kind src; do
+            out="work/out/${base}.opt.spv"
+            [ -f "$out" ] || continue
+            total=$(spirv-dis "$out" | grep -cE 'OpVariable' || true)
+            func=$(spirv-dis "$out" | grep -cE 'OpVariable .* Function' || true)
+            echo "| \`$src\` | $func | $total |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$src: Function-scope=$func total=$total"
+          done < work/inputs.txt
+
+      - name: Disassemble optimized output
         shell: bash
         run: |
           set -euo pipefail
