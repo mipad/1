@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref:  main
+        ref:  my-测试-几何-顶点去ssbo1
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
