@@ -1,5 +1,4 @@
-name: Andro1 
-
+name: Andro1
 on:                                        
   push:   
     branches: [ "my" ]  
