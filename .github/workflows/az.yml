@@ -1,5 +1,4 @@
-name: 123456 
-
+name: 1234567
 on:                                        
   push:   
     branches: [ "my" ]  
