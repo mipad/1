@@ -1,4 +1,4 @@
-name: 123456780
+name: 1
 on:                                        
   push:   
     branches: [ "my" ]  
