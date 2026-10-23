@@ -28,7 +28,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: 稳定
+        ref: my-2-1-1-j-ue4
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
