@@ -29,7 +29,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: my-nce-vp9-2
+        ref: my-nce-vp9-1
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
