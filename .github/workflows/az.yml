@@ -1,4 +1,4 @@
-name: Ryujinx Android Build with dex2rs Protection
+name: Ryujinx Android Build with Rust JIT Test
 
 on:
   push:
@@ -95,7 +95,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ninja-build
 
-    # ========== Rust 编译与注入流程 ==========
+    # ========== 1. 编译 Rust 库 ==========
     - name: Setup Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
@@ -107,26 +107,15 @@ jobs:
     - name: Compile Rust Macro JIT
       working-directory: ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit
       run: |
-        # 去掉 -o 参数，让它默认编译到 target 目录
         cargo ndk -t arm64-v8a build --release
 
-    - name: Copy Rust Library to Android jniLibs
-      run: |
-        # 强制创建目标目录
-        mkdir -p ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a
-        # 从 cargo 的默认输出目录强行复制过去
-        cp ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit/target/aarch64-linux-android/release/libryujinx_macro_jit.so \
-           ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a/
-        # 打印出来确认文件在了
-        echo "=== jniLibs 目录下的文件 ==="
-        ls -la ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a/
-
-    # ========== 原版 Ryujinx 编译 ==========
+    # ========== 2. 编译 Ryujinx 原版 APK ==========
     - name: Build APK
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
       run: |
+        # 正常执行 clean 和 assembleRelease
         ./gradlew clean assembleRelease \
           -DllvmToolchainPath=$LLVM_PATH \
           -Dopenssl.root=$OPENSSL_ROOT_DIR \
@@ -134,10 +123,29 @@ jobs:
           --no-daemon \
           --stacktrace
 
-    # ========== 产物上传 ==========
-    - name: Upload APK Artifact
+    # ========== 3. 收集产物 ==========
+    - name: Collect Outputs
+      run: |
+        mkdir -p output_apk
+        mkdir -p output_so
+        
+        # 复制 APK
+        find ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release -name "*.apk" -exec cp {} output_apk/ \;
+        
+        # 复制 .so
+        cp ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit/target/aarch64-linux-android/release/libryujinx_macro_jit.so output_so/
+
+    # ========== 4. 上传产物 ==========
+    - name: Upload Original APK
       uses: actions/upload-artifact@v4
       with:
-        name: ryujinx-jit-test-apk
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
+        name: Ryujinx-Original-APK
+        path: output_apk/*.apk
+        retention-days: 7
+
+    - name: Upload Rust SO File
+      uses: actions/upload-artifact@v4
+      with:
+        name: Rust-JIT-SO
+        path: output_so/libryujinx_macro_jit.so
         retention-days: 7
