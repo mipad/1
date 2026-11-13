@@ -1,4 +1,4 @@
-name: Ryujinx Android Build with dex2rs Protect
+name: Ryujinx Android Build with dex2rs Protection
 
 on:
   push:
@@ -23,7 +23,6 @@ jobs:
       RUST_TARGET: "aarch64-linux-android"
 
     steps:
-    # ========== 1. 从 GitLab 检出代码 ==========
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
       with:
@@ -33,7 +32,6 @@ jobs:
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
-    # ========== 2. 环境配置 ==========
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
@@ -51,7 +49,6 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    # ========== 3. 缓存 ==========
     - name: Cache Gradle dependencies
       uses: actions/cache@v3
       with:
@@ -62,7 +59,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    # ========== 4. 权限和 Gradle Wrapper ==========
     - name: Set execution permissions
       working-directory: ${{ github.workspace }}/Test-ryu
       run: |
@@ -76,7 +72,6 @@ jobs:
           gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }}
         fi
 
-    # ========== 5. Android SDK / NDK 与路径 ==========
     - name: Install Android SDK Components
       run: |
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
@@ -90,11 +85,9 @@ jobs:
       run: |
         ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION }}"
         LLVM_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
-        LIB_DIR="$LLVM_PATH/sysroot/usr/lib/aarch64-linux-android/${{ env.ANDROID_API_LEVEL }}"
         echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
         echo "ANDROID_NDK_ROOT=$ANDROID_NDK_HOME" >> $GITHUB_ENV
         echo "LLVM_PATH=$LLVM_PATH" >> $GITHUB_ENV
-        echo "LIB_DIR=$LIB_DIR" >> $GITHUB_ENV
         echo "$LLVM_PATH/bin" >> $GITHUB_PATH
 
     - name: Install Ninja Build
@@ -102,7 +95,25 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ninja-build
 
-    # ========== 6. 主构建流程（Ryujinx） ==========
+    # ========== Rust 编译与注入流程 ==========
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ env.RUST_TARGET }}
+
+    - name: Install cargo-ndk
+      run: cargo install cargo-ndk
+
+    - name: Compile Rust Macro JIT
+      working-directory: ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit
+      run: |
+        cargo ndk -t arm64-v8a -o ../RyujinxAndroid/app/src/main/jniLibs build --release
+
+    - name: Verify Rust Library Output
+      run: |
+        find ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs -name "*.so"
+
+    # ========== 原版 Ryujinx 编译 ==========
     - name: Build APK
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
@@ -115,80 +126,10 @@ jobs:
           --no-daemon \
           --stacktrace
 
-    # ========== 7. dex2rs 工具链安装与加固 ==========
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ env.RUST_TARGET }}
-
-    - name: Install cargo-ndk
-      run: cargo install cargo-ndk
-
-    - name: Install dex2rs
-      run: cargo binstall dex2rs -y || cargo install dex2rs
-
-    - name: Create dex2rs filter file
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        rm -rf .tmp
-        cat << 'EOF' > filter.txt
-        # 保护 Ryujinx Android 的主要包
-        org/ryujinx/android/.*;.*
-
-        # 排除自动生成、无需转换的类
-        !Lorg/ryujinx/android/R;
-        !Lorg/ryujinx/android/R$*;
-        !Lorg/ryujinx/android/BuildConfig;
-        EOF
-
-    - name: Find built APK
-      id: find-apk
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      run: |
-        APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-        if [ -z "$APK_PATH" ]; then
-          echo "::error::No APK found for dex2rs input"
-          exit 1
-        fi
-        echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
-        echo "Input APK: $APK_PATH"
-
-    - name: Run dex2rs protection
-      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
-      env:
-        ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-      run: |
-        dex2rs \
-          -i "${{ steps.find-apk.outputs.APK_PATH }}" \
-          -o "app-protected.apk" \
-          -f filter.txt \
-          --abis arm64-v8a \
-          -k \
-          -d
-        # -k 保留原始签名（debug 签名），便于在 CI 中直接安装测试
-        # -d 启用动态注册，降低 JNI 对类名/方法名的硬绑定依赖
-
-    # ========== 8. 产物上传 ==========
-    - name: Upload original APK
+    # ========== 产物上传 ==========
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ryujinx-original
+        name: ryujinx-jit-test-apk
         path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
-
-    - name: Upload dex2rs protected APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: ryujinx-protected
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app-protected.apk
-        retention-days: 7
-
-    - name: Upload Build Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: build-reports
-        path: |
-          ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/reports/
-          ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/build/reports/
-        retention-days: 3
