@@ -29,7 +29,7 @@ jobs:
       with:
         github-server-url: https://gitlab.com
         repository: mipad1-group/Test-ryu
-        ref: my-nce-vp9-5
+        ref: my-nce-vp9-5.1
         path: Test-ryu
         token: ${{ secrets.GITLAB_TOKEN }}
 
@@ -135,8 +135,7 @@ jobs:
         # 保护 Ryujinx Android 的主要包
         org/ryujinx/android/.*;.*
 
-        # 用完整 Dalvik 类描述符精确排除，确保 dex2rs 完全跳过这些类
-        !Lorg/ryujinx/android/KaryujinxApplication;
+        # 排除自动生成、无需转换的类
         !Lorg/ryujinx/android/R;
         !Lorg/ryujinx/android/R$*;
         !Lorg/ryujinx/android/BuildConfig;
@@ -165,13 +164,9 @@ jobs:
           -f filter.txt \
           --abis arm64-v8a \
           -k \
-          -d \
-          -r \
-          -c org.ryujinx.android.NativeLoader
+          -d
         # -k 保留原始签名（debug 签名），便于在 CI 中直接安装测试
         # -d 启用动态注册，降低 JNI 对类名/方法名的硬绑定依赖
-        # -r 强制使用自定义加载器
-        # -c 指定自定义加载器的完整类名，避开对 KaryujinxApplication 的修改
 
     # ========== 8. 产物上传 ==========
     - name: Upload original APK
