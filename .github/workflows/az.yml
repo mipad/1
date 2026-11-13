@@ -165,9 +165,11 @@ jobs:
           -f filter.txt \
           --abis arm64-v8a \
           -k \
-          -d
+          -d \
+          -r
         # -k 保留原始签名（debug 签名），便于在 CI 中直接安装测试
         # -d 启用动态注册，降低 JNI 对类名/方法名的硬绑定依赖
+        # -r 强制使用自定义加载器，不修改 Application 类的 <clinit>
 
     # ========== 8. 产物上传 ==========
     - name: Upload original APK
