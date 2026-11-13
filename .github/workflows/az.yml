@@ -1,4 +1,4 @@
-name: Ryujinx Android Build with Rust JIT Te
+name: Ryujinx Android Build with Rust JIT T
 
 on:
   push:
