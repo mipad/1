@@ -1,4 +1,4 @@
-name: Ryujinx Android Build with dex2rs Protecti
+name: Ryujinx Android Build with dex2rs Protect
 
 on:
   push:
