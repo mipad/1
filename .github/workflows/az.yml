@@ -1,16 +1,16 @@
-name: 111
+name: Ryujinx Android Build with dex2rs Protection
 
-on:                                        
-  push:   
-    branches: [ "my" ]  
+on:
+  push:
+    branches: [ "my" ]
   pull_request:
     branches: [ "my" ]
 
-jobs: 
+jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    
+    timeout-minutes: 60  # 增加超时，为 dex2rs 的 Rust 编译留出时间
+
     env:
       JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=4g"
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
@@ -20,9 +20,10 @@ jobs:
       ANDROID_API_LEVEL: "36"
       GRADLE_VERSION: "9.2.0"
       ANDROID_BUILD_TOOLS: "36.0.0"
+      RUST_TARGET: "aarch64-linux-android"
 
     steps:
-    # ========== 1. 从 GitLab 检出代码（私有仓库） ==========
+    # ========== 1. 从 GitLab 检出代码 ==========
     - name: Checkout code from GitLab
       uses: actions/checkout@v4
       with:
@@ -43,7 +44,6 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v4
       with:
-        # 关键：显式覆盖默认 packages，去掉已被 Google 移除的 'tools' 包
         packages: 'platform-tools'
 
     - name: Setup .NET SDK
@@ -51,7 +51,7 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    # ========== 3. 缓存优化 ==========
+    # ========== 3. 缓存 ==========
     - name: Cache Gradle dependencies
       uses: actions/cache@v3
       with:
@@ -62,30 +62,21 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    # ========== 4. 权限和Gradle设置 ==========
+    # ========== 4. 权限和 Gradle Wrapper ==========
     - name: Set execution permissions
       working-directory: ${{ github.workspace }}/Test-ryu
       run: |
         find . -name "gradlew" -exec chmod +x {} \;
         find . -name "*.sh" -exec chmod +x {} \;
-        find . -name "*.bat" -exec chmod +x {} \; 2>/dev/null || true
 
     - name: Setup Gradle Wrapper
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
         if [ ! -f "gradlew" ]; then
-          echo "Initializing Gradle Wrapper"
           gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }}
-        else
-          echo "Gradle Wrapper already exists"
         fi
 
-    # ========== 5. 验证环境 ==========
-    - name: Verify .NET SDK Installation
-      run: |
-        dotnet --list-sdks
-        echo "检查是否安装 .NET ${{ env.DOTNET_VERSION }}"
-
+    # ========== 5. Android SDK / NDK 与路径 ==========
     - name: Install Android SDK Components
       run: |
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
@@ -100,7 +91,6 @@ jobs:
         ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/${{ env.ANDROID_NDK_VERSION }}"
         LLVM_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
         LIB_DIR="$LLVM_PATH/sysroot/usr/lib/aarch64-linux-android/${{ env.ANDROID_API_LEVEL }}"
-
         echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
         echo "LLVM_PATH=$LLVM_PATH" >> $GITHUB_ENV
         echo "LIB_DIR=$LIB_DIR" >> $GITHUB_ENV
@@ -110,69 +100,85 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y ninja-build
-        ninja --version
 
-    - name: Validate Build Environment
-      run: |
-        echo "=== 环境验证 ==="
-        echo "Java version:"
-        java -version
-        echo "Gradle version:"
-        ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/gradlew --version
-        echo "Android SDK路径:"
-        echo $ANDROID_HOME
-        echo "NDK路径:"
-        echo $ANDROID_NDK_HOME
-        echo "LLVM路径:"
-        echo $LLVM_PATH
-        echo "=== 环境验证完成 ==="
-
-    # ========== 6. 主构建流程 ==========
+    # ========== 6. 主构建流程（Ryujinx） ==========
     - name: Build APK
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       env:
         OPENSSL_ROOT_DIR: /opt/openssl-x64
       run: |
-        echo "LLVM_PATH: $LLVM_PATH"
-        echo "OPENSSL_ROOT_DIR: $OPENSSL_ROOT_DIR"
-        echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-
         ./gradlew clean assembleRelease \
           -DllvmToolchainPath=$LLVM_PATH \
           -Dopenssl.root=$OPENSSL_ROOT_DIR \
           -Pandroid.overridePathCheck=true \
           --no-daemon \
-          --stacktrace \
-          --info
+          --stacktrace
 
-    # ========== 7. 构建产物检查 ==========
-    - name: Find Native Libraries (.so)
+    # ========== 7. dex2rs 工具链安装与加固 ==========
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ env.RUST_TARGET }}
+
+    - name: Install cargo-ndk
+      run: cargo install cargo-ndk
+
+    - name: Install dex2rs
+      run: cargo binstall dex2rs -y || cargo install dex2rs
+      # binstall 优先取预编译版本，失败时回退到源码编译
+
+    - name: Create dex2rs filter file
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
-        echo "========== 开始搜索 .so 文件 =========="
-        find app/build -name "*.so" -print
-        echo "========== 搜索完成 =========="
+        cat << 'EOF' > filter.txt
+        # 保护 Ryujinx Android 的主要包
+        # 根据实际包名调整，这里以 org/ryujinx/android 为例
+        org/ryujinx/android/.*;.*
+        # 排除 R 类和 BuildConfig 等无需转换的自动生成类
+        !org/ryujinx/android/R;.*
+        !org/ryujinx/android/R$.*;.*
+        !org/ryujinx/android/BuildConfig;.*
+        EOF
 
-    - name: List APK Files
+    - name: Find built APK
+      id: find-apk
       working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
       run: |
-        echo "========== APK 文件列表 =========="
-        find app/build/outputs/apk -name "*.apk" -print
-        echo "========== 列表完成 =========="
+        APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+        if [ -z "$APK_PATH" ]; then
+          echo "::error::No APK found for dex2rs input"
+          exit 1
+        fi
+        echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "Input APK: $APK_PATH"
 
-    # ========== 8. 产物处理 ==========
-    - name: Upload Native Libraries
+    - name: Run dex2rs protection
+      working-directory: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}
+      env:
+        ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+      run: |
+        dex2rs \
+          -i "${{ steps.find-apk.outputs.APK_PATH }}" \
+          -o "app-protected.apk" \
+          -f filter.txt \
+          --abis arm64-v8a \
+          -k
+        # -k 保留原始签名（debug 签名），便于在 CI 中直接安装测试
+        # 如需正式发布，去掉 -k 并用自己的 keystore 重新签名
+
+    # ========== 8. 产物上传 ==========
+    - name: Upload original APK
       uses: actions/upload-artifact@v4
       with:
-        name: native-libs
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/**/*.so
+        name: ryujinx-original
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
         retention-days: 7
 
-    - name: Upload APK Artifact
+    - name: Upload dex2rs protected APK
       uses: actions/upload-artifact@v4
       with:
-        name: android-arm64-release
-        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
+        name: ryujinx-protected
+        path: ${{ github.workspace }}/Test-ryu/${{ env.PROJECT_DIR }}/app-protected.apk
         retention-days: 7
 
     - name: Upload Build Reports
