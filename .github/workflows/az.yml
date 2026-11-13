@@ -1,4 +1,4 @@
-name: Ryujinx Android Build with dex2rs Protec
+name: Ryujinx Android Build with dex2rs Protection
 
 on:
   push:
@@ -107,11 +107,19 @@ jobs:
     - name: Compile Rust Macro JIT
       working-directory: ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit
       run: |
-        cargo ndk -t arm64-v8a -o ../RyujinxAndroid/app/src/main/jniLibs build --release
+        # 去掉 -o 参数，让它默认编译到 target 目录
+        cargo ndk -t arm64-v8a build --release
 
-    - name: Verify Rust Library Output
+    - name: Copy Rust Library to Android jniLibs
       run: |
-        find ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs -name "*.so"
+        # 强制创建目标目录
+        mkdir -p ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a
+        # 从 cargo 的默认输出目录强行复制过去
+        cp ${{ github.workspace }}/Test-ryu/src/RyujinxMacroJit/target/aarch64-linux-android/release/libryujinx_macro_jit.so \
+           ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a/
+        # 打印出来确认文件在了
+        echo "=== jniLibs 目录下的文件 ==="
+        ls -la ${{ github.workspace }}/Test-ryu/src/RyujinxAndroid/app/src/main/jniLibs/arm64-v8a/
 
     # ========== 原版 Ryujinx 编译 ==========
     - name: Build APK
