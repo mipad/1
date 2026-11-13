@@ -135,11 +135,11 @@ jobs:
         # 保护 Ryujinx Android 的主要包
         org/ryujinx/android/.*;.*
 
-        # 排除会导致 <clinit> 冲突的类
-        !org/ryujinx/android/KaryujinxApplication;.*
-        !org/ryujinx/android/R;.*
-        !org/ryujinx/android/R$.*;.*
-        !org/ryujinx/android/BuildConfig;.*
+        # 用完整 Dalvik 类描述符精确排除，确保 dex2rs 完全跳过这些类
+        !Lorg/ryujinx/android/KaryujinxApplication;
+        !Lorg/ryujinx/android/R;
+        !Lorg/ryujinx/android/R$*;
+        !Lorg/ryujinx/android/BuildConfig;
         EOF
 
     - name: Find built APK
@@ -166,10 +166,12 @@ jobs:
           --abis arm64-v8a \
           -k \
           -d \
-          -r
+          -r \
+          -c org.ryujinx.android.NativeLoader
         # -k 保留原始签名（debug 签名），便于在 CI 中直接安装测试
         # -d 启用动态注册，降低 JNI 对类名/方法名的硬绑定依赖
-        # -r 强制使用自定义加载器，不修改 Application 类的 <clinit>
+        # -r 强制使用自定义加载器
+        # -c 指定自定义加载器的完整类名，避开对 KaryujinxApplication 的修改
 
     # ========== 8. 产物上传 ==========
     - name: Upload original APK
