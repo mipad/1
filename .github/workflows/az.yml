@@ -1,4 +1,4 @@
-name: Ryujinx Andr Bul with RustJIT 
+name: Ryujinx Andr Bu with RustJIT 
 
 on:
   push:
