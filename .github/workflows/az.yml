@@ -1,4 +1,4 @@
-name: Ryujinx Andro1id 12Build with RustJIT 
+name: Ryujinx Andro1id 112Build with RustJIT 
 
 on:
   push:
