@@ -1,4 +1,4 @@
-name: Ryujinx And BRs
+name: Ryujinx And BR
 
 on:
   push:
