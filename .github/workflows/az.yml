@@ -1,4 +1,4 @@
-name: Ryujinx Andr BRustJIT 
+name: Ryujinx Andr BRustJI
 
 on:
   push:
