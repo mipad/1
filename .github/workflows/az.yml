@@ -1,4 +1,4 @@
-name: Ryujinx Andr B RustJIT 
+name: Ryujinx Andr BRustJIT 
 
 on:
   push:
