@@ -1,4 +1,4 @@
-name: Ryujinx  
+name: Ryujinx 
 
 on:
   push:
